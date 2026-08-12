@@ -1,0 +1,30 @@
+---
+/**
+ * /system — the reader-facing architecture page (LB-32, §E [5.5]).
+ *
+ * Wraps SystemDiagram.astro (config-driven, animated) in the site chrome. The
+ * diagram is the human rendering of the §B architecture; docs/diagrams/*.drawio
+ * stay the engineering SSOT. Linked from /about's "One Layer Deeper" meta card.
+ * All place identity flows from place.config via the component.
+ */
+import Layout from '../layouts/Layout.astro';
+import SystemDiagram from '../components/SystemDiagram.astro';
+import placeConfig from '../../place.config';
+
+const { name } = placeConfig.place;
+---
+
+<Layout
+  title={`How ${name} works`}
+  description={`The architecture behind ${name} — how sources become a published, AI-readable knowledge base, drawn as a live diagram.`}
+>
+  <main class="system-page">
+    <SystemDiagram />
+  </main>
+</Layout>
+
+<style>
+  .system-page {
+    padding: 1rem 0 2rem;
+  }
+</style>

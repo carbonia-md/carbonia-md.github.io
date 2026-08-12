@@ -1,0 +1,42 @@
+# wrangler.toml — the OG image Worker's deploy TEMPLATE.
+#
+# PLACEHOLDERS ONLY, and nothing here is ever edited — not by the framework's own
+# maintainers, not by an adopter. This file is framework-owned and ships in the
+# template, so it carries no worker name, no site domain, no account id (AGENTS.md
+# iron rule 2; both machine gates scan workers/, and
+# scripts/ci/check-worker-config.mjs fails the build on any real value committed
+# here).
+#
+# The file you deploy is wrangler.generated.toml beside this one, written from
+# place.config.ts by `npm run worker-config` and gitignored:
+#
+#   name             <- "<place-slug>-og", derived from place.name
+#   SITE_ORIGIN      <- place.domain (with https:// when no scheme)
+#   SITE_NAME        <- place.name
+#   CATEGORY_COLORS  <- JSON map of categories[].slug -> color
+#
+# Everything below that is NOT one of those keys is carried through unchanged, so
+# this is where main, compatibility_date, and rules are edited.
+# See docs/runbook/DEPLOY.md §Cloudflare Workers.
+#
+# Free tier only: this framework adds no paid hosting or infra services.
+
+name = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+main = "src/index.mjs"
+compatibility_date = "2026-07-01"
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+fallthrough = false
+
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = false
+
+[vars]
+SITE_ORIGIN = ""
+SITE_NAME = ""
+CATEGORY_COLORS = ""
+

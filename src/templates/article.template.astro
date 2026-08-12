@@ -1,0 +1,811 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ArticleHero from '../components/ArticleHero.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import ArticleSidebar from '../components/ArticleSidebar.astro';
+import FeedbackWidget from '../components/FeedbackWidget.astro';
+import { getCategoryConfig, getCategoryConfigs, categoryList } from '../utils/categoryConfig';
+import placeConfig from '../../place.config';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface LatestArticle {
+  title: string;
+  description: string;
+  category: string;
+  slug: string;
+  date: Date;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  headings: Heading[];
+  frontmatter: Record<string, any>;
+  category: string;
+  slug: string;
+  readingTime?: number;
+  latestArticles?: LatestArticle[];
+  relatedArticles?: Array<{ title: string; slug: string; category: string }>;
+  contributors?: string[];
+  commitHash?: string;
+}
+
+const {
+  title,
+  description,
+  headings,
+  frontmatter,
+  category,
+  slug,
+  readingTime,
+  latestArticles = [],
+  relatedArticles = [],
+  contributors = [],
+  commitHash = '',
+} = Astro.props;
+
+const categoryInfo = getCategoryConfig(category);
+if (!categoryInfo) throw new Error(`Unknown category: ${category}`);
+
+const allConfigs = getCategoryConfigs();
+
+const estimatedReadingTime = readingTime ?? 5;
+
+const { domain } = placeConfig.place;
+const { links } = placeConfig;
+const articleUrl = `https://${domain}/${category}/${slug}`;
+const encodedUrl = encodeURIComponent(articleUrl);
+const encodedTitle = encodeURIComponent(title);
+
+// Category folder mapping for GitHub edit link (slug → title)
+const categoryFolderMap: Record<string, string> = Object.fromEntries(
+  placeConfig.categories.map((c) => [c.slug, c.title]),
+);
+
+// Other categories for "Explore more"
+const otherCategories = categoryList
+  .filter((cat) => cat !== category)
+  .slice(0, 3)
+  .map((cat) => ({ key: cat, ...allConfigs[cat] }));
+---
+
+<Layout
+  title={title}
+  description={description}
+  type="article"
+  datePublished={frontmatter.date?.toISOString?.() ?? String(frontmatter.date)}
+  tags={frontmatter.tags}
+  category={categoryInfo.name}
+  slug={slug}
+  categorySlug={category}
+  readerSettings
+>
+  <!-- Reading progress bar -->
+  <div class="reading-progress" id="reading-progress" aria-hidden="true"></div>
+
+  <main class="article-page min-h-screen bg-[#f8f1e9]">
+    <!-- Hero -->
+    <ArticleHero
+      title={title}
+      description={description}
+      category={category}
+      categoryName={categoryInfo.name}
+      categoryColor={categoryInfo.color}
+      subcategory={frontmatter.subcategory}
+    />
+
+    <!-- Three-column body -->
+    <div
+      class="mx-auto grid max-w-[var(--container-article)] grid-cols-[220px_1fr_200px] [grid-template-areas:'toc_body_sidebar'] gap-14 px-8 pb-20 pt-16 max-lg:grid-cols-1 max-lg:[grid-template-areas:'body'_'sidebar'] max-lg:gap-8 max-lg:px-6 max-lg:pb-16 max-lg:pt-10 max-[640px]:px-4 max-[640px]:pb-12 max-[640px]:pt-6"
+    >
+      <!-- Left: Table of Contents -->
+      <div
+        class="h-full [grid-area:toc] max-lg:hidden"
+        aria-label="Table of contents"
+      >
+        <TableOfContents headings={headings} />
+      </div>
+
+      <!-- Center: Article content -->
+      <article class="min-w-0 [grid-area:body]" data-pagefind-body>
+        {
+          frontmatter.image && (
+            <figure class="mb-10 max-[640px]:-mx-2">
+              <img
+                src={frontmatter.image}
+                alt={title}
+                loading="eager"
+                class="aspect-[16/9] w-full rounded-2xl object-cover"
+              />
+              {(frontmatter.imageCredit || frontmatter.imageLicense || frontmatter.imageSource) && (
+                <figcaption class="mt-3 px-1 font-['Inter',system-ui,sans-serif] text-[0.78rem] leading-relaxed text-[rgba(26,60,52,0.6)]">
+                  {frontmatter.imageCredit && (
+                    <span>Image: {frontmatter.imageCredit}</span>
+                  )}
+                  {frontmatter.imageLicense && (
+                    <span> · {frontmatter.imageLicense}</span>
+                  )}
+                  {frontmatter.imageSource && (
+                    <span>
+                      {' '} ·{' '}
+                      <a href={frontmatter.imageSource} target="_blank" rel="noopener noreferrer" class="no-external-icon">
+                        Original source
+                      </a>
+                    </span>
+                  )}
+                </figcaption>
+              )}
+            </figure>
+          )
+        }
+
+        <!-- Prose body -->
+        <div class="prose">
+          <slot />
+        </div>
+
+        <!-- Sources -->
+        {
+          frontmatter.source && frontmatter.source.length > 0 && (
+            <div class="my-12 rounded-2xl border border-[rgba(26,60,52,0.08)] bg-[rgba(26,60,52,0.03)] p-8">
+              <h3 class="mb-4 font-['Inter',system-ui,sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.1em] text-[#0e3a5c]">
+                Sources
+              </h3>
+              <ul class="m-0 flex list-none flex-col gap-2 p-0">
+                {frontmatter.source.map((url: string) => (
+                  <li>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="no-external-icon break-all text-[0.82rem] text-[#0369a1] no-underline hover:underline"
+                    >
+                      {url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+
+        <!-- AI Disclaimer -->
+        <div
+          class="my-12 mb-8 flex items-start gap-4 rounded-xl border border-[rgba(193,125,94,0.18)] bg-[rgba(193,125,94,0.06)] px-6 py-5"
+        >
+          <div
+            class="mt-[0.15rem] flex-shrink-0 text-[#c17d5e]"
+            aria-hidden="true"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              ><circle cx="12" cy="12" r="10"></circle><line
+                x1="12"
+                y1="8"
+                x2="12"
+                y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"
+              ></line></svg
+            >
+          </div>
+          <div
+            class="font-['Inter',system-ui,sans-serif] text-[0.83rem] leading-[1.6] text-[#5a4a42] [&>strong]:mb-[0.3rem] [&>strong]:block [&>strong]:text-[0.8rem] [&>strong]:font-semibold [&>strong]:uppercase [&>strong]:tracking-[0.08em] [&>strong]:text-[#c17d5e]"
+          >
+            <strong>AI-Assisted Content</strong>
+            This article was researched and written with AI assistance. All claims are source-traced; factual errors should be reported via GitHub.
+          </div>
+        </div>
+
+        <!-- Contribution row -->
+        <div class="my-8 flex flex-wrap gap-3">
+          <a
+            href={`${links.repo}/edit/main/knowledge/${categoryFolderMap[category]}/${slug}.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="no-external-icon inline-flex items-center gap-[0.45rem] rounded-full bg-[#0e3a5c] px-[1.1rem] py-[0.55rem] font-['Inter',system-ui,sans-serif] text-[0.82rem] font-medium text-[#f8f1e9] no-underline transition-all duration-200 hover:bg-[#243d36]"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+              ><path
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              ></path></svg
+            >
+            Edit this page
+          </a>
+          <a
+            href={`${links.repo}/issues/new?title=${encodeURIComponent(`Feedback: ${title}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="no-external-icon inline-flex items-center gap-[0.45rem] rounded-full border border-[rgba(26,60,52,0.2)] bg-transparent px-[1.1rem] py-[0.55rem] font-['Inter',system-ui,sans-serif] text-[0.82rem] font-medium text-[#0e3a5c] no-underline transition-all duration-200 hover:bg-[rgba(26,60,52,0.05)]"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+              ><path
+                d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+              ></path></svg
+            >
+            Report issue
+          </a>
+        </div>
+
+        <!-- Tags + bottom share row -->
+        <div
+          class="my-12 mb-8 flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(26,60,52,0.08)] pt-8 max-[640px]:flex-col max-[640px]:items-start"
+        >
+          {
+            frontmatter.tags && frontmatter.tags.length > 0 && (
+              <div class="flex flex-wrap gap-[0.4rem]">
+                {frontmatter.tags.map((tag: string) => (
+                  <span
+                    class="rounded-full border px-[0.7rem] py-1 font-['Inter',system-ui,sans-serif] text-[0.75rem] font-medium"
+                    style={`color:${categoryInfo.color}; background:${categoryInfo.colorLight}; border-color:${categoryInfo.color}28;`}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )
+          }
+
+          <div class="flex items-center gap-[0.4rem]">
+            <span
+              class="mr-1 font-['Inter',system-ui,sans-serif] text-[0.78rem] text-[#7a8b7e]"
+              >Share</span
+            >
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="no-external-icon inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(26,60,52,0.06)] text-[#0e3a5c] no-underline transition-[background,color] duration-200 hover:bg-[#0e3a5c] hover:text-[#f8f1e9]"
+              aria-label="Share on X"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                ><path
+                  d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.256 5.636L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                ></path></svg
+              >
+            </a>
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="no-external-icon inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(26,60,52,0.06)] text-[#0e3a5c] no-underline transition-[background,color] duration-200 hover:bg-[#0e3a5c] hover:text-[#f8f1e9]"
+              aria-label="Share on Facebook"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                ><path
+                  d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
+                ></path></svg
+              >
+            </a>
+            <button
+              class="copy-btn-bottom inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(26,60,52,0.06)] text-[#0e3a5c] no-underline transition-[background,color] duration-200 hover:bg-[#0e3a5c] hover:text-[#f8f1e9]"
+              type="button"
+              aria-label="Copy link"
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                ><path
+                  d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
+                ></path><path
+                  d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+                ></path></svg
+              >
+            </button>
+          </div>
+        </div>
+
+        <!-- Return navigation -->
+        <div class="my-10 mb-4 flex flex-wrap gap-3 max-[640px]:flex-col">
+          <a
+            href={`/${category}`}
+            class="inline-flex items-center justify-center gap-[0.45rem] rounded-full px-5 py-[0.55rem] font-['Inter',system-ui,sans-serif] text-[0.82rem] font-medium text-[#f8f1e9] no-underline transition-all duration-200 hover:opacity-[0.88]"
+            style={`background:${categoryInfo.color};`}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+              ><polyline points="15 18 9 12 15 6"></polyline></svg
+            >
+            Back to {categoryInfo.name}
+          </a>
+          <a
+            href="/"
+            class="inline-flex items-center justify-center gap-[0.45rem] rounded-full border border-[rgba(26,60,52,0.2)] bg-transparent px-5 py-[0.55rem] font-['Inter',system-ui,sans-serif] text-[0.82rem] font-medium text-[#0e3a5c] no-underline transition-all duration-200 hover:bg-[rgba(26,60,52,0.06)]"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+              ><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+              ></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg
+            >
+            Home
+          </a>
+        </div>
+      </article>
+
+      <!-- Right: Sidebar -->
+      <div class="h-full [grid-area:sidebar] max-lg:h-auto">
+        <ArticleSidebar
+          title={title}
+          tags={frontmatter.tags}
+          readingTime={estimatedReadingTime}
+          date={frontmatter.date}
+          contributors={contributors}
+          commitHash={commitHash}
+          category={category}
+          categoryName={categoryInfo.name}
+          categoryColor={categoryInfo.color}
+          slug={slug}
+          relatedArticles={relatedArticles}
+        />
+      </div>
+    </div>
+
+    <!-- Reader feedback (renders only with features.feedback + workers.feedback) -->
+    <FeedbackWidget page={`/${category}/${slug}`} />
+
+    <!-- Latest on the site -->
+    {
+      latestArticles.length > 0 && (
+        <section class="border-t border-[rgba(26,60,52,0.08)] bg-white px-8 py-16 max-[640px]:px-4 max-[640px]:py-12">
+          <div class="mx-auto max-w-[var(--container-article)]">
+            <div class="mb-8 text-center">
+              <p class="mb-[0.6rem] font-['Inter',system-ui,sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-[#9aa89e]">
+                Latest
+              </p>
+              <h2 class="font-['Inter',serif] text-[clamp(1.4rem,3vw,1.9rem)] font-bold leading-[1.25] text-[#0e3a5c]">
+                Latest on the site
+              </h2>
+            </div>
+            <div class="grid gap-6 grid-cols-1 min-[640px]:grid-cols-2 min-[1024px]:grid-cols-3">
+              {latestArticles.map((article) => {
+                const artCat = allConfigs[article.category];
+                const catColor = artCat?.color ?? '#475569';
+                const catIcon = artCat?.icon ?? '📄';
+                const catName = artCat?.name ?? article.category;
+                return (
+                  <a
+                    href={`/${article.category}/${article.slug}`}
+                    class="no-external-icon group flex flex-col overflow-hidden rounded-2xl border border-[rgba(26,60,52,0.06)] bg-white no-underline shadow-[0_2px_8px_rgba(26,60,52,0.05)] transition-[transform,box-shadow] duration-[250ms] hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(26,60,52,0.1)]"
+                  >
+                    <div
+                      class="flex h-28 items-center justify-center text-3xl"
+                      style={`background: linear-gradient(135deg, ${catColor}22, ${catColor}44);`}
+                    >
+                      <span style={`color: ${catColor};`}>{catIcon}</span>
+                    </div>
+                    <div class="flex flex-1 flex-col gap-2 p-5">
+                      <span
+                        class="inline-block w-fit rounded-full border px-2 py-[0.15rem] font-['Inter',system-ui,sans-serif] text-[0.7rem] font-medium"
+                        style={`color: ${catColor}; background: ${catColor}14; border-color: ${catColor}28;`}
+                      >
+                        {catName}
+                      </span>
+                      <h3 class="font-['Inter',system-ui,sans-serif] text-[0.92rem] font-bold leading-[1.3] text-[#0e3a5c] group-hover:text-[#0369a1]">
+                        {article.title}
+                      </h3>
+                      {article.description && (
+                        <p class="m-0 line-clamp-2 font-['Inter',system-ui,sans-serif] text-[0.8rem] leading-[1.5] text-[#6a7d72]">
+                          {article.description}
+                        </p>
+                      )}
+                      <span
+                        class="mt-auto pt-2 font-['Inter',system-ui,sans-serif] text-[0.78rem] font-semibold"
+                        style={`color: ${catColor};`}
+                      >
+                        Read
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    <!-- Explore other categories -->
+    <section class="bg-[#f8f1e9] px-8 py-20 max-[640px]:px-4 max-[640px]:py-14">
+      <div class="mx-auto max-w-[var(--container-article)]">
+        <div class="mb-12 text-center">
+          <p
+            class="mb-[0.6rem] font-['Inter',system-ui,sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-[#9aa89e]"
+          >
+            Keep exploring
+          </p>
+          <h2
+            class="font-['Inter',serif] text-[clamp(1.5rem,3vw,2rem)] font-bold leading-[1.25] text-[#0e3a5c]"
+          >
+            More to discover
+          </h2>
+        </div>
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+          {
+            otherCategories.map((cat) => (
+              <a
+                href={`/${cat.key}`}
+                class="flex overflow-hidden rounded-2xl border border-[rgba(26,60,52,0.06)] bg-white no-underline shadow-[0_2px_8px_rgba(26,60,52,0.05)] transition-[transform,box-shadow] duration-[250ms] hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(26,60,52,0.12)]"
+              >
+                <div
+                  class="w-[5px] flex-shrink-0"
+                  style={`background:${cat.color};`}
+                  aria-hidden="true"
+                />
+                <div class="flex flex-col gap-[0.4rem] px-6 py-[1.4rem]">
+                  <span
+                    class="font-['Inter',system-ui,sans-serif] text-[0.92rem] font-bold -tracking-[0.01em]"
+                    style={`color:${cat.color};`}
+                  >
+                    {cat.name}
+                  </span>
+                  <p class="m-0 font-['Inter',system-ui,sans-serif] text-[0.82rem] leading-[1.55] text-[#6a7d72]">
+                    {cat.description}
+                  </p>
+                  <span
+                    class="mt-[0.35rem] inline-flex items-center gap-[0.3rem] font-['Inter',system-ui,sans-serif] text-[0.78rem] font-semibold"
+                    style={`color:${cat.color};`}
+                  >
+                    Explore
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      aria-hidden="true"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </span>
+                </div>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Reading progress bar script -->
+  <script>
+    function updateProgress() {
+      const body = document.querySelector('.prose') as HTMLElement;
+      if (!body) return;
+      const scrolled = window.scrollY;
+      const top = body.offsetTop;
+      const height = body.offsetHeight;
+      const winH = window.innerHeight;
+      const progress = Math.min(
+        Math.max(((scrolled - top + winH * 0.3) / height) * 100, 0),
+        100,
+      );
+      const bar = document.getElementById('reading-progress');
+      if (bar) bar.style.width = progress + '%';
+    }
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    window.addEventListener('resize', updateProgress, { passive: true });
+    updateProgress();
+
+    // Bottom copy button
+    const copyBtnBottom =
+      document.querySelector<HTMLButtonElement>('.copy-btn-bottom');
+    if (copyBtnBottom) {
+      copyBtnBottom.addEventListener('click', () => {
+        navigator.clipboard
+          .writeText(window.location.href)
+          .then(() => {
+            copyBtnBottom.style.color = '#006D77';
+            setTimeout(() => {
+              copyBtnBottom.style.color = '';
+            }, 2200);
+          })
+          .catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = window.location.href;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          });
+      });
+    }
+  </script>
+</Layout>
+
+<style
+  define:vars={{
+    catColor: categoryInfo.color,
+    catColorLight: categoryInfo.colorLight,
+  }}
+>
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--catColor);
+    z-index: 9999;
+    transition: width 0.1s linear;
+  }
+
+  .prose {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.05rem;
+    line-height: 1.72;
+    color: #2c2c2c;
+  }
+
+  .prose :global(h1) {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 700;
+    color: #0e3a5c;
+    margin: 2.5rem 0 1rem;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+  .prose :global(h2) {
+    font-size: clamp(1.3rem, 2.5vw, 1.65rem);
+    font-weight: 700;
+    color: #0e3a5c;
+    margin: 2.5rem 0 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid rgba(26, 60, 52, 0.12);
+    line-height: 1.3;
+  }
+  .prose :global(h3) {
+    font-size: clamp(1.05rem, 2vw, 1.25rem);
+    font-weight: 600;
+    color: #0e3a5c;
+    margin: 1.75rem 0 0.65rem;
+    padding-left: 0.85rem;
+    border-left: 3px solid var(--catColor);
+    line-height: 1.35;
+  }
+  .prose :global(h4) {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #3a4f44;
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  .prose :global(p) {
+    margin-bottom: 1.1rem;
+    color: #2c2c2c;
+  }
+
+  .prose :global(a) {
+    color: #0369a1;
+    text-decoration: underline;
+    text-decoration-color: rgba(0, 109, 119, 0.35);
+    text-underline-offset: 3px;
+    border-bottom: none;
+    padding-bottom: 0;
+    transition: text-decoration-color 0.2s;
+  }
+  .prose :global(a:hover) {
+    text-decoration-color: #0369a1;
+  }
+
+  .prose :global(ul) {
+    list-style: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1.1rem;
+  }
+  .prose :global(ol) {
+    list-style: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 1.1rem;
+  }
+  .prose :global(li) {
+    margin-bottom: 0.3rem;
+    line-height: 1.65;
+  }
+
+  .prose :global(blockquote) {
+    border-left: 4px solid var(--catColor);
+    background: linear-gradient(to right, rgba(26, 60, 52, 0.04), transparent);
+    margin: 2.5rem 0;
+    padding: 1.5rem 1.75rem;
+    border-radius: 0 12px 12px 0;
+    font-style: italic;
+    color: #3a4f44;
+    font-size: 1.05rem;
+  }
+  .prose :global(blockquote p) {
+    margin-bottom: 0;
+  }
+
+  .prose :global(strong) {
+    font-weight: 700;
+    color: #0e3a5c;
+  }
+
+  .prose :global(code) {
+    font-family: 'Courier New', monospace;
+    font-size: 0.88em;
+    background: rgba(26, 60, 52, 0.06);
+    color: #0e3a5c;
+    padding: 0.15em 0.45em;
+    border-radius: 4px;
+  }
+
+  .prose :global(pre) {
+    background: #0e3a5c;
+    color: #f8f1e9;
+    padding: 1.5rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin: 2rem 0;
+    font-size: 0.875rem;
+  }
+  .prose :global(pre code) {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  .prose :global(p:has(img)) {
+    margin: 2.5rem 0;
+    text-align: center;
+  }
+  .prose :global(img) {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin: 0;
+    box-shadow: 0 4px 24px rgba(26, 60, 52, 0.1);
+  }
+  .prose :global(p:has(img) br) {
+    display: none;
+  }
+  .prose :global(p:has(img) em) {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: #6a7d72;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+  .prose :global(table th) {
+    background: rgba(26, 60, 52, 0.05);
+    color: #0e3a5c;
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid rgba(26, 60, 52, 0.12);
+  }
+  .prose :global(table td) {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid rgba(26, 60, 52, 0.06);
+    color: #3a4f44;
+  }
+  .prose :global(table tr:hover td) {
+    background: rgba(26, 60, 52, 0.02);
+  }
+
+  .prose :global(hr) {
+    border: none;
+    border-top: 1px solid rgba(26, 60, 52, 0.1);
+    margin: 3rem 0;
+  }
+
+  .prose :global(.footnotes) {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #6b7280;
+  }
+  .prose :global(.footnotes ol) {
+    padding-left: 1.5rem;
+    margin: 0;
+  }
+  .prose :global(.footnotes li) {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  .prose :global(.footnotes li p) {
+    display: inline;
+    margin: 0;
+    color: #6b7280;
+  }
+  .prose :global(.footnotes a) {
+    color: #6b7280;
+    text-decoration: underline;
+    text-decoration-color: rgba(107, 114, 128, 0.4);
+    text-underline-offset: 2px;
+  }
+  .prose :global(.footnotes a:hover) {
+    color: #374151;
+    text-decoration-color: #6b7280;
+  }
+
+  .prose :global(sup) {
+    line-height: 0;
+    font-size: 0.75em;
+    vertical-align: super;
+  }
+  .prose :global(.footnote-ref) {
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: none;
+    padding: 0 0.05em;
+    transition: color 0.15s, text-decoration-color 0.15s;
+  }
+  .prose :global(.footnote-ref:hover) {
+    color: #1d4ed8;
+    text-decoration: underline;
+    text-decoration-color: #2563eb;
+  }
+  .prose :global(.footnote-backref) {
+    margin-left: 0.35em;
+    color: #9ca3af;
+    font-size: 0.9em;
+    text-decoration: none;
+    border-bottom: none;
+    transition: color 0.15s;
+  }
+  .prose :global(.footnote-backref:hover) {
+    color: #6b7280;
+    text-decoration: none;
+  }
+</style>

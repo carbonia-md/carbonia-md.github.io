@@ -1,0 +1,44 @@
+---
+interface FeatureCard {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+interface Props {
+  sectionTitle: string;
+  cards: FeatureCard[];
+}
+
+const { sectionTitle, cards } = Astro.props;
+---
+
+<section class="mx-auto my-20 max-w-[1400px] px-8 max-md:mx-5 max-md:my-14 max-md:px-0">
+  <h2
+    class="mb-12 text-center text-[2.5rem] font-bold text-[color:var(--color-ink)] max-md:mb-8 max-md:text-[2rem]"
+  >
+    {sectionTitle}
+  </h2>
+  <div
+    class="mx-auto grid max-w-[1100px] grid-cols-4 gap-4 max-md:grid-cols-2 max-md:gap-5"
+  >
+    {
+      cards.map((card) => (
+        <div class="flex flex-col items-start gap-2 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[color:var(--color-border-visible)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] max-md:gap-4 max-md:p-6">
+          <div class="flex-shrink-0 text-[2.5rem] leading-none [filter:drop-shadow(0_2px_4px_rgba(0,0,0,0.1))] max-md:text-[2.25rem]">
+            {card.icon}
+          </div>
+          <div>
+            <h3 class="mb-2 text-[1.15rem] font-semibold leading-tight text-[color:var(--color-ink)] max-md:text-[1.1rem]">
+              {card.title}
+            </h3>
+            <p class="m-0 text-[0.95rem] leading-relaxed text-[color:var(--color-ink-soft)] max-md:text-[0.9rem]">
+              {card.description}
+            </p>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+  <slot />
+</section>

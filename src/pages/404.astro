@@ -1,0 +1,137 @@
+---
+/**
+ * 404 — page not found. Single-language, genericized from the fork (the fork's
+ * zh/ja/ko i18n bundles + _translations.json "untranslated article" Smart-404
+ * branch are not ported; this rebuild is English-only). Place identity (domain,
+ * repo, categories) flows from place.config.ts.
+ */
+import Layout from '../layouts/Layout.astro';
+import placeConfig from '../../place.config';
+
+const { domain, name } = placeConfig.place;
+const { repo } = placeConfig.links;
+const { features } = placeConfig;
+const siteName = `${name}.${domain.split('.').pop()}`;
+const categories = placeConfig.categories;
+const issueUrl = `${repo}/issues/new`;
+---
+
+<Layout title="Page Not Found" noindex={true}>
+  <main
+    class="error-page flex min-h-[80vh] items-center justify-center px-[var(--space-page-x)] py-8"
+  >
+    <div class="max-w-[600px] text-center">
+      <h1
+        class="m-0 text-[clamp(4rem,10vw,8rem)] font-black leading-none text-[#1a1a2e] opacity-[0.15]"
+      >
+        404
+      </h1>
+      <p class="my-2 font-[var(--font-editorial)] text-[1.5rem] font-bold">
+        Page Not Found
+      </p>
+      <p class="mb-8 leading-[1.6] text-[#666]">
+        The link may have expired, the page may have moved, or the URL was
+        mistyped.
+      </p>
+
+      <div
+        class="mb-10 flex justify-center gap-4 max-[640px]:flex-col max-[640px]:items-center"
+      >
+        <a
+          href="/"
+          class="inline-flex items-center rounded-lg bg-[#1a1a2e] px-5 py-[0.6rem] text-[0.95rem] font-semibold text-white no-underline transition-all duration-200 hover:bg-[#2d2d4a]"
+          >← Home</a
+        >
+        {
+          features.graph && (
+            <a
+              href="/graph"
+              class="inline-flex items-center rounded-lg bg-[#f0f0f0] px-5 py-[0.6rem] text-[0.95rem] font-semibold text-[#333] no-underline transition-all duration-200 hover:bg-[#e0e0e0]"
+            >
+              🕸️ Knowledge Graph
+            </a>
+          )
+        }
+      </div>
+
+      <div class="mb-10">
+        <p class="mb-3 text-[0.9rem] text-[#888]">
+          Try searching for what you need:
+        </p>
+        <form
+          action="https://www.google.com/search"
+          method="get"
+          target="_blank"
+          class="search-form flex justify-center gap-2 max-[640px]:flex-col max-[640px]:items-center"
+        >
+          <input type="hidden" name="q" value={`site:${domain}`} />
+          <input
+            type="text"
+            name="q"
+            placeholder={`Search ${siteName}…`}
+            class="w-[280px] rounded-lg border-2 border-[#e0e0e0] px-4 py-2 text-[0.95rem] outline-none transition-colors duration-200 focus:border-[#1a1a2e] max-[640px]:w-full"
+            aria-label={`Search ${siteName}`}
+          />
+          <button
+            type="submit"
+            class="inline-flex cursor-pointer items-center rounded-lg border-none bg-[#1a1a2e] px-5 py-[0.6rem] text-[0.95rem] font-semibold text-white no-underline transition-all duration-200 hover:bg-[#2d2d4a]"
+            >Search</button
+          >
+        </form>
+      </div>
+
+      <div
+        class="mb-10 rounded-xl border border-[#fcd34d] bg-[#fef3c7] px-6 py-5"
+      >
+        <p class="m-0 mb-[0.4rem] text-base font-bold">🐛 Is this a bug?</p>
+        <p class="m-0 mb-4 text-[0.88rem] text-[#666]">
+          If you think this page should exist, please report it:
+        </p>
+        <a
+          href={issueUrl}
+          class="no-external-icon inline-flex items-center rounded-lg bg-[#f59e0b] px-5 py-[0.6rem] text-[0.9rem] font-semibold text-white no-underline transition-all duration-200 hover:bg-[#d97706]"
+          target="_blank"
+          rel="noopener"
+        >
+          📋 Report a broken link
+        </a>
+      </div>
+
+      <div
+        class="[&_a:hover]:bg-[#1a1a2e] [&_a:hover]:text-white [&_a]:rounded-[20px] [&_a]:bg-[#f5f5f5] [&_a]:px-3 [&_a]:py-[0.35rem] [&_a]:text-[0.85rem] [&_a]:text-[#333] [&_a]:no-underline [&_a]:transition-all [&_a]:duration-200"
+      >
+        <p class="mb-3 text-[0.9rem] text-[#888]">Or explore these topics:</p>
+        <div class="flex flex-wrap justify-center gap-2">
+          {
+            categories.map((cat) => (
+              <a href={`/${cat.slug}`}>
+                {cat.icon} {cat.title}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script
+    is:inline
+    define:vars={{ siteQuery: `site:${domain}` }}
+  >
+    // Google site-search: merge the hidden site: filter with the user query into
+    // a single q param on submit.
+    const form = document.querySelector('.search-form');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        const inputs = form.querySelectorAll('input[name="q"]');
+        if (inputs.length === 2) {
+          const userQuery = inputs[1].value.trim();
+          if (userQuery) {
+            inputs[0].value = `${siteQuery} ${userQuery}`;
+            inputs[1].removeAttribute('name');
+          }
+        }
+      });
+    }
+  </script>
+</Layout>

@@ -1,0 +1,360 @@
+---
+/**
+ * FeedbackWidget.astro — reader feedback dialog on article pages.
+ *
+ * Posts JSON to the deployed `workers/feedback/` Worker (see
+ * `docs/runbook/DEPLOY.md` §Cloudflare Workers). Nothing about the transport is
+ * shared with the inherited fork's Supabase orchestrator: this is one `fetch` to
+ * one URL, with no client library, no auth, and no shared payload shape.
+ *
+ * The component owns its own gate, like Footer.astro owns the social-row gate:
+ * it renders when `features.feedback` is true AND `workers.feedback` is a
+ * non-empty string. Either half missing means no markup at all — which is what
+ * makes the config key absent-safe (SPEC §`place.config.ts`), since a flag turned
+ * on before the worker exists cannot render a trigger that posts nowhere.
+ *
+ * Zero client-side frameworks (SPEC §Stack). The script is `is:inline` and sits
+ * inside the gated fragment, so a flag-off build emits no script either. Styling
+ * is utilities plus an inline backdrop rule in the same fragment, so no
+ * widget-identifying selector reaches the CSS bundle when the widget is off.
+ *
+ * Every string comes from `src/i18n/ui.ts` (genericity: `src/` carries no copy).
+ * The inline script cannot import them, so the result messages ride on the form's
+ * `data-msg-*` attributes.
+ */
+import { useTranslations, getLangFromUrl } from '../i18n/utils';
+import placeConfig from '../../place.config';
+
+interface Props {
+  /** Site-absolute path of the article being commented on, e.g. `/history/pier`. */
+  page: string;
+}
+
+const { page } = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const { features, links } = placeConfig;
+// `workers` is optional and so is every key inside it: a config written before this
+// key existed, or by an adopter who has not deployed the worker yet, reads as an
+// empty endpoint rather than throwing.
+const endpoint = placeConfig.workers?.feedback ?? '';
+const enabled = features.feedback === true && endpoint.trim() !== '';
+
+const categories = [
+  { value: 'correction', label: t('feedback.category.correction') },
+  { value: 'addition', label: t('feedback.category.addition') },
+  { value: 'question', label: t('feedback.category.question') },
+  { value: 'other', label: t('feedback.category.other') },
+];
+
+const fieldClass =
+  "w-full rounded-lg border border-[rgba(26,60,52,0.18)] bg-white px-3 py-2 font-['Inter',system-ui,sans-serif] text-[0.9rem] text-[#0e3a5c] outline-none transition-colors duration-200 focus:border-[#0e3a5c]";
+const labelClass =
+  "mb-[0.35rem] block font-['Inter',system-ui,sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.08em] text-[#6a7d72]";
+
+/**
+ * The submit path, injected with `set:html` because an inline `<script>` body
+ * inside an Astro expression would have its braces read as expressions.
+ *
+ * Four end states, one per failure the endpoint can produce: success, a 400 that
+ * names its `field`, a 429, and anything else — an unreachable endpoint, a
+ * rejected origin (whose missing CORS header surfaces as a fetch rejection), a
+ * server fault — all of which mean the same thing to a reader: try again later.
+ */
+const SUBMIT_SCRIPT = `
+(function () {
+  var widget = document.querySelector('[data-feedback-widget]');
+  if (!widget) return;
+  var opener = widget.querySelector('[data-feedback-open]');
+  var dialog = widget.querySelector('[data-feedback-dialog]');
+  var closer = widget.querySelector('[data-feedback-close]');
+  var form = widget.querySelector('[data-feedback-form]');
+  if (!opener || !dialog || !closer || !form) return;
+  var status = form.querySelector('[data-feedback-status]');
+  var button = form.querySelector('button[type="submit"]');
+  var message = form.querySelector('[name="message"]');
+  if (!status || !button || !message) return;
+  var sending = false;
+
+  function openDialog() {
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+  }
+
+  function closeDialog() {
+    if (typeof dialog.close === 'function') {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+      opener.focus();
+    }
+  }
+
+  opener.addEventListener('click', openDialog);
+  closer.addEventListener('click', closeDialog);
+  dialog.addEventListener('close', function () {
+    opener.focus();
+  });
+  dialog.addEventListener('click', function (event) {
+    if (event.target === dialog) closeDialog();
+  });
+  message.addEventListener('input', function () {
+    message.setCustomValidity('');
+  });
+
+  function show(message, state) {
+    status.textContent = message;
+    status.setAttribute('data-state', state);
+    status.hidden = false;
+  }
+
+  function done() {
+    sending = false;
+    button.disabled = false;
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (sending) return;
+
+    var messageLength = message.value.trim().length;
+    if (messageLength < 10 || messageLength > 4000) {
+      message.setCustomValidity(form.getAttribute('data-msg-message-requirement'));
+      message.reportValidity();
+      return;
+    }
+
+    sending = true;
+    button.disabled = true;
+    show(form.getAttribute('data-msg-sending'), 'pending');
+
+    var data = new FormData(form);
+    fetch(form.getAttribute('data-endpoint'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: form.getAttribute('data-page'),
+        category: data.get('category') || '',
+        message: data.get('message') || '',
+        contact: data.get('contact') || '',
+        website: data.get('website') || ''
+      })
+    })
+      .then(function (response) {
+        if (response.status === 429) {
+          show(form.getAttribute('data-msg-rate-limited'), 'error');
+          done();
+          return;
+        }
+        if (response.status === 400) {
+          return response
+            .json()
+            .catch(function () {
+              return {};
+            })
+            .then(function (body) {
+              var field = typeof body.field === 'string' && body.field ? body.field : 'form';
+              show(form.getAttribute('data-msg-invalid').replace('{field}', field), 'error');
+              done();
+            });
+        }
+        if (!response.ok) {
+          show(form.getAttribute('data-msg-error'), 'error');
+          done();
+          return;
+        }
+        show(form.getAttribute('data-msg-success'), 'success');
+        form.reset();
+        done();
+      })
+      .catch(function () {
+        show(form.getAttribute('data-msg-error'), 'error');
+        done();
+      });
+  });
+})();
+`;
+---
+
+{
+  enabled && (
+    <section
+      class="border-t border-[rgba(26,60,52,0.08)] bg-white px-8 py-8 max-[640px]:px-4 max-[640px]:py-6"
+      data-feedback-widget
+    >
+      <div class="mx-auto max-w-[var(--container-article)]">
+        <button
+          class="inline-flex items-center gap-2 rounded-full border border-[rgba(14,58,92,0.22)] bg-white px-5 py-[0.55rem] font-['Inter',system-ui,sans-serif] text-[0.85rem] font-semibold text-[#0e3a5c] transition-colors duration-200 hover:bg-[#eef5f1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e3a5c]"
+          type="button"
+          data-feedback-open
+        >
+          <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m8-2a9 9 0 1 1-4.2-7.6L21 3v4.2A8.9 8.9 0 0 1 21 12Z"></path>
+          </svg>
+          {t('feedback.open')}
+        </button>
+
+        <noscript>
+          <style is:inline>
+            [data-feedback-open], [data-feedback-dialog] { display: none !important; }
+          </style>
+          <p class="m-0 font-['Inter',system-ui,sans-serif] text-[0.9rem] leading-[1.6] text-[#6a7d72]">
+            {t('feedback.noscript')}{' '}
+            <a
+              class="font-semibold text-[#0e3a5c] underline"
+              href={`mailto:${links.email}`}
+            >
+              {links.email}
+            </a>
+          </p>
+        </noscript>
+
+        <dialog
+          class="m-auto max-h-[calc(100dvh-2rem)] w-[min(46rem,calc(100%-2rem))] overflow-y-auto rounded-2xl border border-[rgba(26,60,52,0.14)] bg-white p-0 text-[#0e3a5c] shadow-[0_24px_80px_rgba(14,58,92,0.24)]"
+          data-feedback-dialog
+          aria-labelledby="feedback-heading"
+          aria-describedby="feedback-intro"
+        >
+          <div class="p-8 max-[640px]:p-5">
+            <div class="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2
+                  class="mb-[0.6rem] font-['Inter',serif] text-[clamp(1.25rem,2.6vw,1.6rem)] font-bold leading-[1.25] text-[#0e3a5c]"
+                  id="feedback-heading"
+                >
+                  {t('feedback.heading')}
+                </h2>
+                <p
+                  class="m-0 max-w-[52ch] font-['Inter',system-ui,sans-serif] text-[0.9rem] leading-[1.6] text-[#6a7d72]"
+                  id="feedback-intro"
+                >
+                  {t('feedback.intro')}
+                </p>
+              </div>
+              <button
+                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(14,58,92,0.18)] text-[#0e3a5c] transition-colors duration-200 hover:bg-[#eef5f1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e3a5c]"
+                type="button"
+                data-feedback-close
+                aria-label={t('feedback.close')}
+                autofocus
+              >
+                <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" d="m6 6 12 12M18 6 6 18"></path>
+                </svg>
+              </button>
+            </div>
+
+            <form
+              class="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1"
+              data-feedback-form
+              data-endpoint={endpoint}
+              data-page={page}
+              data-msg-sending={t('feedback.sending')}
+              data-msg-success={t('feedback.success')}
+              data-msg-invalid={t('feedback.invalid')}
+              data-msg-rate-limited={t('feedback.rateLimited')}
+              data-msg-error={t('feedback.error')}
+              data-msg-message-requirement={t('feedback.message.requirement')}
+            >
+              <div>
+                <label class={labelClass} for="feedback-category">
+                  {t('feedback.category.label')}
+                </label>
+                <select
+                  class={fieldClass}
+                  id="feedback-category"
+                  name="category"
+                  required
+                >
+                  {categories.map((c) => (
+                    <option value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label class={labelClass} for="feedback-contact">
+                  {t('feedback.contact.label')}
+                </label>
+                <input
+                  class={fieldClass}
+                  id="feedback-contact"
+                  name="contact"
+                  type="email"
+                  autocomplete="email"
+                />
+              </div>
+
+              <div class="col-span-2 max-[640px]:col-span-1">
+                <label class={labelClass} for="feedback-message">
+                  {t('feedback.message.label')}
+                </label>
+                <textarea
+                  class={`${fieldClass} resize-y leading-[1.6]`}
+                  id="feedback-message"
+                  name="message"
+                  rows="4"
+                  required
+                  minlength="10"
+                  maxlength="4000"
+                  aria-describedby="feedback-message-requirement"
+                  placeholder={t('feedback.message.placeholder')}
+                ></textarea>
+                <p
+                  class="mb-0 mt-1.5 font-['Inter',system-ui,sans-serif] text-[0.76rem] leading-[1.5] text-[#6a7d72]"
+                  id="feedback-message-requirement"
+                >
+                  {t('feedback.message.requirement')}
+                </p>
+              </div>
+
+              {/* Honeypot: off-screen rather than display:none, aria-hidden so assistive
+                  technology never reaches it, and out of the tab order. The endpoint
+                  answers a filled trap with a success-shaped 200 and stores nothing. */}
+              <div
+                class="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
+                aria-hidden="true"
+              >
+                <label for="feedback-website">{t('feedback.trap.label')}</label>
+                <input
+                  id="feedback-website"
+                  name="website"
+                  type="text"
+                  tabindex="-1"
+                  autocomplete="off"
+                  aria-hidden="true"
+                />
+              </div>
+
+              <div class="col-span-2 flex flex-wrap items-center gap-4 max-[640px]:col-span-1">
+                <button
+                  class="inline-flex items-center justify-center rounded-full bg-[#0e3a5c] px-6 py-[0.55rem] font-['Inter',system-ui,sans-serif] text-[0.85rem] font-semibold text-[#f8f1e9] transition-opacity duration-200 hover:opacity-[0.88] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e3a5c] disabled:cursor-not-allowed disabled:opacity-60"
+                  type="submit"
+                >
+                  {t('feedback.submit')}
+                </button>
+                <p
+                  class="m-0 font-['Inter',system-ui,sans-serif] text-[0.85rem] leading-[1.5] text-[#6a7d72] data-[state=error]:text-[#a8321f] data-[state=success]:text-[#15803d]"
+                  data-feedback-status
+                  role="status"
+                  aria-live="polite"
+                  hidden
+                ></p>
+              </div>
+            </form>
+          </div>
+        </dialog>
+      </div>
+
+      <style is:inline>
+        [data-feedback-dialog]::backdrop { background: rgba(14, 58, 92, 0.42); backdrop-filter: blur(2px); }
+      </style>
+      <script is:inline set:html={SUBMIT_SCRIPT} />
+    </section>
+  )
+}

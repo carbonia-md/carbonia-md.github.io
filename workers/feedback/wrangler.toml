@@ -1,0 +1,44 @@
+# wrangler.toml — the feedback Worker's deploy TEMPLATE.
+#
+# PLACEHOLDERS ONLY, and nothing here is ever edited — not by the framework's own
+# maintainers, not by an adopter. This file is framework-owned and ships in the
+# template, so it carries no worker name, no database name, no site domain, no
+# account id, and no database id (AGENTS.md iron rule 2; both machine gates scan
+# workers/, and scripts/ci/check-worker-config.mjs fails the build on any real value
+# committed here).
+#
+# The file you deploy is wrangler.generated.toml beside this one, written from
+# place.config.ts by `npm run worker-config` and gitignored:
+#
+#   name, database_name  <- "<place-slug>-feedback", derived from place.name
+#   ALLOWED_ORIGIN       <- place.domain
+#   database_id          <- place.config.ts `workers.feedbackDatabaseId`
+#   IP_HASH_SALT         <- `npx wrangler secret put IP_HASH_SALT` (a secret, never
+#                           a var, and never in either file)
+#
+# Everything below that is NOT one of those keys is carried through unchanged, so
+# this is where main, compatibility_date, the D1 binding, migrations_dir, and the
+# rate-limit defaults are edited. See docs/runbook/DEPLOY.md §Cloudflare Workers.
+#
+# Free tier only: this framework adds no paid hosting or infra services.
+
+name = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+main = "src/index.mjs"
+compatibility_date = "2026-07-01"
+
+# Non-secret configuration. ALLOWED_ORIGIN is the single origin the worker accepts;
+# it is never `*`, and an empty value makes every request 403 rather than opening the
+# endpoint up. This template ships it empty; the generated config carries place.domain.
+[vars]
+ALLOWED_ORIGIN = ""
+RATE_LIMIT_MAX = "5"
+RATE_LIMIT_WINDOW_SECONDS = "3600"
+
+# `database_name` and `database_id` come from the generated config: the derived name,
+# and the id recorded in place.config.ts as `workers.feedbackDatabaseId`. `binding` is
+# the name the worker code uses (`env.DB`) — framework-owned, not instance identity.
+[[d1_databases]]
+binding = "DB"
+database_name = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+database_id = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+migrations_dir = "migrations"

@@ -1,0 +1,1239 @@
+/**
+ * article-modules.css — shared visual modules inside articles
+ *
+ * "Present key comparisons and data with good visual experience for readers."
+ * Authors invoke via minimal fenced-code syntax (see docs/editorial/graph.md);
+ * marked code renderer (article-render.ts renderTwModule) converts tw-* blocks
+ * into the HTML below.
+ *
+ * Design philosophy (inspired by The Pudding, per reports/article-visualization-design-2026-06-06.md):
+ *   Static + semantic HTML + annotation-first → readable by humans, screen readers, Google, AI crawlers alike.
+ *   "Visualization that LLMs can read = sovereign visualization." Data text in DOM; translation handles it natively.
+ *
+ * Modules (17):
+ *   .tw-figure   big number   single big number / before→after           [editorial]
+ *   .tw-stat     stat group   2-4 key stats in a row                     [editorial]
+ *   .tw-versus   comparison   two systems side by side                   [editorial]
+ *   .tw-bars     bar chart    horizontal bars (ranking/compare/diverge±) [editorial]
+ *   .tw-waffle   waffle       part-to-whole, 100 cells                   [editorial]
+ *   .tw-timeline timeline     annotated node timeline                    [editorial]
+ *   .tw-quote    pull quote   pull quote                                 [editorial]
+ *   .tw-source   source chip  source / method chip                       [editorial]
+ *   .tw-note     note box     methodology / correction note              [editorial]
+ *   .tw-line     line chart   trend over time (inline SVG + table)       [chart]
+ *   .tw-slope    slope chart  two-point change (inline SVG + table)      [chart]
+ *   .tw-dot      dot chart    dot strip / range (shared-axis distribution)[chart]
+ *   .tw-stack    stacked bar  100% composition across rows               [chart]
+ *   .tw-pyramid  pyramid      back-to-back bars (left-right comparison)  [chart]
+ *   .tw-heatmap  heatmap      intensity matrix (HTML table)              [chart]
+ *   .tw-tiles    tile map     regional tile cartogram                   [chart]
+ *   .tw-iso      isotype      isotype, 1 symbol = N (countable big numbers) [chart]
+ *
+ * All read tokens.css design variables → dark mode / RWD / fonts follow automatically.
+ * Do not add scattered color values here; module-specific colors are in the --tw-* block below.
+ */
+
+:root {
+  --tw-warm: #c2410c; /* warm (problem/before/series1) orange-700 */
+  --tw-cool: #0e7490; /* cool (contrast/after/series2) cyan-700 */
+  --tw-green: #2a7d52; /* series3 (colorblind-friendly) */
+  --tw-fill: var(--color-accent);
+  --tw-mute: #94a3b8; /* neutral / other */
+  --tw-track: rgba(15, 23, 42, 0.06);
+  --tw-grid: rgba(15, 23, 42, 0.12);
+  --tw-mod-radius: 14px;
+  /* Sequential color scale (heatmap / tiles): single-hue light→dark.
+     Two-hue cool→warm produces muddy midtones (2026-06-12 visual check); sequential always uses single-hue. */
+  --tw-heat-lo: #faf3ea;
+  --tw-heat-hi: #9a3412; /* orange-800, dark enough to support white text */
+  --tw-seg-text: #fff; /* text on saturated segments (stack/heatmap dark cells) */
+}
+:root[data-theme='dark'] {
+  --tw-warm: #fb923c;
+  --tw-cool: #22d3ee;
+  --tw-green: #4ade80;
+  --tw-mute: #64748b;
+  --tw-track: rgba(241, 245, 249, 0.1);
+  --tw-grid: rgba(241, 245, 249, 0.18);
+  --tw-heat-lo: #1d232c;
+  --tw-heat-hi: #b45309; /* amber-700, still supports white text in dark */
+  --tw-seg-text: #0b1220; /* dark mode category colors are light (400 level) → segment text goes dark */
+}
+
+/* Shared container margins + card base */
+.tw-figure,
+.tw-stat,
+.tw-stat-wrap,
+.tw-versus,
+.tw-bars,
+.tw-waffle,
+.tw-timeline,
+.tw-quote,
+.tw-source,
+.tw-note,
+.tw-line,
+.tw-slope,
+.tw-dot,
+.tw-stack,
+.tw-pyramid,
+.tw-heatmap,
+.tw-tiles,
+.tw-iso {
+  margin: var(--space-5) 0;
+  font-family: var(--font-interface);
+  color: var(--color-ink);
+}
+.tw-stat-wrap .tw-stat {
+  margin: 0.6em 0 0;
+}
+.tw-tiles--fallback .tw-bars {
+  margin: 0.6em 0 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  padding: 0;
+}
+.tw-figure,
+.tw-versus,
+.tw-bars,
+.tw-waffle,
+.tw-timeline,
+.tw-line,
+.tw-slope,
+.tw-dot,
+.tw-stack,
+.tw-pyramid,
+.tw-heatmap,
+.tw-tiles,
+.tw-iso {
+  border: 1px solid var(--color-border);
+  border-radius: var(--tw-mod-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Module title (used by chart types) + source row shared */
+.tw-mod-title {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: var(--color-ink);
+  margin-bottom: 0.5em;
+}
+/* Source row: placed outside module as caption (sibling), avoids fighting with container padding */
+.tw-mod-src {
+  margin: -0.3em 0 var(--space-5);
+  padding-left: 0.2em;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--color-ink-soft);
+  opacity: 0.85;
+}
+.tw-mod-src b {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.tw-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ════════════════════════════ 1. Big number .tw-figure ════════════════════════════ */
+.tw-figure {
+  text-align: center;
+  padding: var(--space-5) var(--space-4);
+}
+.tw-figure-nums {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4em 0.5em;
+  font-family: var(--font-title);
+  font-weight: 700;
+  line-height: 1.05;
+}
+.tw-figure-num {
+  font-size: clamp(2rem, 7vw, 3.4rem);
+  color: var(--tw-warm);
+  letter-spacing: -0.01em;
+}
+.tw-figure-nums .tw-figure-num:last-child:not(:first-child) {
+  color: var(--tw-cool);
+}
+.tw-figure-num--solo {
+  color: var(--color-accent);
+}
+.tw-figure-arrow {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  color: var(--color-ink-soft);
+  opacity: 0.7;
+  transform: translateY(-0.05em);
+}
+.tw-figure-cap {
+  margin: 0.7em auto 0;
+  font-family: var(--font-reading);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--color-ink-soft);
+  max-width: 36ch;
+}
+.tw-figure-src {
+  margin-top: 0.9em;
+  padding-top: 0.7em;
+  border-top: 1px dashed var(--color-border);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--color-ink-soft);
+  opacity: 0.85;
+}
+
+/* ════════════════════════════ 2. Stat group .tw-stat ════════════════════════════ */
+.tw-stat {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8em, 1fr));
+  gap: 0.8em;
+}
+.tw-stat-card {
+  padding: var(--space-4) 1em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--tw-mod-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  text-align: center;
+}
+.tw-stat-val {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 4.5vw, 2.1rem);
+  line-height: 1.1;
+  color: var(--color-accent);
+}
+.tw-stat-label {
+  margin-top: 0.4em;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-ink-soft);
+}
+.tw-stat-note {
+  margin-top: 0.2em;
+  font-size: 0.74rem;
+  color: var(--color-ink-soft);
+  opacity: 0.8;
+}
+
+/* ════════════════════════════ 3. Comparison card .tw-versus ════════════════════════════ */
+.tw-versus {
+  overflow: hidden;
+}
+.tw-versus-title {
+  padding: 0.85em var(--space-4) 0;
+  margin-bottom: 0;
+}
+.tw-versus-heads {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.9em var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+}
+.tw-versus-head {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.tw-versus-head--a {
+  color: var(--tw-warm);
+}
+.tw-versus-head--b {
+  color: var(--tw-cool);
+  text-align: right;
+}
+.tw-versus-vs {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--color-ink-soft);
+  padding: 0.1em 0.55em;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+.tw-versus-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--color-border);
+}
+.tw-versus-row:nth-child(even) .tw-versus-cell {
+  background: var(--color-bg-soft);
+}
+.tw-versus-cell {
+  background: var(--color-surface);
+  padding: 0.75em var(--space-4);
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+.tw-versus-cell:first-child {
+  box-shadow: inset 3px 0 0 -1px var(--tw-warm);
+}
+.tw-versus-cell:last-child {
+  box-shadow: inset -3px 0 0 -1px var(--tw-cool);
+}
+/* Side labels: hidden on desktop (header already labels columns), shown on mobile (see RWD collapse) */
+.tw-versus-tag {
+  display: none;
+}
+
+/* ════════════════════════════ 4. Bar chart .tw-bars ════════════════════════════ */
+.tw-bars {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7em;
+}
+.tw-bars-row {
+  display: grid;
+  grid-template-columns: minmax(5.5em, 9em) 1fr auto;
+  align-items: center;
+  gap: 0.8em;
+}
+.tw-bars-label {
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+  text-align: right;
+}
+.tw-bars-track {
+  position: relative;
+  height: 0.85em;
+  background: var(--tw-track);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.tw-bars-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--tw-cool), var(--tw-fill));
+  min-width: 0.85em;
+}
+.tw-bars-val {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+.tw-bars-note {
+  font-family: var(--font-interface);
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+}
+/* Diverging bars (with negatives): 0 at center, negative left (cool), positive right (warm) */
+.tw-bars-track--div {
+  overflow: visible;
+}
+.tw-bars-zero {
+  position: absolute;
+  left: 50%;
+  top: -0.15em;
+  bottom: -0.15em;
+  width: 1.5px;
+  background: var(--tw-grid);
+}
+.tw-bars-fill--pos {
+  background: var(--tw-warm);
+  border-radius: 0 999px 999px 0;
+  min-width: 2px;
+}
+.tw-bars-fill--neg {
+  background: var(--tw-cool);
+  border-radius: 999px 0 0 999px;
+  min-width: 2px;
+}
+/* Emphasis rows (label starts with `*`): when any emphasis row exists, dim the rest as context (Datawrapper pattern) */
+.tw-bars--focus .tw-bars-row:not(.tw-bars-row--hi) .tw-bars-fill {
+  background: var(--tw-mute);
+  opacity: 0.55;
+}
+.tw-bars--focus .tw-bars-row:not(.tw-bars-row--hi) .tw-bars-val {
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+.tw-bars-row--hi .tw-bars-fill {
+  background: var(--tw-warm);
+}
+.tw-bars-row--hi .tw-bars-label {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ════════════════════════════ 5. Waffle chart .tw-waffle ════════════════════════════ */
+.tw-waffle {
+  padding: var(--space-4);
+}
+.tw-waffle-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  max-width: 22em;
+  margin: 0 auto;
+  aspect-ratio: 1;
+}
+.tw-waffle-cell {
+  border-radius: 3px;
+  background: var(--tw-track);
+}
+.tw-waffle-cell[data-cat='0'] {
+  background: var(--tw-warm);
+}
+.tw-waffle-cell[data-cat='1'] {
+  background: var(--tw-cool);
+}
+.tw-waffle-cell[data-cat='2'] {
+  background: var(--tw-green);
+}
+.tw-waffle-cell[data-cat='3'] {
+  background: var(--color-accent);
+}
+.tw-waffle-cell[data-cat='4'] {
+  background: var(--tw-mute);
+}
+.tw-waffle-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5em 1.1em;
+  margin-top: var(--space-4);
+}
+.tw-waffle-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.88rem;
+  color: var(--color-ink-soft);
+}
+.tw-waffle-swatch {
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 3px;
+  flex: none;
+}
+.tw-waffle-key b {
+  color: var(--color-ink);
+  font-family: var(--font-title);
+}
+
+/* ════════════════════════════ 6. Timeline .tw-timeline ════════════════════════════ */
+.tw-timeline {
+  padding: var(--space-4) var(--space-4) 0.4em;
+}
+.tw-timeline-item {
+  display: grid;
+  grid-template-columns: 3.6em 1.2em 1fr;
+  gap: 0.9em;
+  align-items: start;
+  padding-bottom: var(--space-4);
+}
+.tw-timeline-year {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--tw-warm);
+  text-align: right;
+  padding-top: 0.05em;
+}
+.tw-timeline-node {
+  position: relative;
+  justify-self: center;
+  width: 0.7em;
+  height: 0.7em;
+  margin-top: 0.35em;
+  border-radius: 999px;
+  background: var(--color-accent);
+  box-shadow:
+    0 0 0 3px var(--color-surface),
+    0 0 0 4px var(--color-border);
+}
+.tw-timeline-item:not(:last-child) .tw-timeline-node::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 1em;
+  transform: translateX(-50%);
+  width: 2px;
+  height: calc(100% + var(--space-4));
+  background: var(--color-border);
+}
+.tw-timeline-title {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--color-ink);
+}
+.tw-timeline-desc {
+  margin-top: 0.2em;
+  font-family: var(--font-reading);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+}
+
+/* ════════════════════════════ 7. Pull quote .tw-quote ════════════════════════════ */
+.tw-quote {
+  position: relative;
+  padding: 0.2em 0 0.2em 1.1em;
+  border-left: 4px solid var(--color-accent);
+  margin: var(--space-5) 0;
+}
+.tw-quote-text {
+  /* Explicit reset: was overridden by .prose blockquote grey bg + italic
+     (cascade leak, caught in 2026-06-12 visual check). Template added :not(); this is belt-and-braces. */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-style: normal;
+  font-family: var(--font-quote);
+  font-size: clamp(1.2rem, 3.2vw, 1.6rem);
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+.tw-quote-text::before {
+  content: '\201C';
+  color: var(--color-accent);
+  opacity: 0.6;
+}
+.tw-quote-text::after {
+  content: '\201D';
+  color: var(--color-accent);
+  opacity: 0.6;
+}
+.tw-quote-by {
+  margin-top: 0.6em;
+  font-family: var(--font-interface);
+  font-size: 0.92rem;
+  color: var(--color-ink-soft);
+}
+.tw-quote-by::before {
+  content: '— ';
+}
+.tw-quote-by b {
+  color: var(--color-ink);
+}
+
+/* ════════════════════════════ 8. Source chip .tw-source ════════════════════════════ */
+.tw-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  padding: 0.6em 0.9em;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+  width: fit-content;
+  max-width: 100%;
+}
+.tw-source-icon {
+  flex: none;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+.tw-source b {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ════════════════════════════ 9. Line chart .tw-line ════════════════════════════ */
+.tw-line {
+  padding: var(--space-4);
+}
+.tw-line-plot {
+  display: block;
+  width: 100%;
+  /* Desktop cap: viewBox 400 scaling up infinitely makes SVG text grow proportionally
+     (2026-06-12 visual check: 320 viewBox at 720px inflated axis labels to ~25px). 520px cap → text at most ~1.3x. */
+  max-width: 520px;
+  margin-inline: auto;
+  height: auto;
+  box-sizing: border-box;
+  overflow: visible;
+}
+/* Baseline / reference line: dashed, no endpoints, single label (graph.md section 8 anti-example gallery solution) */
+.tw-line-ref {
+  stroke: var(--color-ink-soft);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+  opacity: 0.65;
+  vector-effect: non-scaling-stroke;
+}
+.tw-line-reflab {
+  font-family: var(--font-interface);
+  font-size: 10px;
+  fill: var(--color-ink-soft);
+}
+.tw-line-area {
+  opacity: 0.12;
+  stroke: none;
+}
+.tw-line-path {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.tw-line-dot {
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.tw-line-axis {
+  stroke: var(--tw-grid);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.tw-line-xlab,
+.tw-line-ylab {
+  font-family: var(--font-interface);
+  font-size: 11px;
+  fill: var(--color-ink-soft);
+}
+.tw-line-slab {
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 700;
+}
+/* Series colors: path uses stroke only (fill:none must not be overridden, or polyline self-fills as a blob —
+   caught in 2026-06-12 visual check); dot / endpoint labels / area use fill */
+.tw-line-path.tw-line-s0 {
+  stroke: var(--tw-warm);
+}
+.tw-line-path.tw-line-s1 {
+  stroke: var(--tw-cool);
+}
+.tw-line-path.tw-line-s2 {
+  stroke: var(--tw-green);
+}
+.tw-line-dot.tw-line-s0,
+.tw-line-slab.tw-line-s0,
+.tw-line-area.tw-line-s0 {
+  fill: var(--tw-warm);
+}
+.tw-line-dot.tw-line-s1,
+.tw-line-slab.tw-line-s1,
+.tw-line-area.tw-line-s1 {
+  fill: var(--tw-cool);
+}
+.tw-line-dot.tw-line-s2,
+.tw-line-slab.tw-line-s2,
+.tw-line-area.tw-line-s2 {
+  fill: var(--tw-green);
+}
+
+/* ════════════════════════════ 10. Heatmap .tw-heatmap ════════════════════════════ */
+.tw-heatmap {
+  padding: var(--space-4);
+  overflow-x: auto;
+}
+.tw-heatmap table {
+  border-collapse: separate;
+  border-spacing: 3px;
+  width: 100%;
+  font-size: 0.86rem;
+}
+.tw-heatmap th {
+  font-family: var(--font-interface);
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  padding: 0.3em 0.5em;
+  text-align: center;
+}
+.tw-heatmap th[scope='row'] {
+  text-align: right;
+  white-space: nowrap;
+}
+.tw-heatmap td {
+  text-align: center;
+  padding: 0.55em 0.5em;
+  border-radius: 5px;
+  font-family: var(--font-title);
+  font-weight: 700;
+  /* --i (0-1) injected → single-hue light to dark (original cool→warm two-hue produced muddy midtones,
+     and text color was overridden by .prose td making dark cells unreadable — fixed in 2026-06-12 visual check) */
+  background: color-mix(
+    in srgb,
+    var(--tw-heat-hi) calc(var(--i, 0) * 92% + 4%),
+    var(--tw-heat-lo)
+  );
+  color: var(--color-ink);
+  border-bottom: 0;
+}
+.tw-heatmap td.tw-hm-hi {
+  color: #fff;
+}
+.tw-heatmap td.tw-hm-na {
+  background: var(--tw-track);
+  color: var(--color-ink-soft);
+  font-weight: 400;
+}
+@supports not (background: color-mix(in srgb, red, blue)) {
+  .tw-heatmap td {
+    background: var(--tw-fill);
+    opacity: calc(0.35 + var(--i, 0) * 0.65);
+  }
+}
+
+/* ════════════════════════════ 11. Slope chart .tw-slope ════════════════════════════ */
+.tw-slope {
+  padding: var(--space-4);
+}
+.tw-slope-plot {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  height: auto;
+  overflow: visible;
+}
+.tw-slope-time {
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--color-ink-soft);
+}
+.tw-slope-line {
+  stroke: var(--tw-cool);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.tw-slope-dot {
+  fill: var(--tw-cool);
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.tw-slope-lab {
+  font-family: var(--font-interface);
+  font-size: 12px;
+  fill: var(--color-ink);
+}
+.tw-slope-v {
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+/* Emphasis rows: dim the rest */
+.tw-slope--focus .tw-slope-line:not(.tw-slope-row--hi),
+.tw-slope--focus .tw-slope-dot:not(.tw-slope-row--hi) {
+  stroke: var(--tw-mute);
+  opacity: 0.6;
+}
+.tw-slope--focus .tw-slope-dot:not(.tw-slope-row--hi) {
+  fill: var(--tw-mute);
+  stroke: var(--color-surface);
+}
+.tw-slope--focus .tw-slope-lab:not(.tw-slope-row--hi) {
+  fill: var(--color-ink-soft);
+}
+.tw-slope-line.tw-slope-row--hi {
+  stroke: var(--tw-warm);
+  stroke-width: 2.6;
+}
+.tw-slope-dot.tw-slope-row--hi {
+  fill: var(--tw-warm);
+}
+.tw-slope-lab.tw-slope-row--hi {
+  fill: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ════════════════════════════ 12. Dot chart .tw-dot ════════════════════════════ */
+.tw-dot {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65em;
+}
+.tw-dot-row {
+  display: grid;
+  grid-template-columns: minmax(5.5em, 9em) 1fr auto;
+  align-items: center;
+  gap: 0.8em;
+}
+.tw-dot-label {
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+  text-align: right;
+}
+.tw-dot-track {
+  position: relative;
+  height: 1.1em;
+  border-bottom: 1px dashed var(--tw-grid);
+}
+.tw-dot-track--axis {
+  border-bottom: 0;
+  height: 1em;
+}
+.tw-dot-axislab {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+}
+.tw-dot-pt {
+  position: absolute;
+  top: 50%;
+  width: 0.72em;
+  height: 0.72em;
+  border-radius: 999px;
+  background: var(--color-accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+.tw-dot-pt--start {
+  background: var(--color-surface);
+  border: 2px solid var(--tw-cool);
+}
+.tw-dot-pt--end {
+  background: var(--tw-warm);
+}
+.tw-dot-seg {
+  position: absolute;
+  top: 50%;
+  height: 2.5px;
+  transform: translateY(-50%);
+  background: var(--tw-grid);
+}
+.tw-dot-val {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.tw-dot-arrow {
+  color: var(--color-ink-soft);
+  font-family: var(--font-interface);
+  font-weight: 400;
+}
+.tw-dot--focus .tw-dot-row:not(.tw-dot-row--hi) .tw-dot-pt {
+  background: var(--tw-mute);
+  opacity: 0.65;
+}
+.tw-dot--focus .tw-dot-row:not(.tw-dot-row--hi) .tw-dot-val {
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+.tw-dot-row--hi .tw-dot-pt {
+  background: var(--tw-warm);
+}
+.tw-dot-row--hi .tw-dot-label {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ════════════════════════════ 13. Stacked bar .tw-stack ════════════════════════════ */
+.tw-stack {
+  padding: var(--space-4);
+}
+.tw-stack-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em 1.1em;
+  margin-bottom: 0.8em;
+}
+.tw-stack-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+}
+.tw-stack-swatch {
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 3px;
+  flex: none;
+}
+.tw-stack-row {
+  display: grid;
+  grid-template-columns: minmax(5.5em, 9em) 1fr;
+  align-items: center;
+  gap: 0.8em;
+  margin-bottom: 0.55em;
+}
+.tw-stack-label {
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+  text-align: right;
+}
+.tw-stack-bar {
+  display: flex;
+  height: 1.7em;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.tw-stack-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.tw-stack-seg span {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--tw-seg-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.tw-stack-seg[data-cat='0'],
+.tw-stack-swatch[data-cat='0'] {
+  background: var(--tw-warm);
+}
+.tw-stack-seg[data-cat='1'],
+.tw-stack-swatch[data-cat='1'] {
+  background: var(--tw-cool);
+}
+.tw-stack-seg[data-cat='2'],
+.tw-stack-swatch[data-cat='2'] {
+  background: var(--tw-green);
+}
+.tw-stack-seg[data-cat='3'],
+.tw-stack-swatch[data-cat='3'] {
+  background: var(--color-accent);
+}
+.tw-stack-seg[data-cat='4'],
+.tw-stack-swatch[data-cat='4'] {
+  background: var(--tw-mute);
+}
+/* Isotype symbols use text color (custom glyphs like 👤 render correctly, not covered by fill) */
+.tw-iso-unit[data-cat='0'] {
+  color: var(--tw-warm);
+}
+.tw-iso-unit[data-cat='1'] {
+  color: var(--tw-cool);
+}
+.tw-iso-unit[data-cat='2'] {
+  color: var(--tw-green);
+}
+.tw-iso-unit[data-cat='3'] {
+  color: var(--color-accent);
+}
+.tw-iso-unit[data-cat='4'] {
+  color: var(--tw-mute);
+}
+
+/* ════════════════════════════ 14. Pyramid .tw-pyramid ════════════════════════════ */
+.tw-pyramid {
+  padding: var(--space-4);
+}
+.tw-pyramid-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(3.6em, auto) 1fr;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 0.45em;
+}
+.tw-pyramid-heads {
+  margin-bottom: 0.7em;
+}
+.tw-pyramid-head {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.tw-pyramid-side {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  min-width: 0;
+}
+.tw-pyramid-side--l {
+  flex-direction: row;
+  justify-content: flex-end;
+  color: var(--tw-cool);
+}
+.tw-pyramid-side--r {
+  color: var(--tw-warm);
+}
+.tw-pyramid-mid {
+  font-size: 0.86rem;
+  color: var(--color-ink-soft);
+  text-align: center;
+  white-space: nowrap;
+}
+.tw-pyramid-bar {
+  height: 0.95em;
+  border-radius: 4px;
+  min-width: 2px;
+}
+.tw-pyramid-side--l .tw-pyramid-bar {
+  background: var(--tw-cool);
+}
+.tw-pyramid-side--r .tw-pyramid-bar {
+  background: var(--tw-warm);
+}
+.tw-pyramid-v {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  flex: none;
+}
+
+/* ════════════════════════════ 15. Tile map .tw-tiles ════════════════════════════ */
+.tw-tiles {
+  padding: var(--space-4);
+}
+.tw-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  max-width: 24em;
+  margin: 0 auto;
+}
+.tw-tiles-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
+  aspect-ratio: 1.18;
+  border-radius: 6px;
+  padding: 0.2em;
+  background: color-mix(
+    in srgb,
+    var(--tw-heat-hi) calc(var(--i, 0) * 92% + 4%),
+    var(--tw-heat-lo)
+  );
+  text-align: center;
+}
+.tw-tiles-cell--empty {
+  background: var(--tw-track);
+}
+.tw-tiles-name {
+  font-size: 0.72rem;
+  line-height: 1.15;
+  color: var(--color-ink-soft);
+}
+.tw-tiles-val {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--color-ink);
+}
+.tw-tiles-cell.tw-hm-hi .tw-tiles-name,
+.tw-tiles-cell.tw-hm-hi .tw-tiles-val {
+  color: #fff;
+}
+.tw-tiles-gap {
+  aspect-ratio: 1.18;
+}
+.tw-tiles-scale {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  margin-top: 0.9em;
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+}
+.tw-tiles-grad {
+  width: 7em;
+  height: 0.55em;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tw-heat-hi) 4%, var(--tw-heat-lo)),
+    color-mix(in srgb, var(--tw-heat-hi) 96%, var(--tw-heat-lo))
+  );
+}
+.tw-tiles-warn {
+  margin: 0.7em 0 0;
+  font-size: 0.78rem;
+  color: var(--tw-warm);
+}
+
+/* ════════════════════════════ 16. Isotype .tw-iso ════════════════════════════ */
+.tw-iso {
+  padding: var(--space-4);
+}
+.tw-iso-row {
+  display: grid;
+  grid-template-columns: minmax(5.5em, 9em) 1fr auto;
+  align-items: center;
+  gap: 0.8em;
+  margin-bottom: 0.55em;
+}
+.tw-iso-label {
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+  text-align: right;
+}
+.tw-iso-units {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22em;
+  line-height: 1;
+}
+.tw-iso-unit {
+  font-size: 0.92em;
+  line-height: 1;
+  flex: none;
+}
+.tw-iso-val {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.tw-iso-key {
+  margin: 0.6em 0 0;
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+}
+
+/* ════════════════════════════ 17. Note box .tw-note ════════════════════════════ */
+.tw-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7em;
+  padding: 0.85em 1em;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 8px;
+  background: var(--color-bg-soft);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--color-ink-soft);
+}
+.tw-note--warn {
+  border-left-color: var(--tw-warm);
+}
+.tw-note-chip {
+  flex: none;
+  font-family: var(--font-interface);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--color-ink);
+  padding-top: 0.1em;
+}
+.tw-note--warn .tw-note-chip {
+  color: var(--tw-warm);
+}
+.tw-note-body p {
+  margin: 0 0 0.45em;
+}
+.tw-note-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ════════════════════════════ RWD ════════════════════════════ */
+@media (max-width: 560px) {
+  /* Comparison card: mobile collapses into "paired mini-cards" — each pair carries its own labels,
+     card border groups the pair, prevents two-column-to-one-column collapse from becoming an unmatched list */
+  .tw-versus-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65em;
+    padding: 0.7em var(--space-4) 0.9em;
+  }
+  .tw-versus-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--color-border);
+  }
+  /* Remove desktop alternating-row coloring; mobile uses card borders for grouping */
+  .tw-versus-row:nth-child(even) .tw-versus-cell {
+    background: var(--color-surface);
+  }
+  .tw-versus-cell {
+    padding: 0.6em 0.85em;
+  }
+  .tw-versus-cell:first-child {
+    box-shadow: inset 3px 0 0 -1px var(--tw-warm);
+    background: var(--color-bg-soft);
+  }
+  .tw-versus-cell:last-child {
+    box-shadow: inset 3px 0 0 -1px var(--tw-cool);
+  }
+  .tw-versus-tag {
+    display: block;
+    font-family: var(--font-title);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 0.2em;
+  }
+  .tw-versus-cell:first-child .tw-versus-tag {
+    color: var(--tw-warm);
+  }
+  .tw-versus-cell:last-child .tw-versus-tag {
+    color: var(--tw-cool);
+  }
+  .tw-bars-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'label val'
+      'track track';
+  }
+  .tw-bars-label {
+    grid-area: label;
+    text-align: left;
+  }
+  .tw-bars-val {
+    grid-area: val;
+  }
+  .tw-bars-track {
+    grid-area: track;
+  }
+  /* Same mobile collapse for newer modules: label top-left, value top-right, track full-width below */
+  .tw-dot-row,
+  .tw-iso-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'label val'
+      'track track';
+  }
+  .tw-dot-label,
+  .tw-iso-label {
+    grid-area: label;
+    text-align: left;
+  }
+  .tw-dot-val,
+  .tw-iso-val {
+    grid-area: val;
+  }
+  .tw-dot-track,
+  .tw-iso-units {
+    grid-area: track;
+  }
+  .tw-stack-row {
+    grid-template-columns: 1fr;
+    gap: 0.25em;
+  }
+  .tw-stack-label {
+    text-align: left;
+  }
+  .tw-pyramid-mid {
+    font-size: 0.78rem;
+  }
+}

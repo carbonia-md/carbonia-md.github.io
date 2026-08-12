@@ -1,0 +1,807 @@
+---
+/**
+ * /chat — ask a question, get an answer streamed from the chat Worker with the
+ * articles it drew on rendered as linked cards.
+ *
+ * Zero client-side frameworks (SPEC §Stack): one `is:inline` script, `fetch`, and
+ * the streams API the platform already ships. No CDN script, no bundler-managed
+ * client island, nothing off-origin.
+ *
+ * The page ALWAYS builds, as `/map`, `/graph`, `/soundscape`, and `/dashboard` do.
+ * What the gate in `src/lib/chat.ts` decides is which of two states it renders: the
+ * live panel, or a static "chat is not enabled here" state carrying no endpoint and
+ * no script, so a build with the feature off cannot attempt a fetch. The Header and
+ * Footer entry points read the same predicate, so the nav never links here when the
+ * page would render the disabled state.
+ *
+ * Citations come from the Worker's structural `event: citations` frame and nothing
+ * else. The page never reads a URL out of answer prose: a future model that formats
+ * its prose differently must not be able to change which sources are shown, and a
+ * model that invents a plausible-looking URL mid-sentence must not be able to get it
+ * rendered as a link (`workers/chat/` DoD 5, LB-84).
+ *
+ * `?ctx=<slug>` is the QR flow's half of this page. A code on a wall carries the slug
+ * of a context declared in `knowledge/chat/_contexts.md`, and a reader who scans it
+ * lands here already greeted by name for the spot they are standing in. The contexts
+ * are baked into the page as an attribute at build time and matched client-side,
+ * because this is a static build with no server to read a query string. An instance
+ * that declares none ships no attribute and no matching code path at all, so the page
+ * is byte-identical to the one without a manifest.
+ *
+ * All copy comes from src/i18n/ui.ts; the endpoint comes from place.config.ts. Every
+ * colour resolves through the theme tokens in src/styles/tokens.css.
+ */
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { builtRoutes } from '../lib/built-routes';
+import { resolveChat } from '../lib/chat';
+import { readChatContexts } from '../lib/chat-contexts';
+import placeConfig from '../../place.config';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const { enabled, endpoint } = resolveChat(placeConfig);
+
+/**
+ * Build-time read. A context's `article` is checked against the routes this build
+ * produces, so a stale link is dropped with a build-time warning (emitted by the
+ * reader itself, into the astro build output) instead of putting a 404 under a
+ * greeting — which is also what keeps the post-build internal-link check green.
+ *
+ * The read is skipped entirely when chat is off: the disabled state carries no
+ * script and no endpoint, so a context could not do anything there but sit in the
+ * markup.
+ */
+const contexts = enabled
+  ? readChatContexts(process.cwd(), {
+      knownRoutes: builtRoutes(placeConfig, await getCollection('en')),
+    }).contexts
+  : [];
+
+/**
+ * The contexts as one attribute value rather than a `<script type="application/json">`
+ * island: Astro escapes an attribute, so a greeting containing `</script>` cannot
+ * break out of it, and there is no second escaping rule to remember
+ * (`.agent-toolkit/rules/astro-json-island-escape.md`). Undefined when there are no
+ * contexts, which omits the attribute rather than emitting an empty one.
+ */
+const contextData = contexts.length > 0 ? JSON.stringify(contexts) : undefined;
+
+/**
+ * The client, injected with `set:html` because an inline `<script>` body inside an
+ * Astro expression would have its braces read as expressions (the shape
+ * `FeedbackWidget.astro` already uses, and what lets the test suite extract and
+ * drive this script directly).
+ *
+ * Four things it is responsible for, each of which the DoD names:
+ *
+ *   - Progressive rendering. Answer text is appended frame by frame as it arrives,
+ *     never buffered to the end.
+ *   - Citations from the payload only, deduplicated by URL because retrieval returns
+ *     chunks and a reader wants articles: five chunks of one article is one card.
+ *   - Session history in `sessionStorage`, capped on the way out to the last four
+ *     MESSAGES -- two prior exchanges, since a question and its answer are one entry
+ *     each. That is the same window `workers/chat/` applies to whatever it receives,
+ *     and the two must agree or the cap is whichever side is stricter by accident.
+ *     Only entries the worker will accept are ever stored or sent, because a rejected
+ *     request appends nothing and so an unusable entry would never slide back out of
+ *     the window. sessionStorage is what clears it on tab close, with no unload handler.
+ *   - A worker failure renders inline and leaves the transcript standing.
+ *   - The `?ctx=` context, when the page was built with any: its greeting opens the
+ *     transcript, and its retrieval hint rides the FIRST question and no other. A hint
+ *     pulls retrieval toward one location, which is what a reader standing there wants
+ *     for the question they scanned the code to ask -- and is exactly wrong for the
+ *     third question, which has moved on. An unknown or absent `ctx` is not an error
+ *     state: the page opens the way it does for a reader who typed the URL.
+ */
+const CHAT_SCRIPT = `
+(function () {
+  var root = document.querySelector('[data-chat]');
+  if (!root) return;
+  var form = root.querySelector('[data-chat-form]');
+  var input = root.querySelector('[data-chat-input]');
+  var log = root.querySelector('[data-chat-log]');
+  var empty = root.querySelector('[data-chat-empty]');
+  var button = form && form.querySelector('button[type="submit"]');
+  if (!form || !input || !log || !button) return;
+
+  var endpoint = form.getAttribute('data-endpoint');
+  var STORE = 'chat-history';
+  var MAX_HISTORY_MESSAGES = 4;
+  var sending = false;
+
+  // Contexts are baked in at build time; an instance that declares none ships no
+  // attribute, so everything below collapses to "no context" without a branch.
+  var contexts = [];
+  try {
+    var declared = JSON.parse(form.getAttribute('data-contexts') || '[]');
+    if (Object.prototype.toString.call(declared) === '[object Array]') contexts = declared;
+  } catch (e) {
+    contexts = [];
+  }
+
+  // The context named by ?ctx=, or null. An unknown slug returns null rather than
+  // reporting anything: a code outlives the manifest entry that made it, and a
+  // reader standing in front of a retired sign should get the ordinary page, not an
+  // error about a slug they have no way to understand.
+  function activeContext() {
+    if (!contexts.length) return null;
+    var slug;
+    try {
+      slug = new URLSearchParams(location.search).get('ctx');
+    } catch (e) {
+      return null;
+    }
+    if (!slug) return null;
+    for (var i = 0; i < contexts.length; i++) {
+      if (contexts[i] && contexts[i].slug === slug) return contexts[i];
+    }
+    return null;
+  }
+
+  function msg(name) {
+    return form.getAttribute('data-msg-' + name) || '';
+  }
+
+  // What workers/chat/ will accept: one of the two roles it models, and content that
+  // is not blank -- it answers anything else with a 400 naming the entry. The store is
+  // client-visible and its contents are what get sent, so an entry from any source (an
+  // older shape, a devtools edit, a hand-written value) is dropped on the way in rather
+  // than failing every request the tab makes from then on.
+  function isSendable(entry) {
+    return (
+      !!entry &&
+      (entry.role === 'user' || entry.role === 'assistant') &&
+      typeof entry.content === 'string' &&
+      entry.content.trim() !== ''
+    );
+  }
+
+  function loadHistory() {
+    try {
+      var raw = sessionStorage.getItem(STORE);
+      var parsed = raw ? JSON.parse(raw) : [];
+      if (Object.prototype.toString.call(parsed) !== '[object Array]') return [];
+      return parsed.filter(isSendable);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(history) {
+    try {
+      sessionStorage.setItem(STORE, JSON.stringify(history));
+    } catch (e) {
+      /* a full or unavailable store must not break the conversation in progress */
+    }
+  }
+
+  function hideEmpty() {
+    if (empty) empty.hidden = true;
+  }
+
+  function addTurn(role, text) {
+    hideEmpty();
+    var turn = document.createElement('article');
+    turn.className = 'turn';
+    turn.setAttribute('data-turn', role);
+    var who = document.createElement('p');
+    who.className = 'turn-who';
+    who.textContent = role === 'user' ? msg('you') : msg('guide');
+    var body = document.createElement('div');
+    body.className = 'turn-body';
+    body.setAttribute('data-turn-body', '');
+    body.textContent = text || '';
+    turn.appendChild(who);
+    turn.appendChild(body);
+    log.appendChild(turn);
+    return turn;
+  }
+
+  // An inline note under a turn. Every state that reaches one here is recoverable, so
+  // the note is appended beside the transcript rather than replacing it, and the hook
+  // attribute says which state it is: a reader who is told nothing has no way to tell a
+  // failure from an answer the model declined to give.
+  function showNote(turn, text, hook) {
+    var note = document.createElement('p');
+    note.className = 'turn-error';
+    note.setAttribute(hook, '');
+    note.setAttribute('role', 'status');
+    note.textContent = text;
+    turn.appendChild(note);
+  }
+
+  function showError(turn, text) {
+    showNote(turn, text, 'data-chat-error');
+  }
+
+  // Site-root-absolute only. The payload is worker output rather than reviewed
+  // repository content, and a link target is the one value in it that becomes
+  // executable if it carries a 'javascript:' scheme, so anything else renders as
+  // plain text instead of a link.
+  //
+  // The leading '/' is not sufficient on its own: the URL parser reads a backslash
+  // as a slash for http(s), strips tabs and newlines before parsing, and resolves
+  // percent-encodings, so several site-root-looking strings ('/\\host', '/<tab>/host')
+  // land on another origin. Resolving the candidate and comparing origins is the check
+  // that holds for all of them, rather than a growing list of second characters.
+  function isLinkable(url) {
+    if (typeof url !== 'string' || url.charAt(0) !== '/') return false;
+    try {
+      return new URL(url, location.origin).origin === location.origin;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function renderCitations(turn, citations) {
+    var section = document.createElement('div');
+    section.className = 'sources';
+    section.setAttribute('data-chat-sources', '');
+
+    if (!citations || !citations.length) {
+      section.setAttribute('data-empty', '');
+      var none = document.createElement('p');
+      none.className = 'sources-none';
+      none.textContent = msg('no-sources');
+      section.appendChild(none);
+      turn.appendChild(section);
+      return;
+    }
+
+    var heading = document.createElement('p');
+    heading.className = 'sources-title';
+    heading.textContent = msg('sources');
+    section.appendChild(heading);
+
+    var list = document.createElement('ul');
+    list.className = 'source-cards';
+    var seen = {};
+    for (var i = 0; i < citations.length; i++) {
+      var citation = citations[i] || {};
+      var url = citation.url;
+      var title = typeof citation.title === 'string' && citation.title ? citation.title : url;
+      // Retrieval returns chunks; a reader wants articles. Several chunks of one
+      // article collapse into the single card that article deserves.
+      if (typeof url !== 'string' || !url || seen[url]) continue;
+      seen[url] = true;
+      var item = document.createElement('li');
+      if (isLinkable(url)) {
+        var link = document.createElement('a');
+        link.className = 'source-card';
+        link.href = url;
+        link.textContent = title;
+        item.appendChild(link);
+      } else {
+        var plain = document.createElement('span');
+        plain.className = 'source-card';
+        plain.textContent = title;
+        item.appendChild(plain);
+      }
+      list.appendChild(item);
+    }
+    section.appendChild(list);
+    turn.appendChild(section);
+  }
+
+  function errorMessageFor(status) {
+    if (status === 429) return msg('rate-limited');
+    if (status === 503) return msg('unavailable');
+    return msg('error');
+  }
+
+  // The answer text carried by one upstream frame, across the two shapes Workers AI
+  // streams in: the documented {response} form, and the OpenAI-compatible
+  // {choices:[{delta:{content}}]} form the current generation model emits. SPEC
+  // deliberately does not pin a model, so the page reads both rather than breaking
+  // the day the model changes.
+  //
+  // A reasoning model also streams delta.reasoning and delta.reasoning_content --
+  // its private chain of thought, an order of magnitude longer than the answer. That
+  // is never read here: rendering it would put unreviewed intermediate speculation on
+  // the page as though it were the cited answer.
+  function answerDelta(frame) {
+    if (!frame) return '';
+    if (typeof frame.response === 'string') return frame.response;
+    var choice = frame.choices && frame.choices[0];
+    var delta = choice && choice.delta;
+    if (delta && typeof delta.content === 'string') return delta.content;
+    return '';
+  }
+
+  // One SSE event per '\\n\\n'-delimited block. A block naming the citations event
+  // carries the structural payload; every other block is answer text.
+  function consume(block, state) {
+    var lines = block.split('\\n');
+    var isCitations = false;
+    var data = '';
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (line.indexOf('event:') === 0) {
+        if (line.slice(6).trim() === 'citations') isCitations = true;
+      } else if (line.indexOf('data:') === 0) {
+        data += line.slice(5).trim();
+      }
+    }
+    if (!data) return;
+
+    if (isCitations) {
+      try {
+        var payload = JSON.parse(data);
+        state.citations = payload && payload.citations ? payload.citations : [];
+        state.sawCitations = true;
+      } catch (e) {
+        state.citations = [];
+        state.sawCitations = true;
+      }
+      return;
+    }
+
+    try {
+      var text = answerDelta(JSON.parse(data));
+      if (text) {
+        state.answer += text;
+        state.body.textContent = state.answer;
+      }
+    } catch (e) {
+      /* a frame this page does not model (keep-alive, usage-only) is skipped */
+    }
+  }
+
+  function finish() {
+    sending = false;
+    button.disabled = false;
+    button.textContent = msg('send');
+  }
+
+  // The greeting opens the transcript as an ordinary answer turn, so a reader sees
+  // the conversation already started rather than an empty box with a label on it.
+  var context = activeContext();
+  var pendingHint = context && typeof context.hint === 'string' ? context.hint : '';
+  if (context) {
+    var opening = addTurn('assistant', context.greeting);
+    opening.setAttribute('data-chat-greeting', context.slug);
+    if (isLinkable(context.article)) {
+      var readMore = document.createElement('p');
+      readMore.className = 'greeting-article';
+      var readLink = document.createElement('a');
+      readLink.setAttribute('data-chat-greeting-article', '');
+      readLink.href = context.article;
+      readLink.textContent = msg('context-article');
+      readMore.appendChild(readLink);
+      opening.appendChild(readMore);
+    }
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (sending) return;
+    var question = input.value.trim();
+    if (!question) return;
+
+    sending = true;
+    button.disabled = true;
+    button.textContent = msg('sending');
+    addTurn('user', question);
+    input.value = '';
+
+    var history = loadHistory();
+    var turn = addTurn('assistant', '');
+    var state = {
+      answer: '',
+      citations: [],
+      sawCitations: false,
+      body: turn.querySelector('[data-turn-body]'),
+    };
+
+    var request = { message: question, history: history.slice(-MAX_HISTORY_MESSAGES) };
+    // Carried until a question actually reaches the worker, then spent -- see the
+    // header note. Clearing it here instead would let a first question that 503s or
+    // dies on the network burn the hint, so the reader's first ANSWERED question, the
+    // one they scanned the code to ask, would be the unbiased one.
+    if (pendingHint) request.hint = pendingHint;
+
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+      .then(function (response) {
+        if (!response.ok || !response.body) {
+          showError(turn, errorMessageFor(response.status));
+          finish();
+          return null;
+        }
+        // The worker took the question, so the hint has done its job.
+        pendingHint = '';
+
+        var reader = response.body.getReader();
+        var decoder = new TextDecoder();
+        var pending = '';
+
+        function pump() {
+          return reader.read().then(function (result) {
+            if (result.done) {
+              pending += decoder.decode();
+              if (pending.trim()) consume(pending, state);
+              // A stream that closes cleanly without a citations frame is a broken
+              // contract, not an answer with no sources: the worker emits the frame on
+              // every path, including the empty one. Rendering "no sources found" here
+              // would tell the reader an answer had no support when what actually
+              // happened is that the source list never arrived. scripts/tools/chat-eval.mjs
+              // draws the same line, so both consumers of this stream agree.
+              if (state.sawCitations) renderCitations(turn, state.citations);
+              else showError(turn, msg('error'));
+              // A turn that produced no answer text is a failed turn, and a failed turn
+              // is not remembered -- the same thing the !response.ok branch above does
+              // by returning early. The answer is empty whenever no frame yielded text:
+              // a reasoning model that spends its output budget before answering, or a
+              // frame shape answerDelta does not model. Storing it would put a blank
+              // assistant entry in the window, which the worker refuses, and since a
+              // refused request appends nothing the blank would never age out: every
+              // later question in the tab would fail until the tab was closed.
+              //
+              // Not remembering it is only half of what the reader needs. Without the
+              // note below the turn renders as the 'Answer' label, an empty body and a
+              // row of source cards, which reads as an answer the model chose not to
+              // give rather than one that never arrived. The broken-contract branch
+              // above already carries its own note, so a turn never gets two.
+              if (state.answer.trim()) {
+                history.push({ role: 'user', content: question });
+                history.push({ role: 'assistant', content: state.answer });
+                saveHistory(history);
+              } else if (state.sawCitations) {
+                var noteKey = state.citations.length
+                  ? 'empty-answer'
+                  : 'empty-answer-no-sources';
+                showNote(turn, msg(noteKey), 'data-chat-empty-answer');
+              }
+              finish();
+              return;
+            }
+            pending += decoder.decode(result.value, { stream: true });
+            var blocks = pending.split('\\n\\n');
+            pending = blocks.pop() || '';
+            for (var i = 0; i < blocks.length; i++) {
+              if (blocks[i].trim()) consume(blocks[i], state);
+            }
+            return pump();
+          });
+        }
+
+        return pump();
+      })
+      .catch(function () {
+        // Mid-stream failure keeps whatever text already arrived: a partial answer
+        // plus a note beats replacing the transcript with an error.
+        showError(turn, msg('error'));
+        finish();
+      });
+  });
+})();
+`;
+---
+
+<Layout title={t('chat.meta.title')} description={t('chat.meta.description')} lang={lang}>
+  <main class="chat">
+    <section class="hero">
+      <h1>{t('chat.hero.title')}</h1>
+      <p class="hero-subtitle">{t('chat.hero.subtitle')}</p>
+    </section>
+
+    {
+      !enabled ? (
+        <section class="disabled" data-chat-disabled>
+          <h2>{t('chat.disabled.title')}</h2>
+          <p>{t('chat.disabled.description')}</p>
+          <a class="disabled-cta" href="/explore">
+            {t('chat.disabled.cta')}
+          </a>
+        </section>
+      ) : (
+        <section class="panel" data-chat>
+          <noscript>
+            <style is:inline>
+              [data-chat-form] { display: none !important; }
+            </style>
+            <p class="noscript">
+              {t('chat.noscript')}{' '}
+              <a href="/explore">{t('chat.disabled.cta')}</a>
+            </p>
+          </noscript>
+
+          <div
+            class="log"
+            data-chat-log
+            role="log"
+            aria-live="polite"
+            aria-label={t('chat.transcript.label')}
+          >
+            <p class="log-empty" data-chat-empty>
+              {t('chat.transcript.empty')}
+            </p>
+          </div>
+
+          <form
+            class="composer"
+            data-chat-form
+            data-endpoint={endpoint}
+            data-msg-send={t('chat.send')}
+            data-msg-sending={t('chat.sending')}
+            data-msg-you={t('chat.speaker.reader')}
+            data-msg-guide={t('chat.speaker.guide')}
+            data-msg-sources={t('chat.sources.title')}
+            data-msg-no-sources={t('chat.sources.none')}
+            data-msg-rate-limited={t('chat.error.rateLimited')}
+            data-msg-unavailable={t('chat.error.unavailable')}
+            data-msg-error={t('chat.error.generic')}
+            data-msg-empty-answer={t('chat.error.emptyAnswer')}
+            data-msg-empty-answer-no-sources={t('chat.error.emptyAnswerNoSources')}
+            data-msg-context-article={t('chat.context.article')}
+            data-contexts={contextData}
+          >
+            <label class="composer-label" for="chat-input">
+              {t('chat.input.label')}
+            </label>
+            <div class="composer-row">
+              <textarea
+                class="composer-input"
+                id="chat-input"
+                data-chat-input
+                rows="2"
+                required
+                maxlength="1000"
+                placeholder={t('chat.input.placeholder')}
+              ></textarea>
+              <button class="composer-send" type="submit">
+                {t('chat.send')}
+              </button>
+            </div>
+          </form>
+
+          <script is:inline set:html={CHAT_SCRIPT} />
+        </section>
+      )
+    }
+  </main>
+</Layout>
+
+<style>
+  /* Every colour resolves through src/styles/tokens.css, which is what makes the
+     dark theme a token flip rather than a second stylesheet. */
+  .chat {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 5.5rem var(--space-page-x, 1.5rem) 5rem;
+  }
+
+  .hero {
+    margin-bottom: var(--space-6, 2.5rem);
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  .hero-subtitle {
+    margin: 0.6rem auto 0;
+    max-width: 60ch;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  .disabled,
+  .panel {
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface);
+    padding: 1.5rem;
+  }
+
+  .disabled h2 {
+    margin: 0 0 0.6rem;
+    font-size: var(--title-subsection-size, 1.5rem);
+    font-weight: 800;
+    color: var(--color-ink);
+  }
+
+  .disabled p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  .disabled-cta {
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--color-accent, var(--color-ink));
+  }
+
+  .noscript {
+    margin: 0 0 1rem;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  .log {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-height: 6rem;
+  }
+
+  .log-empty {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  /* Everything below sits inside `.log` and is created by the client at runtime, so
+     it never carries Astro's scope attribute and a plain scoped selector would not
+     match it -- citations would render as bulleted links rather than cards. Each rule
+     is therefore `:global()`, kept off the rest of the site by the scoped `.log`
+     ancestor, which does carry the attribute. */
+  .log :global(.turn) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .log :global(.turn-who) {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-ink-soft);
+  }
+
+  .log :global(.turn-body) {
+    margin: 0;
+    line-height: 1.7;
+    color: var(--color-ink);
+    white-space: pre-wrap;
+  }
+
+  .log :global(.turn-error) {
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--color-danger, #a8321f);
+  }
+
+  .log :global(.greeting-article) {
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .log :global(.greeting-article a) {
+    font-weight: 600;
+    color: var(--color-accent, var(--color-ink));
+  }
+
+  .log :global(.sources) {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .log :global(.sources-title),
+  .log :global(.sources-none) {
+    margin: 0 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-ink-soft);
+  }
+
+  .log :global(.sources-none) {
+    margin-bottom: 0;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .log :global(.source-cards) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .log :global(.source-card) {
+    display: inline-block;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg, transparent);
+    padding: 0.35rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  .log :global(a.source-card:hover),
+  .log :global(a.source-card:focus-visible) {
+    border-color: var(--color-ink-soft);
+    text-decoration: none;
+  }
+
+  .composer {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .composer-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-ink-soft);
+  }
+
+  .composer-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .composer-input {
+    flex: 1;
+    resize: vertical;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg, transparent);
+    padding: 0.6rem 0.75rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-ink);
+  }
+
+  .composer-input:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 1px;
+  }
+
+  .composer-send {
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-ink);
+    padding: 0.6rem 1.4rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-surface);
+    cursor: pointer;
+  }
+
+  .composer-send:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 640px) {
+    .composer-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+</style>

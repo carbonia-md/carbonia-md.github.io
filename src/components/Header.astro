@@ -1,0 +1,1268 @@
+---
+import BrandMark from './BrandMark.astro';
+import { useTranslations, getLangFromUrl } from '../i18n/utils';
+import { resolveChat } from '../lib/chat';
+import placeConfig from '../../place.config';
+
+const currentPath = Astro.url.pathname;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+// English-only: no per-language route resolution, hrefs are used as-is.
+const navHref = (p: string) => p;
+
+const { features, links } = placeConfig;
+// Chat needs both halves (flag + endpoint), unlike the flag-only gates above it, so
+// it reads the shared predicate rather than the flag alone. A nav link to a page
+// rendering "chat is not enabled here" is worse than no link at all.
+const chat = resolveChat(placeConfig);
+
+const normalizedPath = currentPath.replace(/\/$/, '') || '/';
+const isHome = normalizedPath === '/';
+
+// Top-level nav. Generic labels come from the trimmed i18n bundle; the Explore
+// dropdown's category links come from place.config.categories.
+const navConfig = [
+  { path: '/explore', label: t('nav.explore') },
+  ...(features.map ? [{ path: '/map', label: t('nav.map') }] : []),
+  ...(features.soundscape ? [{ path: '/soundscape', label: t('nav.soundscape') }] : []),
+  ...(features.dashboard ? [{ path: '/dashboard', label: t('nav.dashboard') }] : []),
+  ...(chat.enabled ? [{ path: '/chat', label: t('nav.chat') }] : []),
+  { path: '/about', label: t('nav.about') },
+  { path: '/contribute', label: t('nav.contribute') },
+].map((item) => {
+  const fullPath = navHref(item.path);
+  const active = currentPath.startsWith(fullPath);
+  return { ...item, fullPath, active };
+});
+
+// Category links for the Explore dropdown + mobile menu, from config.
+const categoryList = placeConfig.categories.map((c) => ({
+  path: navHref(`/${c.slug}`),
+  label: c.title,
+  emoji: c.icon,
+}));
+---
+
+<div id="header-container" class="fixed left-0 right-0 top-0 z-[1001] w-full">
+  <div class="flex flex-col items-stretch">
+    <header
+      id="main-header"
+      role="banner"
+      data-hero={isHome ? '' : undefined}
+      class:list={[{ scrolled: !isHome }]}
+    >
+      <div class="header-inner">
+        <BrandMark
+          href={navHref('/')}
+          variant="auto"
+          ariaLabel={t('nav.aria-home')}
+        />
+
+        <nav class="nav-desktop" aria-label={t('nav.aria-main-navigation')}>
+          {
+            navConfig.map((item, index) => {
+              const showSep = item.path === '/about';
+              if (item.path === '/explore') {
+                return (
+                  <Fragment>
+                    <div class="nav-dropdown">
+                      <a
+                        href={item.fullPath}
+                        class:list={['nav-link', { active: item.active }]}
+                      >
+                        {item.label} <span class="dropdown-arrow">▾</span>
+                      </a>
+                      <div class="dropdown-menu">
+                        <a
+                          href={item.fullPath}
+                          class="dropdown-item dropdown-section-header"
+                        >
+                          {t('nav.explore')}
+                        </a>
+                        <a
+                          href="/latest"
+                          class="dropdown-item dropdown-section-header"
+                        >
+                          🆕 {t('nav.latest')}
+                        </a>
+                        {features.graph && (
+                          <Fragment>
+                            <div class="dropdown-divider" />
+                            <a
+                              href="/graph"
+                              class="dropdown-item dropdown-section-header"
+                            >
+                              {t('nav.graph')} 🕸️
+                            </a>
+                          </Fragment>
+                        )}
+                        <div class="dropdown-divider" />
+                        {categoryList.map((category) => (
+                          <a href={category.path} class="dropdown-item">
+                            {category.emoji} {category.label}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              }
+              if (item.path === '/about') {
+                return (
+                  <Fragment>
+                    {showSep && <span class="nav-sep" />}
+                    <div class="nav-dropdown">
+                      <a
+                        href={item.fullPath}
+                        class:list={['nav-link', { active: item.active }]}
+                      >
+                        {item.label} <span class="dropdown-arrow">▾</span>
+                      </a>
+                      <div class="dropdown-menu">
+                        <a
+                          href="/about"
+                          class="dropdown-item dropdown-section-header"
+                        >
+                          {t('nav.about')}
+                        </a>
+                        <div class="dropdown-divider" />
+                        <a href="/changelog" class="dropdown-item">
+                          📝 {t('nav.changelog')}
+                        </a>
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              }
+              return (
+                <Fragment>
+                  <a
+                    href={item.fullPath}
+                    class:list={['nav-link', { active: item.active }]}
+                  >
+                    {item.label}
+                  </a>
+                </Fragment>
+              );
+            })
+          }
+        </nav>
+
+        <!-- Search -->
+        <button
+          class="search-toggle"
+          aria-label={t('nav.aria-search')}
+          onclick="document.getElementById('search-modal').classList.add('open');setTimeout(()=>document.getElementById('search-input').focus(),100)"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="11" cy="11" r="8"></circle><line
+              x1="21"
+              y1="21"
+              x2="16.65"
+              y2="16.65"></line></svg
+          >
+          <kbd>/</kbd>
+        </button>
+
+        <!-- GitHub -->
+        <a
+          href={links.repo}
+          target="_blank"
+          rel="noopener"
+          class="gh-link"
+          aria-label="GitHub"
+        >
+          <svg viewBox="0 0 16 16" fill="currentColor"
+            ><path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            ></path></svg
+          >
+        </a>
+
+        <!-- Mobile hamburger — ☰↔✕ swap + aria-expanded inline so the close
+             affordance works even if the module script fails to load (#1142) -->
+        <button
+          class="menu-toggle"
+          aria-label={t('nav.aria-toggle-menu')}
+          aria-expanded="false"
+          aria-controls="primary-mobile-nav"
+          onclick="const n=document.querySelector('.nav-mobile');const o=n.classList.toggle('open');this.textContent=o?'✕':'☰';this.setAttribute('aria-expanded',String(o));"
+          >☰</button
+        >
+      </div>
+
+      <!-- Mobile Nav -->
+      <nav
+        id="primary-mobile-nav"
+        class="nav-mobile"
+        aria-label={t('nav.aria-mobile-navigation')}
+      >
+        {
+          navConfig.map((item) => {
+            const hasSub = item.path === '/explore';
+            return (
+              <Fragment>
+                <div class:list={['mobile-nav-item', { 'has-sub': hasSub }]}>
+                  <a
+                    href={item.fullPath}
+                    class:list={['nav-link', { active: item.active }]}
+                    onclick="document.querySelector('.nav-mobile').classList.remove('open')"
+                  >
+                    {item.label}
+                  </a>
+                  {hasSub && (
+                    <button
+                      class="mobile-sub-toggle open"
+                      aria-label="Expand submenu"
+                    >
+                      ▸
+                    </button>
+                  )}
+                </div>
+                {item.path === '/explore' && (
+                  <div class="mobile-sub-links open">
+                    <a
+                      href="/latest"
+                      class="nav-link nav-sub-link"
+                      onclick="document.querySelector('.nav-mobile').classList.remove('open')"
+                    >
+                      🆕 {t('nav.latest')}
+                    </a>
+                    {features.graph && (
+                      <a
+                        href="/graph"
+                        class="nav-link nav-sub-link"
+                        onclick="document.querySelector('.nav-mobile').classList.remove('open')"
+                      >
+                        {t('nav.graph')} 🕸️
+                      </a>
+                    )}
+                  </div>
+                )}
+              </Fragment>
+            );
+          })
+        }
+        <a
+          href={links.repo}
+          target="_blank"
+          rel="noopener"
+          class="nav-link"
+          onclick="document.querySelector('.nav-mobile').classList.remove('open')"
+          >GitHub</a
+        >
+      </nav>
+    </header>
+  </div>
+</div>
+
+<!--
+  Search Modal
+  ────────────
+  Hidden by default via `hidden`; JS toggles `.open` → adds `flex` via
+  the `[&.open]:flex` arbitrary variant. `.search-modal` class kept as a
+  CSS hook; the `search-*` class names on inner elements are also kept
+  because the search results (.search-item, .search-hint, etc.) are
+  rendered via innerHTML from the Layout.astro search script and rely on
+  :global() selectors still living in this component's <style> block.
+-->
+<div
+  id="search-modal"
+  class="search-modal fixed inset-0 z-[200] hidden items-start justify-center pt-[12vh] [&.open]:flex max-[768px]:pt-[8vh]"
+>
+  <div
+    class="fixed inset-0 bg-black/40 backdrop-blur-[4px]"
+    onclick="document.getElementById('search-modal').classList.remove('open')"
+  >
+  </div>
+  <div
+    class="relative w-[90%] max-w-[560px] overflow-hidden rounded-xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)] max-[768px]:w-[95%] max-[768px]:max-w-full"
+  >
+    <div
+      class="flex items-center gap-3 border-b border-[#e2e8f0] px-4 py-[0.9rem]"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#94a3b8"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><circle cx="11" cy="11" r="8"></circle><line
+          x1="21"
+          y1="21"
+          x2="16.65"
+          y2="16.65"></line></svg
+      >
+      <input
+        id="search-input"
+        type="text"
+        class="flex-1 border-none bg-transparent text-base text-[#1a1a2e] outline-none placeholder:text-[#94a3b8]"
+        placeholder={`${t('nav.search-placeholder')}...`}
+        autocomplete="off"
+      />
+      <kbd
+        class="cursor-pointer rounded border border-[#e2e8f0] bg-[#f1f5f9] px-2 py-[0.2rem] font-[inherit] text-[0.7rem] text-[#64748b]"
+        onclick="document.getElementById('search-modal').classList.remove('open')"
+        >ESC</kbd
+      >
+    </div>
+    <div id="search-results" class="search-results">
+      <div class="search-hint">
+        {t('nav.search-type-to-search')}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const header = document.getElementById('main-header');
+  if (header) {
+    // Block transitions on initial load to prevent flash
+    header.style.transition = 'none';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        header.style.transition = '';
+      });
+    });
+
+    // Keep the header below the language banner on homepage only.
+    const isHero = header.hasAttribute('data-hero');
+    if (isHero) {
+      const banner = document.getElementById('lang-banner');
+      if (banner && banner.offsetHeight > 0) {
+        header.style.top = banner.offsetHeight + 'px';
+      }
+
+      const update = () =>
+        header.classList.toggle('scrolled', window.scrollY > 40);
+      window.addEventListener('scroll', update, { passive: true });
+      update();
+    }
+  }
+</script>
+
+<!--
+  Phase 5 shell migration #2: Header.astro (partial)
+  ──────────────────────────────────────────────────
+  Migrated to Tailwind (removed from <style>):
+    - #header-container, #header-inner-container (structural wrappers)
+    - .search-modal, .search-backdrop, .search-panel, .search-header,
+      .search-header input, .search-kbd (search modal — no scroll state)
+    - Mobile overrides for .search-modal / .search-panel
+
+  Intentionally kept in scoped <style>:
+    - The header-bar scroll-state CSS variable machine (--header-bg,
+      --nav-color, --dot-color, etc. × 2 states)
+    - All rules that cascade off the `.scrolled` modifier class
+    - The mobile drawer state rules (hero/scrolled color switch)
+    - :global(html[lang='en']) early-mobile-collapse rules
+    - :global(.search-item*) rules that style the JS-rendered search
+      results (rendered via innerHTML from Layout.astro's search script)
+
+  Rationale: converting the 20+ state-switching rules to
+  [.scrolled_&]: arbitrary variants would be more verbose than the
+  current CSS variable architecture. The variable system IS the
+  right abstraction for this component. See ADR-001 for the
+  broader refactor philosophy (scoped <style> is allowed when it
+  pays its way).
+-->
+<style>
+  /* =============================================
+     JADE PALETTE + GLASS TOKEN SYSTEM
+     Transparent state (top) → Scrolled state (white glass)
+  ============================================= */
+  header {
+    /* Palette */
+    --green-deep: #0c4a6e;
+    --green-primary: #006352;
+    --green-mid: #3b82f6;
+    --green-light: #00997d;
+    --green-accent: #60a5fa;
+    --jade-soft: #e0f2ef;
+    /* Glass surface tokens */
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-shadow: rgba(0, 0, 0, 0.16);
+    --glass-inset: rgba(0, 0, 0, 0.02);
+    /* Glass tokens — default: white frosted glass (scrolled) */
+    --header-bg: rgba(255, 255, 255, 0.88);
+    --header-border: rgba(0, 0, 0, 0.06);
+    --header-blur: 20px;
+    --nav-color: #475569;
+    --nav-hover-color: #1a1a2e;
+    --nav-hover-bg: rgba(148, 163, 184, 0.1);
+    --sep-color: #e2e8f0;
+    --arrow-color: #94a3b8;
+    --logo-color: #1a1a2e;
+    --dot-color: var(--green-mid);
+    --search-border: rgba(0, 0, 0, 0.08);
+    --search-bg: transparent;
+    --search-color: #64748b;
+    --kbd-bg: #f1f5f9;
+    --kbd-color: #94a3b8;
+    --kbd-border: #e2e8f0;
+    --gh-color: #94a3b8;
+    --lang-bg: #f1f5f9;
+    --lang-border: rgba(0, 0, 0, 0.06);
+    --lang-color: #64748b;
+    --lang-active-bg: var(--green-mid);
+    --lang-active-color: white;
+    --burger-bg: #f8fafc;
+    --burger-border: #e2e8f0;
+    --burger-color: #334155;
+    box-shadow: 0 1px 20px rgba(0, 0, 0, 0.06);
+  }
+  /* Homepage transparent state — only when not scrolled */
+  header[data-hero]:not(.scrolled) {
+    --header-bg: transparent;
+    --header-border: transparent;
+    --header-blur: 0px;
+    --nav-color: #ffffff;
+    --nav-hover-color: #ffffff;
+    --nav-hover-bg: rgba(255, 255, 255, 0.15);
+    --sep-color: rgba(255, 255, 255, 0.25);
+    --arrow-color: rgba(255, 255, 255, 0.6);
+    --logo-color: #ffffff;
+    --dot-color: var(--green-accent);
+    --search-border: rgba(255, 255, 255, 0.2);
+    --search-bg: rgba(255, 255, 255, 0.08);
+    --search-color: rgba(255, 255, 255, 0.8);
+    --kbd-bg: rgba(255, 255, 255, 0.12);
+    --kbd-color: rgba(255, 255, 255, 0.6);
+    --kbd-border: rgba(255, 255, 255, 0.15);
+    --gh-color: rgba(255, 255, 255, 0.8);
+    --lang-bg: rgba(255, 255, 255, 0.1);
+    --lang-border: rgba(255, 255, 255, 0.15);
+    --lang-color: rgba(255, 255, 255, 0.8);
+    --lang-active-bg: var(--green-accent);
+    --lang-active-color: var(--green-deep);
+    --burger-bg: rgba(255, 255, 255, 0.1);
+    --burger-border: rgba(255, 255, 255, 0.2);
+    --burger-color: #ffffff;
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: rgba(0, 0, 0, 0.5);
+    --glass-inset: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+
+  /* =============================================
+     HEADER — GLOBAL FIXED BAR
+  ============================================= */
+  header {
+    background: var(--header-bg);
+    backdrop-filter: blur(var(--header-blur));
+    -webkit-backdrop-filter: blur(var(--header-blur));
+    border-bottom: 1px solid var(--header-border);
+    transition:
+      background 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      backdrop-filter 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .header-inner {
+    max-width: var(--container-wide);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 2vw, 2rem);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 56px;
+  }
+
+  /* Logo */
+  .logo {
+    text-decoration: none;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: var(--font-title);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition:
+      color 0.45s,
+      transform 0.3s;
+    color: var(--logo-color);
+  }
+  .logo:hover {
+    transform: translateY(-1px);
+  }
+  .logo-icon {
+    width: 1.4rem;
+    height: 1.4rem;
+    vertical-align: middle;
+  }
+  .logo-dot {
+    color: var(--dot-color);
+    font-family: var(--font-interface);
+    font-weight: 600;
+    transition: color 0.45s;
+  }
+
+  /* Nav Desktop */
+  .nav-desktop {
+    display: flex;
+    gap: 0.15rem;
+    margin-left: auto;
+    align-items: center;
+  }
+
+  /* Nav links */
+  .nav-link {
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--nav-color);
+    transition:
+      color 0.25s,
+      background-color 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.55rem;
+    white-space: nowrap;
+    border-radius: 8px;
+    position: relative;
+    letter-spacing: -0.01em;
+  }
+  .nav-link:hover {
+    color: var(--nav-hover-color);
+    background: var(--nav-hover-bg);
+    text-decoration: none;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--green-accent);
+    border-radius: 1px;
+    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(-50%);
+  }
+  .nav-link:hover::after {
+    width: 80%;
+  }
+  .nav-link.active {
+    color: var(--nav-hover-color);
+    font-weight: 600;
+    background: var(--nav-hover-bg);
+  }
+  .nav-link.active::after {
+    width: 80%;
+    background: var(--dot-color);
+  }
+
+  /* Nav separator */
+  .nav-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--sep-color);
+    margin: 0 0.2rem;
+    flex-shrink: 0;
+    transition: background 0.45s;
+  }
+
+  /* Dropdown */
+  .nav-dropdown {
+    position: relative;
+  }
+  .dropdown-arrow {
+    font-size: 0.55em;
+    color: var(--arrow-color);
+    transition:
+      color 0.25s,
+      transform 0.25s;
+    margin-left: 1px;
+  }
+  /* Dropdown — transparent state: dark glass */
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    opacity: 0;
+    visibility: hidden;
+    background: rgba(8, 47, 73, 0.92);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 0.5rem 0;
+    min-width: 180px;
+    box-shadow:
+      0 24px 60px var(--glass-shadow),
+      0 8px 20px var(--glass-shadow),
+      inset 0 1px 0 var(--glass-inset);
+    z-index: 1100;
+    transition:
+      opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Dropdown — scrolled state: white glass */
+  .scrolled .dropdown-menu {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      0 24px 60px var(--glass-shadow),
+      0 8px 20px var(--glass-shadow),
+      inset 0 1px 0 var(--glass-inset);
+  }
+  .nav-dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+  .nav-dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+  .dropdown-item {
+    display: block;
+    padding: 0.5rem 1.1rem;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .dropdown-item:hover {
+    background: rgba(56, 189, 248, 0.18);
+    color: #ffffff;
+  }
+  .scrolled .dropdown-item {
+    color: #334155;
+  }
+  .scrolled .dropdown-item:hover {
+    background: rgba(0, 120, 100, 0.06);
+    color: var(--green-deep);
+  }
+  .dropdown-section-header {
+    font-weight: 600;
+    color: var(--green-accent);
+    font-size: 0.88rem;
+  }
+  .scrolled .dropdown-section-header {
+    color: var(--green-deep);
+  }
+  .dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0.35rem 0.9rem;
+  }
+  .scrolled .dropdown-divider {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /* Search button */
+  .search-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--search-border);
+    background: var(--search-bg);
+    cursor: pointer;
+    transition:
+      color 0.35s,
+      border-color 0.35s,
+      background-color 0.35s;
+    flex-shrink: 0;
+    color: var(--search-color);
+    font-family: inherit;
+  }
+  .search-toggle:hover {
+    color: var(--nav-hover-color);
+    border-color: var(--nav-hover-bg);
+  }
+  .search-toggle kbd {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-weight: 600;
+    background: var(--kbd-bg);
+    color: var(--kbd-color);
+    border: 1px solid var(--kbd-border);
+    line-height: 1.3;
+    transition:
+      background-color 0.35s,
+      color 0.35s,
+      border-color 0.35s;
+  }
+
+  /* GitHub icon link */
+  .gh-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    border-radius: 8px;
+    transition: transform 0.2s;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .gh-link svg {
+    width: 20px;
+    height: 20px;
+    color: var(--gh-color);
+    transition: color 0.35s;
+  }
+  .gh-link:hover svg {
+    color: var(--nav-hover-color);
+  }
+  .gh-link:hover {
+    transform: scale(1.1);
+  }
+
+  /* Lang toggle */
+  .lang-toggle {
+    display: flex;
+    gap: 2px;
+    border-radius: 10px;
+    padding: 3px;
+    flex-shrink: 0;
+    transition:
+      background-color 0.35s,
+      border-color 0.35s;
+    background: var(--lang-bg);
+    border: 1px solid var(--lang-border);
+  }
+  .lang-btn {
+    padding: 0.3rem 0.6rem;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--lang-color);
+    border-radius: 7px;
+    transition:
+      background-color 0.25s,
+      color 0.25s,
+      box-shadow 0.25s;
+    min-width: 36px;
+    text-align: center;
+  }
+  .lang-btn:hover {
+    background: var(--nav-hover-bg);
+    color: var(--nav-hover-color);
+  }
+  .lang-btn.active {
+    background: var(--lang-active-bg);
+    color: var(--lang-active-color);
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
+  }
+
+  /* 2026-04-24 β3: Lang dropdown — replaces button row to scale to 5+ langs.
+     Native names + globe icon let any reader recognize their language. */
+  .lang-dropdown {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .lang-dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 10px;
+    background: var(--lang-bg);
+    border: 1px solid var(--lang-border);
+    color: var(--lang-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background-color 0.25s,
+      border-color 0.25s,
+      color 0.25s;
+  }
+  .lang-dropdown-toggle:hover,
+  .lang-dropdown-toggle[aria-expanded='true'] {
+    background: var(--nav-hover-bg);
+    color: var(--nav-hover-color);
+  }
+  .lang-globe {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+  .lang-current {
+    min-width: 1.5rem;
+    text-align: center;
+  }
+  .lang-caret {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    transition: transform 0.2s;
+  }
+  .lang-dropdown-toggle[aria-expanded='true'] .lang-caret {
+    transform: rotate(180deg);
+  }
+  .lang-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 11rem;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--lang-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    z-index: 100;
+  }
+  .lang-dropdown-menu[hidden] {
+    display: none;
+  }
+  /* Menu panel is always white regardless of header state, so item colors are
+     pinned to dark-on-light — do NOT use --lang-color / --nav-hover-* here
+     (those flip to white in the transparent hero state → white-on-white bug). */
+  .lang-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 7px;
+    text-decoration: none;
+    color: #334155;
+    font-size: 0.9rem;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .lang-dropdown-item:hover {
+    background: rgba(0, 120, 100, 0.06);
+    color: var(--green-deep);
+  }
+  .lang-dropdown-item.active {
+    background: var(--green-mid);
+    color: #ffffff;
+    font-weight: 600;
+  }
+  .lang-native {
+    flex: 1 1 auto;
+  }
+  .lang-check {
+    font-size: 0.85rem;
+    opacity: 0.9;
+  }
+
+  /* Hamburger */
+  .menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    transition:
+      color 0.35s,
+      background-color 0.35s,
+      border-color 0.35s;
+    color: var(--burger-color);
+    background: var(--burger-bg);
+    border: 1px solid var(--burger-border);
+  }
+  .menu-toggle:hover {
+    color: var(--nav-hover-color);
+  }
+
+  /* Mobile nav — hidden by default */
+  .nav-mobile {
+    display: none;
+  }
+  .mobile-nav-item {
+    display: flex;
+    align-items: center;
+  }
+  .mobile-nav-item .nav-link {
+    flex: 1;
+  }
+  .mobile-sub-toggle {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      color 0.15s ease;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .mobile-sub-toggle:hover,
+  .mobile-sub-toggle.open {
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .mobile-sub-toggle.open {
+    transform: rotate(90deg);
+  }
+  .scrolled .mobile-sub-toggle {
+    color: rgba(0, 0, 0, 0.35);
+  }
+  .scrolled .mobile-sub-toggle:hover,
+  .scrolled .mobile-sub-toggle.open {
+    color: rgba(0, 0, 0, 0.7);
+  }
+  .mobile-sub-links {
+    display: none;
+    flex-direction: column;
+    padding-left: 1rem;
+    overflow: hidden;
+  }
+  .mobile-sub-links.open {
+    display: flex;
+  }
+  .mobile-sub-links .nav-sub-link {
+    font-size: 0.85em;
+    opacity: 0.8;
+    padding: 0.25rem 0;
+  }
+
+  /* =============================================
+     SEARCH RESULTS — :global() selectors are required because the
+     search results (.search-item, .search-hint, etc.) are rendered
+     via innerHTML from Layout.astro's search script, so Astro's
+     scoped-class hashing cannot reach them. Modal wrapper, backdrop,
+     panel, header, input, and kbd are now Tailwind utilities in the
+     markup above.
+  ============================================= */
+  :global(.search-results) {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+  :global(.search-hint) {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+  :global(.search-item) {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s;
+    border-bottom: none;
+  }
+  :global(.search-item:hover) {
+    background: #f1f5f9;
+  }
+  :global(.search-item-lang) {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    background: #e2e8f0;
+    color: #64748b;
+    margin-top: 0.15rem;
+  }
+  :global(.search-item-text) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+  :global(.search-item-title) {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+  :global(.search-item-desc) {
+    font-size: 0.8rem;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* =============================================
+     MEDIUM TIGHTEN (≤1200px)
+  ============================================= */
+  @media (max-width: 1320px) {
+    .header-inner {
+      gap: 0.5rem;
+    }
+    .nav-desktop {
+      gap: 0;
+    }
+    .nav-link {
+      font-size: 0.78rem;
+      padding: 0.3rem 0.35rem;
+    }
+    .nav-sep {
+      margin: 0 0.05rem;
+    }
+    .search-toggle kbd {
+      display: none;
+    }
+    .logo {
+      font-size: 1.15rem;
+    }
+    .gh-link svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  /* =============================================
+     TABLET / SMALL DESKTOP — collapse to mobile menu (≤1024px)
+  ============================================= */
+  @media (max-width: 1024px) {
+    .nav-desktop {
+      display: none;
+    }
+    .gh-link {
+      display: none;
+    }
+    .menu-toggle {
+      display: flex;
+      order: 4;
+    }
+    :global(.brand-mark) {
+      margin-right: auto;
+    }
+    .search-toggle {
+      order: 2;
+    }
+    .search-toggle kbd {
+      display: none;
+    }
+    .lang-toggle {
+      order: 3;
+    }
+    .nav-mobile {
+      position: absolute;
+      top: 100%;
+      left: 0.75rem;
+      right: 0.75rem;
+      margin-top: 0.35rem;
+      background: rgba(0, 28, 22, 1);
+      backdrop-filter: blur(40px) saturate(1.6);
+      -webkit-backdrop-filter: blur(40px) saturate(1.6);
+      flex-direction: column;
+      padding: 0.5rem 0.85rem 0.7rem;
+      gap: 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      /* #1142: cap drawer height + scroll internally so a fully-expanded menu
+         never runs off-screen (was 799px on a 812px viewport). */
+      max-height: calc(100vh - 5rem);
+      max-height: calc(100dvh - 5rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    .scrolled .nav-mobile {
+      background: rgba(255, 255, 255, 0.995);
+      backdrop-filter: blur(32px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+    }
+    .nav-mobile.open {
+      display: flex;
+    }
+    .nav-mobile .nav-link {
+      padding: 0.55rem 0.2rem;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0;
+      background: transparent;
+    }
+    .scrolled .nav-mobile .nav-link {
+      color: #334155;
+      border-bottom-color: #f1f5f9;
+    }
+    .nav-mobile .nav-link::after {
+      display: none;
+    }
+  }
+
+  /* =============================================
+     MOBILE (≤768px)
+  ============================================= */
+  @media (max-width: 768px) {
+    .header-inner {
+      padding: 0 1rem;
+      gap: 0.4rem;
+      height: 52px !important;
+    }
+    /* BrandMark renders `.brand-mark` (scoped to its own component), so we
+       reach it via :global(). margin-right: auto is what pushes the search
+       + hamburger cluster to the right edge on mobile. */
+    :global(.brand-mark) {
+      --brand-size: 1.1rem;
+      margin-right: auto;
+    }
+    .nav-desktop {
+      display: none;
+    }
+    .gh-link {
+      display: none;
+    }
+    .menu-toggle {
+      display: flex;
+      order: 4;
+    }
+    .search-toggle {
+      order: 2;
+    }
+    .search-toggle kbd {
+      display: none;
+    }
+    .lang-toggle {
+      display: none;
+    }
+    .lang-btn {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.75rem;
+      min-width: unset;
+    }
+
+    /* Mobile drawer — adapts to scroll state. Opacity bumped + stronger
+       blur so the hero wordmark / copy doesn't bleed through the panel. */
+    .nav-mobile {
+      position: absolute;
+      top: 100%;
+      left: 0.75rem;
+      right: 0.75rem;
+      margin-top: 0.35rem;
+      background: rgba(0, 28, 22, 1);
+      backdrop-filter: blur(40px) saturate(1.6);
+      -webkit-backdrop-filter: blur(40px) saturate(1.6);
+      flex-direction: column;
+      padding: 0.5rem 0.85rem 0.7rem;
+      gap: 0;
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      box-shadow:
+        0 24px 60px var(--glass-shadow),
+        0 8px 20px var(--glass-shadow),
+        inset 0 1px 0 var(--glass-inset);
+      transition:
+        background-color 0.35s,
+        border-color 0.35s,
+        box-shadow 0.35s;
+      /* #1142: cap drawer height + scroll internally (see ≤1024 block) */
+      max-height: calc(100vh - 4.5rem);
+      max-height: calc(100dvh - 4.5rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    .scrolled .nav-mobile {
+      background: rgba(255, 255, 255, 0.995);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+    }
+    .nav-mobile.open {
+      display: flex;
+    }
+    .nav-mobile .nav-link {
+      padding: 0.55rem 0.2rem;
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0;
+      background: transparent;
+    }
+    .scrolled .nav-mobile .nav-link {
+      color: #334155;
+      border-bottom-color: #f1f5f9;
+    }
+    .nav-mobile .nav-link:hover {
+      background: transparent;
+    }
+    .nav-mobile .nav-link::after {
+      display: none;
+    }
+    .nav-mobile .nav-link.active {
+      color: #ffffff;
+      font-weight: 600;
+      background: rgba(56, 189, 248, 0.15);
+      margin: 0 -1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      border-radius: 8px;
+    }
+    .scrolled .nav-mobile .nav-link.active {
+      color: #1a1a2e;
+      background: rgba(0, 120, 100, 0.05);
+    }
+  }
+</style>
+
+<script>
+  // Mobile accordion sub-menu toggle
+  document.querySelectorAll('.mobile-sub-toggle').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      btn.classList.toggle('open');
+      // The .mobile-sub-links is the next sibling of the .mobile-nav-item parent
+      const subLinks = btn.closest('.mobile-nav-item')?.nextElementSibling;
+      if (subLinks?.classList.contains('mobile-sub-links')) {
+        subLinks.classList.toggle('open');
+      }
+    });
+  });
+
+  // 2026-06-19 #1142: mobile nav close affordances — tap-outside + Escape.
+  // Reported by a reader (Pixel 9 Pro XL, /terminology/): the drawer opened with no
+  // obvious way to dismiss it. The ☰↔✕ icon swap + aria-expanded is inline on the
+  // toggle (no-JS-safe); this adds the two standard escape hatches.
+  (() => {
+    const nav = document.querySelector('.nav-mobile');
+    const toggle = document.querySelector('.menu-toggle');
+    if (!nav || !toggle) return;
+    const closeNav = () => {
+      if (!nav.classList.contains('open')) return;
+      nav.classList.remove('open');
+      toggle.textContent = '☰';
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    document.addEventListener('click', (e) => {
+      if (!nav.classList.contains('open')) return;
+      const target = e.target as Node;
+      if (!nav.contains(target) && !toggle.contains(target)) closeNav();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeNav();
+    });
+  })();
+</script>

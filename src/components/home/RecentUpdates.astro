@@ -1,0 +1,86 @@
+---
+import { commitIcon, timeAgo } from '../../lib/commits';
+import type { Commit } from '../../lib/commits';
+import placeConfig from '../../../place.config';
+
+interface Props {
+  commits: Commit[];
+}
+
+const { commits } = Astro.props;
+const { recentUpdates } = placeConfig.home;
+const repoUrl = placeConfig.links.repo;
+---
+
+{
+  commits.length > 0 && (
+    <section class="mx-auto my-16 max-w-[980px] px-8 max-[768px]:my-12 max-[768px]:px-4">
+      <div class="recent-updates-panel relative overflow-hidden rounded-[20px] border border-[color:var(--color-border-visible)] p-10 max-[768px]:p-6">
+        <div class="pointer-events-none absolute right-0 top-0 h-[200px] w-[200px] bg-[radial-gradient(circle,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
+        <div class="relative z-[2] mb-8 text-center">
+          <h2 class="mb-2 text-[1.8rem] font-extrabold text-[color:var(--color-ink-heading)] max-[768px]:text-[1.5rem]">
+            {recentUpdates.heading}
+          </h2>
+          <p class="text-base font-medium text-[color:var(--color-ink-soft)]">
+            {recentUpdates.subtitle}
+          </p>
+        </div>
+        <div class="relative z-[2] mx-auto max-w-[860px]">
+          <div class="flex flex-col gap-3">
+            {commits.map((commit) => (
+              <article class="grid grid-cols-[32px_1fr] gap-4 rounded-[10px] border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] px-5 py-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-px hover:border-[color:var(--color-ink-soft)] hover:shadow-[0_10px_24px_rgba(15,23,42,0.08)] max-[768px]:grid-cols-[24px_1fr] max-[768px]:gap-3 max-[768px]:px-4 max-[768px]:py-[0.9rem]">
+                <span class="text-center text-base leading-normal">
+                  {commitIcon(commit.message)}
+                </span>
+                <div class="min-w-0">
+                  <p class="m-0 break-words text-[0.95rem] font-semibold leading-normal text-[color:var(--color-ink)]">
+                    {commit.message}
+                  </p>
+                  <div class="mt-2 flex flex-wrap items-center gap-3 text-[0.82rem] text-[color:var(--color-ink-soft)]">
+                    {commit.author && (
+                      <span class="font-semibold">{commit.author}</span>
+                    )}
+                    <span class="whitespace-nowrap font-medium text-[#94a3b8]">
+                      {timeAgo(commit.date)}
+                    </span>
+                    <a
+                      href={`${repoUrl}/commit/${commit.hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="no-external-icon font-mono font-semibold text-[#2563eb] no-underline hover:underline"
+                    >
+                      {commit.hash.slice(0, 7)}
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div class="relative z-[2] mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="/latest"
+            class="inline-flex items-center gap-[0.3rem] rounded-full bg-[#10b981] px-6 py-[0.6rem] text-[0.9rem] font-semibold text-white no-underline transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
+          >
+            {recentUpdates.latestLabel}
+          </a>
+          <a
+            href="/changelog"
+            class="inline-flex items-center gap-[0.3rem] rounded-full bg-[#1e3a5f] px-6 py-[0.6rem] text-[0.9rem] font-semibold text-white no-underline transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1e40af] hover:shadow-[0_4px_12px_rgba(30,64,175,0.3)]"
+          >
+            {recentUpdates.viewAll}
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .recent-updates-panel {
+    background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+  }
+  :global([data-theme='dark']) .recent-updates-panel {
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-soft) 100%);
+  }
+</style>

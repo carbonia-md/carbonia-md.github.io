@@ -1,0 +1,461 @@
+---
+/**
+ * /contribute — extracted from the fork's contribute.template.astro, genericized.
+ * All place identity flows from place.config.ts.
+ */
+import Layout from '../layouts/Layout.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import placeConfig from '../../place.config';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const repoUrl = placeConfig.links.repo;
+const email = placeConfig.links.email;
+---
+
+<Layout
+  title={t('contribute.meta.title')}
+  description={t('contribute.meta.description')}
+  lang={lang}
+>
+  <div class="contribute-page">
+    <!-- Hero -->
+    <section class="hero-section">
+      <div class="hero-inner">
+        <h1>{t('contribute.hero.title')}</h1>
+        <p class="hero-subtitle">{t('contribute.hero.subtitle')}</p>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+      <div class="how-inner">
+        <h2>{t('contribute.how.title')}</h2>
+        <div class="how-grid">
+          <div class="how-card">
+            <h3>{t('contribute.how.md.title')}</h3>
+            <p>{t('contribute.how.md.desc')}</p>
+          </div>
+          <div class="how-card">
+            <h3>{t('contribute.how.review.title')}</h3>
+            <p>{t('contribute.how.review.desc')}</p>
+          </div>
+          <div class="how-card">
+            <h3>{t('contribute.how.publish.title')}</h3>
+            <p>{t('contribute.how.publish.desc')}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contribution Paths -->
+    <section class="paths" id="paths">
+      <div class="paths-inner">
+        <h2>{t('contribute.paths.title')}</h2>
+        <div class="path-grid">
+          <div class="path-card easy">
+            <div class="path-badge">{t('contribute.paths.easy.badge')}</div>
+            <h3>{t('contribute.paths.easy.title')}</h3>
+            <p>{t('contribute.paths.easy.desc')}</p>
+            <ul>
+              <li>{t('contribute.paths.easy.feature1')}</li>
+              <li>{t('contribute.paths.easy.feature2')}</li>
+              <li>{t('contribute.paths.easy.feature3')}</li>
+            </ul>
+            <a href={`mailto:${email}`} class="path-btn primary">
+              {t('contribute.paths.easy.button')}
+            </a>
+          </div>
+
+          <div class="path-card dev">
+            <div class="path-badge">{t('contribute.paths.dev.badge')}</div>
+            <h3>{t('contribute.paths.dev.title')}</h3>
+            <p>{t('contribute.paths.dev.desc')}</p>
+            <ul>
+              <li>{t('contribute.paths.dev.feature1')}</li>
+              <li>{t('contribute.paths.dev.feature2')}</li>
+              <li>{t('contribute.paths.dev.feature3')}</li>
+            </ul>
+            <a
+              href={repoUrl}
+              target="_blank"
+              class="path-btn secondary no-external-icon"
+            >
+              {t('contribute.paths.dev.button')}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Writing Guide -->
+    <section class="writing-guides">
+      <div class="guides-inner">
+        <h2>{t('contribute.guides.title')}</h2>
+        <p class="guides-desc">{t('contribute.guides.desc')}</p>
+
+        <div class="guides-grid">
+          <div class="guide-card">
+            <div class="guide-icon">✍️</div>
+            <h3>{t('contribute.guides.writing.title')}</h3>
+            <div class="guide-content">
+              <p>{t('contribute.guides.writing.desc')}</p>
+              <ul>
+                <li>{t('contribute.guides.writing.rule1')}</li>
+                <li>{t('contribute.guides.writing.rule2')}</li>
+                <li>{t('contribute.guides.writing.rule3')}</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="guide-card">
+            <div class="guide-icon">📸</div>
+            <h3>{t('contribute.guides.images.title')}</h3>
+            <div class="guide-content">
+              <p>{t('contribute.guides.images.desc')}</p>
+              <ul>
+                <li>{t('contribute.guides.images.rule1')}</li>
+                <li>{t('contribute.guides.images.rule2')}</li>
+                <li>{t('contribute.guides.images.rule3')}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ideas -->
+    <section class="ideas">
+      <div class="ideas-inner">
+        <h2>{t('contribute.ideas.title')}</h2>
+        <div class="ideas-grid">
+          <div class="idea">{t('contribute.ideas.idea1')}</div>
+          <div class="idea">{t('contribute.ideas.idea2')}</div>
+          <div class="idea">{t('contribute.ideas.idea3')}</div>
+          <div class="idea">{t('contribute.ideas.idea4')}</div>
+          <div class="idea">{t('contribute.ideas.idea5')}</div>
+          <div class="idea">{t('contribute.ideas.idea6')}</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .contribute-page {
+    padding-bottom: 0;
+  }
+
+  .hero-section {
+    padding: 5rem 2rem 4rem;
+    background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+    color: white;
+    text-align: center;
+  }
+
+  .hero-inner {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .hero-section h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* How It Works */
+  .how-it-works {
+    padding: 4rem 2rem;
+    background: var(--color-bg-alt);
+  }
+
+  .how-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .how-inner h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--color-ink-heading);
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .how-card {
+    background: var(--color-surface-raised);
+    padding: 1.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-visible);
+  }
+
+  .how-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+
+  .how-card p {
+    font-size: 0.95rem;
+    color: var(--color-ink-soft);
+    line-height: 1.6;
+  }
+
+  /* Paths */
+  .paths {
+    padding: 4rem 2rem;
+  }
+
+  .paths-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .paths h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    color: var(--color-ink-heading);
+    font-weight: 700;
+  }
+
+  .path-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .path-card {
+    padding: 2rem;
+    border-radius: 16px;
+    border: 2px solid var(--color-border-visible);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface-raised);
+  }
+
+  .path-card.easy {
+    border-color: #10b981;
+  }
+
+  .path-card.dev {
+    border-color: #3b82f6;
+  }
+
+  .path-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    background: #1e40af;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    display: inline-block;
+    width: fit-content;
+  }
+
+  .path-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+
+  .path-card p {
+    color: var(--color-ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .path-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+
+  .path-card li {
+    padding: 0.3rem 0;
+    color: var(--color-ink-soft);
+  }
+
+  .path-card li::before {
+    content: '\2714\00a0';
+    color: #10b981;
+  }
+
+  .path-btn {
+    display: inline-block;
+    padding: 0.7rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: auto;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .path-btn.primary {
+    background: #1e40af;
+    color: white;
+  }
+
+  .path-btn.primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+
+  .path-btn.secondary {
+    background: #f1f5f9;
+    color: #1e40af;
+    border: 1px solid #e2e8f0;
+  }
+
+  .path-btn.secondary:hover {
+    background: #e2e8f0;
+  }
+
+  /* Writing Guides */
+  .writing-guides {
+    padding: 4rem 2rem;
+    background: var(--color-bg-alt);
+  }
+
+  .guides-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .guides-inner h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-ink-heading);
+    font-weight: 700;
+  }
+
+  .guides-desc {
+    text-align: center;
+    color: var(--color-ink-soft);
+    margin-bottom: 2.5rem;
+    font-size: 1.05rem;
+  }
+
+  .guides-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .guide-card {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-visible);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+
+  .guide-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .guide-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+
+  .guide-content p {
+    font-size: 0.95rem;
+    color: var(--color-ink-soft);
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+  }
+
+  .guide-content ul {
+    padding-left: 1.25rem;
+    margin: 0;
+  }
+
+  .guide-content li {
+    margin-bottom: 0.4rem;
+    color: var(--color-ink-soft);
+    line-height: 1.6;
+    font-size: 0.9rem;
+  }
+
+  /* Ideas */
+  .ideas {
+    padding: 4rem 2rem;
+  }
+
+  .ideas-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .ideas h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--color-ink-heading);
+    font-weight: 700;
+    font-size: 1.8rem;
+  }
+
+  .ideas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .idea {
+    padding: 1.25rem;
+    background: var(--color-bg-soft);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    border: 1px solid var(--color-border-visible);
+    color: var(--color-ink-soft);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero-section h1 {
+      font-size: 2rem;
+    }
+
+    .how-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .path-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .guides-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ideas-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

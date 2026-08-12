@@ -1,0 +1,440 @@
+---
+/**
+ * /map — the geographic axis. Every geo-carrying article drops a category-colored
+ * Leaflet marker over an OSM base, inside the municipal boundary overlay.
+ *
+ * Extracted from the fork's map.template.astro (chrome only); all place-specific
+ * logic is gone. Markers come from src/data/map-markers.geojson (built by
+ * scripts/core/build-map-markers.mjs). Category colors/labels flow from
+ * src/utils/categoryConfig.ts; map center/zoom/pan bounds from place.config.map;
+ * the boundary stroke is fetched at runtime from public/data/boundary.geojson.
+ * No coordinates, colors, category names, or place strings are hardcoded here.
+ */
+import Layout from '../layouts/Layout.astro';
+import { getCategoryConfigs } from '../utils/categoryConfig';
+import placeConfig from '../../place.config';
+// Prebuilt by scripts/core/build-map-markers.mjs (run-p prebuild group). Imported
+// as raw text because Vite has no loader for the .geojson extension.
+import markersRaw from '../data/map-markers.geojson?raw';
+
+const markers: {
+  type: string;
+  features: Array<{
+    properties: {
+      slug: string;
+      title: string;
+      category: string;
+      description: string;
+      area: string;
+    };
+    geometry: { type: string; coordinates: [number, number] };
+  }>;
+} = JSON.parse(markersRaw);
+
+const cats = getCategoryConfigs();
+const { name } = placeConfig.place;
+const { center, zoom, maxBounds } = placeConfig.map;
+
+// Category legend/filter: only categories that actually have a marker, in
+// place.config order (matches the /latest "present categories" idiom).
+const presentCats = Object.entries(cats)
+  .map(([slug, cfg]) => ({ slug, label: cfg.name, color: cfg.color }))
+  .filter((c) => markers.features.some((f) => f.properties.category === c.slug));
+
+// Area filter options derive from the markers' `area` field — no place-specific
+// list is hardcoded (a different sekai-kb instance gets its own areas for free).
+const areas = [
+  ...new Set(
+    markers.features.map((f) => f.properties.area).filter((a) => a && a.trim()),
+  ),
+].sort((a, b) => a.localeCompare(b));
+
+// Flat marker rows for the client script (build-time colored via categoryConfig).
+const markerRows = markers.features.map((f) => ({
+  slug: f.properties.slug,
+  title: f.properties.title,
+  category: f.properties.category,
+  categoryLabel: cats[f.properties.category]?.name ?? f.properties.category,
+  area: f.properties.area,
+  description: f.properties.description,
+  href: `/${f.properties.category}/${encodeURIComponent(f.properties.slug)}`,
+  color: cats[f.properties.category]?.color ?? '#475569',
+  lat: f.geometry.coordinates[1],
+  lng: f.geometry.coordinates[0],
+}));
+
+const mapConfig = { center, zoom, maxBounds };
+---
+
+<Layout
+  title={`Map of ${name}`}
+  description={`An interactive map of ${name} — every article pinned to the place it is about.`}
+>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <section class="mx-auto max-w-[var(--container-wide)] px-6 pt-12 pb-2 max-[768px]:px-4 max-[768px]:pt-10">
+    <h1 class="text-[clamp(2rem,5vw,3rem)] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)]">
+      Map of {name}
+    </h1>
+    <p class="mt-2 text-[1.05rem] text-[color:var(--color-ink-soft)]">
+      Explore the places behind the articles — pick a category or area, or tap a marker.
+    </p>
+  </section>
+
+  <div class="map-body mx-auto max-w-[var(--container-wide)] px-6 pb-16 max-[768px]:px-4">
+    <div class="map-layout">
+      <!-- Map -->
+      <div class="map-panel">
+        <div id="leafletMap"></div>
+      </div>
+
+      <!-- Sidebar: filters (legend) + place list -->
+      <div class="sidebar-panel">
+        <div class="sidebar-filters">
+          {
+            areas.length > 0 && (
+              <div class="filter-row">
+                <span class="filter-row-label">Neighborhoods</span>
+                <div class="filter-chips" id="areaFilters">
+                  <button class="filter-btn active" data-filter="all">All</button>
+                  {areas.map((a) => (
+                    <button class="filter-btn" data-filter={a}>
+                      {a}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          }
+          <div class="filter-row">
+            <span class="filter-row-label">Category</span>
+            <div class="filter-chips" id="categoryFilters">
+              <button class="filter-btn active" data-filter="all">All</button>
+              {
+                presentCats.map((c) => (
+                  <button class="filter-btn" data-filter={c.slug}>
+                    <span class="chip-dot" style={`background:${c.color}`} />
+                    {c.label}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        <p class="place-count" id="placeCount"></p>
+        <div class="place-list" id="placeList"></div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script
+  is:inline
+  src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script is:inline define:vars={{ markerRows, mapConfig }}>
+  const map = L.map('leafletMap', {
+    scrollWheelZoom: false,
+    maxBounds: mapConfig.maxBounds,
+    maxBoundsViscosity: 0.7,
+  }).setView(mapConfig.center, mapConfig.zoom);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="no-external-icon">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  }).addTo(map);
+  // Wheel zoom stays off so the page scrolls past the map; +/- controls,
+  // click-to-zoom, and pinch-zoom on touch devices still work.
+
+  // Municipal boundary — a subtle stroke, no fill, drawn under the markers.
+  // Place data, fetched at runtime from public/data/boundary.geojson.
+  fetch('/data/boundary.geojson')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((geo) => {
+      if (!geo) return;
+      L.geoJSON(geo, {
+        style: {
+          color: '#0e3a5c',
+          weight: 1.5,
+          opacity: 0.5,
+          fill: false,
+          interactive: false,
+        },
+      }).addTo(map);
+    })
+    .catch(() => {});
+
+  const state = { category: 'all', area: 'all' };
+  const layer = L.layerGroup().addTo(map);
+  const markerByIndex = new Map();
+
+  function visible(m) {
+    return (
+      (state.category === 'all' || m.category === state.category) &&
+      (state.area === 'all' || m.area === state.area)
+    );
+  }
+
+  function fitToVisible(list) {
+    if (!list.length) return;
+    const bounds = L.latLngBounds(list.map((m) => [m.lat, m.lng]));
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+  }
+
+  const esc = (s) =>
+    String(s == null ? '' : s).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        })[c],
+    );
+
+  function render() {
+    const shown = markerRows.filter(visible);
+    layer.clearLayers();
+    markerByIndex.clear();
+
+    shown.forEach((m, i) => {
+      const marker = L.circleMarker([m.lat, m.lng], {
+        radius: 9,
+        color: '#fff',
+        weight: 2,
+        fillColor: m.color,
+        fillOpacity: 0.95,
+      }).addTo(layer);
+      marker.bindPopup(
+        `<strong>${esc(m.title)}</strong><br/>` +
+          `<span style="color:${m.color};font-size:.8rem">${esc(m.categoryLabel)}</span>` +
+          (m.area ? ` · <span style="font-size:.8rem">${esc(m.area)}</span>` : '') +
+          (m.description
+            ? `<br/><p style="margin:.4rem 0 .3rem">${esc(m.description)}</p>`
+            : '') +
+          `<a href="${esc(m.href)}">Read the article &rarr;</a>`,
+      );
+      markerByIndex.set(i, marker);
+    });
+
+    renderList(shown);
+    fitToVisible(shown);
+  }
+
+  function renderList(shown) {
+    const count = document.getElementById('placeCount');
+    count.textContent = shown.length
+      ? `${shown.length} place${shown.length === 1 ? '' : 's'}`
+      : 'No places match these filters.';
+
+    const list = document.getElementById('placeList');
+    list.innerHTML = '';
+    shown.forEach((m, i) => {
+      const card = document.createElement('div');
+      card.className = 'place-card';
+      card.innerHTML =
+        `<span class="place-dot" style="background:${m.color}"></span>` +
+        `<span class="place-body">` +
+        `<span class="place-title">${esc(m.title)}</span>` +
+        `<span class="place-meta">${esc(m.categoryLabel)}${m.area ? ' · ' + esc(m.area) : ''}</span>` +
+        (m.description
+          ? `<span class="place-desc">${esc(m.description)}</span>`
+          : '') +
+        `</span>`;
+      card.addEventListener('click', () => {
+        window.location.href = m.href;
+      });
+      list.appendChild(card);
+    });
+  }
+
+  function wireFilters(containerId, key) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      state[key] = btn.dataset.filter;
+      container
+        .querySelectorAll('.filter-btn')
+        .forEach((b) => b.classList.toggle('active', b === btn));
+      render();
+    });
+  }
+  wireFilters('categoryFilters', 'category');
+  wireFilters('areaFilters', 'area');
+
+  render();
+</script>
+
+<style>
+  .map-body {
+    margin-top: 1rem;
+  }
+
+  .map-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .map-panel {
+    min-height: 520px;
+  }
+
+  #leafletMap {
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    border-radius: 12px;
+    z-index: 1;
+  }
+
+  .sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .filter-row-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-ink-soft);
+  }
+
+  .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--color-border-visible);
+    background: var(--color-surface-raised);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--color-ink);
+  }
+
+  .chip-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--color-ink-soft);
+    color: var(--color-ink);
+  }
+
+  .filter-btn.active {
+    background: var(--color-ink-heading);
+    border-color: var(--color-ink-heading);
+    color: var(--color-bg);
+  }
+
+  .place-count {
+    font-size: 0.8rem;
+    color: var(--color-ink-soft);
+    margin: 0;
+  }
+
+  .place-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  /* Cards are built in JS (createElement), so Astro's scoped class hashing never
+     reaches them — these must be :global or they render unstyled. */
+  :global(.place-card) {
+    display: flex;
+    gap: 0.7rem;
+    text-align: left;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border-visible);
+    border-radius: 10px;
+    background: var(--color-surface-raised);
+    cursor: pointer;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+
+  :global(.place-card:hover) {
+    border-color: var(--color-accent);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  }
+
+  :global(.place-dot) {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 0.35rem;
+  }
+
+  :global(.place-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  :global(.place-title) {
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  :global(.place-meta) {
+    font-size: 0.75rem;
+    color: var(--color-ink-soft);
+    text-transform: capitalize;
+  }
+
+  :global(.place-desc) {
+    font-size: 0.85rem;
+    color: var(--color-ink);
+    line-height: 1.4;
+  }
+
+
+  @media (max-width: 860px) {
+    .map-layout {
+      grid-template-columns: 1fr;
+    }
+    .sidebar-panel {
+      max-height: none;
+    }
+  }
+</style>

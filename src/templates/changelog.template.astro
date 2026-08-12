@@ -1,0 +1,407 @@
+---
+/**
+ * /changelog — commit history rendered as a timeline.
+ *
+ * Extracted from the fork's changelog.template.astro. CommitLog component
+ * removed (delete-now per §F); commit cards rendered inline. Data sourced from
+ * fetchCommitFeed (git -> cache -> github fallback chain).
+ */
+import TimelineDayNav from '../components/timeline/TimelineDayNav.astro';
+import TimelineDay from '../components/timeline/TimelineDay.astro';
+import Layout from '../layouts/Layout.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { fetchCommitFeed, commitType, commitIcon } from '../lib/commits';
+import placeConfig from '../../place.config';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const repoUrl = placeConfig.links.repo;
+const { commits, source } = await fetchCommitFeed(9999);
+
+const sourceLabel =
+  source === 'git'
+    ? 'From local git history'
+    : source === 'cache'
+      ? 'From the build-time cached commit feed'
+      : source === 'github'
+        ? 'From the GitHub commit feed'
+        : 'Updates are temporarily unavailable';
+
+// Group by day for left nav
+const grouped: Record<string, number> = {};
+for (const commit of commits) {
+  const day = commit.date.slice(0, 10);
+  grouped[day] = (grouped[day] || 0) + 1;
+}
+
+// Group days by month
+const months: Record<string, string[]> = {};
+for (const day of Object.keys(grouped)) {
+  const month = day.slice(0, 7);
+  if (!months[month]) months[month] = [];
+  months[month].push(day);
+}
+const sortedMonths = Object.keys(months).sort((a, b) => b.localeCompare(a));
+for (const m of sortedMonths) {
+  months[m].sort((a, b) => b.localeCompare(a));
+}
+
+// Sorted days (newest first)
+const sortedDays = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+// Count by type for filter pills
+const typeCounts: Record<string, number> = { all: commits.length };
+for (const commit of commits) {
+  const ct = commitType(commit.message);
+  typeCounts[ct] = (typeCounts[ct] || 0) + 1;
+}
+
+function formatMonth(monthStr: string): string {
+  const [y, m] = monthStr.split('-');
+  const names = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return `${names[parseInt(m) - 1]} ${y}`;
+}
+
+function formatDayFull(d: string): string {
+  return new Date(`${d}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    weekday: 'short',
+  });
+}
+
+const filterTypes = [
+  { key: 'all', icon: '', label: 'All' },
+  { key: 'feat', icon: '✨', label: 'Feature' },
+  { key: 'fix', icon: '🐛', label: 'Fix' },
+  { key: 'content', icon: '📝', label: 'Content' },
+  { key: 'merge', icon: '🔀', label: 'Merge' },
+  { key: 'maintenance', icon: '🔧', label: 'Maintenance' },
+];
+
+// Left-column nav data
+const navMonthsData = sortedMonths.map((m) => ({
+  key: m,
+  label: formatMonth(m),
+  days: months[m].map((d) => ({
+    key: d,
+    label: d.slice(5),
+    count: grouped[d],
+  })),
+}));
+
+// Group commits by day for rendering
+const commitsByDay = new Map<string, typeof commits>();
+for (const commit of commits) {
+  const day = commit.date.slice(0, 10);
+  if (!commitsByDay.has(day)) commitsByDay.set(day, []);
+  commitsByDay.get(day)!.push(commit);
+}
+---
+
+<Layout
+  title={t('changelog.meta.title')}
+  description={t('changelog.meta.description')}
+  lang={lang}
+>
+  <div
+    class="mx-auto max-w-[var(--container-wide)] px-8 pb-24 pt-16 max-[768px]:max-w-full max-[768px]:px-4 max-[768px]:pb-16 max-[768px]:pt-12"
+  >
+    {/* Hero */}
+    <div class="mb-10">
+      <h1 class="text-[clamp(2rem,5vw,3rem)] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)]">
+        Update History
+      </h1>
+      <p class="mt-2 text-[1.05rem] text-[color:var(--color-ink-soft)]">
+        Track every content addition and site improvement.
+      </p>
+      <p class="mt-1 text-sm text-[#94a3b8]">
+        {commits.length} updates &middot; {sourceLabel} &middot;
+        <a
+          href={`${repoUrl}/commits/main`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="no-external-icon text-[#3b82f6] no-underline hover:underline"
+        >
+          GitHub
+        </a>
+      </p>
+    </div>
+
+    {/* Search + Filter Controls */}
+    <div
+      id="changelog-controls"
+      class="sticky top-[64px] z-20 -mx-4 mb-6 border-b border-[color:var(--color-border-visible)] bg-[color:var(--color-bg)]/95 px-4 py-3 backdrop-blur-sm max-[768px]:top-[56px]"
+    >
+      <div class="mb-3">
+        <input
+          type="text"
+          id="changelog-search"
+          placeholder="Search updates..."
+          class="w-full rounded-lg border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] px-4 py-2.5 text-sm text-[color:var(--color-ink)] outline-none transition-colors placeholder:text-[color:var(--color-ink-soft)] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20"
+        />
+      </div>
+      <div
+        class="flex flex-wrap gap-2 max-[768px]:overflow-x-auto max-[768px]:flex-nowrap max-[768px]:pb-1"
+      >
+        {
+          filterTypes
+            .filter((f) => f.key === 'all' || (typeCounts[f.key] || 0) > 0)
+            .map((f) => (
+              <button
+                class:list={[
+                  'filter-pill whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-all',
+                  f.key === 'all'
+                    ? 'border-[#3b82f6] bg-[#3b82f6] text-white'
+                    : 'border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-ink-soft)] hover:border-[color:var(--color-ink-soft)] hover:bg-[color:var(--color-bg-soft)]',
+                ]}
+                data-type={f.key}
+              >
+                {f.icon}
+                {f.icon ? ' ' : ''}
+                {f.label}
+                <span class="ml-1 opacity-60">{typeCounts[f.key] || 0}</span>
+              </button>
+            ))
+        }
+      </div>
+      <div id="filter-status" class="mt-2 hidden text-xs text-[color:var(--color-ink-soft)]"></div>
+    </div>
+
+    {/* Two-column layout */}
+    <div class="grid grid-cols-[200px_1fr] gap-8 max-lg:grid-cols-1">
+      {/* Left: Date Navigation */}
+      <TimelineDayNav
+        navId="date-nav"
+        months={navMonthsData}
+        anchorPrefix="day-"
+        accent="blue"
+        top="180px"
+      />
+
+      {/* Right: Commit Timeline */}
+      <div id="commit-list">
+        {
+          commits.length === 0 ? (
+            <div class="py-16 text-center">
+              <h3 class="text-lg font-semibold text-[color:var(--color-ink)]">
+                Update history is temporarily unavailable
+              </h3>
+              <p class="mt-2 text-[color:var(--color-ink-soft)]">
+                This page reads from git, then falls back to a build-time cache and GitHub.
+              </p>
+              <a
+                href={`${repoUrl}/commits/main`}
+                target="_blank"
+                class="no-external-icon mt-4 inline-block text-[#3b82f6] hover:underline"
+              >
+                View on GitHub
+              </a>
+            </div>
+          ) : (
+            sortedDays.map((day, dayIndex) => (
+              <TimelineDay
+                id={`day-${day}`}
+                title={formatDayFull(day)}
+                badge={`${commitsByDay.get(day)!.length} updates`}
+                isLast={dayIndex === sortedDays.length - 1}
+                accent="blue"
+                titleStyle="sans"
+                extraClass="changelog-day-group"
+                dataAttrs={{ 'data-day': day }}
+              >
+                {commitsByDay.get(day)!.map((commit) => (
+                  <article
+                    class="commit-log-item grid grid-cols-[32px_1fr] gap-4 rounded-[10px] border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] px-5 py-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-px hover:border-[color:var(--color-ink-soft)] hover:shadow-[0_10px_24px_rgba(15,23,42,0.08)] max-[768px]:grid-cols-[24px_1fr] max-[768px]:gap-3 max-[768px]:px-4 max-[768px]:py-[0.9rem]"
+                    data-type={commitType(commit.message)}
+                  >
+                    <span class="text-center text-base leading-normal">
+                      {commitIcon(commit.message)}
+                    </span>
+                    <div class="min-w-0">
+                      <p class="m-0 break-words text-[0.95rem] font-semibold leading-normal text-[color:var(--color-ink)]">
+                        {commit.message}
+                      </p>
+                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[0.82rem] text-[color:var(--color-ink-soft)]">
+                        {commit.author && (
+                          <span class="font-semibold">{commit.author}</span>
+                        )}
+                        <span class="whitespace-nowrap text-[#94a3b8]">
+                          {commit.date.slice(0, 10)}
+                        </span>
+                        <a
+                          href={`${repoUrl}/commit/${commit.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="no-external-icon font-mono font-semibold text-[#2563eb] no-underline hover:underline"
+                        >
+                          {commit.hash.slice(0, 7)}
+                        </a>
+                      </div>
+                      {commit.articles && commit.articles.length > 0 && (
+                        <div class="mt-2 flex flex-wrap gap-2">
+                          {commit.articles.map((article) => (
+                            <a
+                              href={article.url}
+                              class="rounded-md bg-[#f0f9ff] px-2 py-0.5 text-[0.78rem] font-medium text-[#1e40af] no-underline hover:bg-[#dbeafe]"
+                            >
+                              {article.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </TimelineDay>
+            ))
+          )
+        }
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script is:inline>
+  // Search + Type Filter
+  const searchInput = document.getElementById('changelog-search');
+  const pills = document.querySelectorAll('.filter-pill');
+  const items = document.querySelectorAll('.commit-log-item');
+  const dayGroups = document.querySelectorAll('.changelog-day-group');
+  const dateNavLinks = document.querySelectorAll('.timeline-nav-link');
+  const filterStatus = document.getElementById('filter-status');
+
+  let activeType = 'all';
+
+  function getItemType(item) {
+    return item.getAttribute('data-type') || 'other';
+  }
+
+  function applyFilters() {
+    const query = (searchInput?.value || '').toLowerCase().trim();
+    let visibleCount = 0;
+    let totalCount = items.length;
+
+    items.forEach(function (item) {
+      const msg = item.querySelector('p')?.textContent?.toLowerCase() || '';
+      const author =
+        item.querySelector('.font-semibold')?.textContent?.toLowerCase() || '';
+      const type = getItemType(item);
+
+      const matchesSearch =
+        !query || msg.includes(query) || author.includes(query);
+      const matchesType = activeType === 'all' ? true : type === activeType;
+      const visible = matchesSearch && matchesType;
+
+      item.style.display = visible ? '' : 'none';
+      if (visible) visibleCount++;
+    });
+
+    // Hide day groups where all items are hidden
+    dayGroups.forEach(function (group) {
+      const visibleItems = group.querySelectorAll(
+        '.commit-log-item:not([style*="display: none"])',
+      );
+      group.style.display = visibleItems.length ? '' : 'none';
+
+      // Update count badge
+      var badge = group.querySelector('.timeline-day-badge');
+      if (badge && visibleItems.length) {
+        badge.textContent = visibleItems.length + ' updates';
+      }
+    });
+
+    // Update left nav visibility + counts
+    dateNavLinks.forEach(function (link) {
+      var day = link.getAttribute('data-day');
+      var dayGroup = document.getElementById('day-' + day);
+      if (dayGroup) {
+        var hidden = dayGroup.style.display === 'none';
+        link.style.display = hidden ? 'none' : '';
+        if (!hidden) {
+          var countEl = link.querySelector('.timeline-nav-count');
+          var visibleItems = dayGroup.querySelectorAll(
+            '.commit-log-item:not([style*="display: none"])',
+          );
+          if (countEl) countEl.textContent = String(visibleItems.length);
+        }
+      }
+    });
+
+    // Hide empty month headers
+    document
+      .querySelectorAll('#date-nav .timeline-nav-month')
+      .forEach(function (monthSection) {
+        var visibleLinks = monthSection.querySelectorAll(
+          '.timeline-nav-link:not([style*="display: none"])',
+        );
+        monthSection.style.display = visibleLinks.length ? '' : 'none';
+      });
+
+    // Status text
+    if (filterStatus) {
+      if (query || activeType !== 'all') {
+        filterStatus.textContent = visibleCount + ' / ' + totalCount;
+        filterStatus.classList.remove('hidden');
+      } else {
+        filterStatus.classList.add('hidden');
+      }
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+  }
+
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      var type = pill.getAttribute('data-type') || 'all';
+      activeType = type;
+
+      pills.forEach(function (p) {
+        var isActive = p.getAttribute('data-type') === type;
+        p.classList.toggle('border-[#3b82f6]', isActive);
+        p.classList.toggle('bg-[#3b82f6]', isActive);
+        p.classList.toggle('text-white', isActive);
+        p.classList.toggle('border-[color:var(--color-border-visible)]', !isActive);
+        p.classList.toggle('bg-[color:var(--color-surface-raised)]', !isActive);
+        p.classList.toggle('text-[color:var(--color-ink-soft)]', !isActive);
+      });
+
+      applyFilters();
+    });
+  });
+
+  // Active date tracking (IntersectionObserver)
+  var dayElements = document.querySelectorAll(
+    '.changelog-day-group[id^="day-"]',
+  );
+
+  if (dayElements.length && dateNavLinks.length) {
+    var observer = new IntersectionObserver(
+      function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            var day = entries[i].target.id.replace('day-', '');
+            dateNavLinks.forEach(function (link) {
+              var isActive = link.getAttribute('data-day') === day;
+              link.classList.toggle('bg-[#eff6ff]', isActive);
+              link.classList.toggle('text-[#1e40af]', isActive);
+              link.classList.toggle('font-bold', isActive);
+            });
+            break;
+          }
+        }
+      },
+      { rootMargin: '-100px 0px -70% 0px', threshold: 0 },
+    );
+
+    dayElements.forEach(function (el) {
+      observer.observe(el);
+    });
+  }
+</script>

@@ -1,0 +1,30 @@
+# wrangler.generated.toml -- GENERATED. Do not edit, do not commit.
+#
+# Written by scripts/deploy/gen-worker-config.mjs (npm run worker-config) from
+# place.config.ts and workers/feedback/wrangler.toml. Regenerate after either
+# changes; edits here are overwritten. This file carries this instance's own
+# account-scoped deployment identity, which is why it is gitignored: workers/ is
+# scanned by both machine gates (AGENTS.md iron rule 2).
+#
+# Derived name: "selftest-place-feedback" (<place-slug>-feedback, from place.name).
+
+name = "selftest-place-feedback"
+main = "src/index.mjs"
+compatibility_date = "2026-07-01"
+
+# Non-secret configuration. ALLOWED_ORIGIN is the single origin the worker accepts;
+# it is never `*`, and an empty value makes every request 403 rather than opening the
+# endpoint up. This template ships it empty; the generated config carries place.domain.
+[vars]
+ALLOWED_ORIGIN = "https://selftest.example"
+RATE_LIMIT_MAX = "5"
+RATE_LIMIT_WINDOW_SECONDS = "3600"
+
+# `database_name` and `database_id` come from the generated config: the derived name,
+# and the id recorded in place.config.ts as `workers.feedbackDatabaseId`. `binding` is
+# the name the worker code uses (`env.DB`) — framework-owned, not instance identity.
+[[d1_databases]]
+binding = "DB"
+database_name = "selftest-place-feedback"
+database_id = ""
+migrations_dir = "migrations"

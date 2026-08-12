@@ -1,0 +1,361 @@
+---
+/**
+ * SEO.astro — meta tags + JSON-LD structured data.
+ *
+ * Genericized (task 1.1a): site identity (name, domain, sameAs, contact,
+ * knowsAbout, category hubs) reads from `place.config`; multi-language machinery
+ * collapsed to English-only (§F i18n toolchain not ported). The fork's build-time
+ * per-article OG resolution (existsSync over generated files) is dropped — the
+ * spec forbids build-time OG generation; a static default OG ships until the
+ * Phase 7 worker. No place literals.
+ */
+import { ENABLED_LANGUAGE_CODES, DEFAULT_LANGUAGE } from '../config/languages';
+import type { Lang } from '../config/languages';
+import placeConfig from '../../place.config';
+import { resolveOgImage } from '../utils/og-image';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  url?: string;
+  lang?: Lang;
+  type?: 'website' | 'article';
+  datePublished?: string;
+  dateModified?: string;
+  content?: string;
+  tags?: string[];
+  category?: string;
+  slug?: string;
+  categorySlug?: string;
+}
+
+
+const { name, tagline, domain } = placeConfig.place;
+const { categories, links, seo, features, workers } = placeConfig;
+const domainDot = `.${domain.split('.').pop()}`;
+const siteName = `${name}${domainDot}`;
+const siteUrl = `https://${domain}`;
+
+const {
+  lang = 'en',
+  title,
+  description = tagline,
+  url = Astro.url.href,
+  type = 'website',
+  datePublished,
+  dateModified,
+  content,
+  tags,
+  category,
+} = Astro.props;
+
+const image = resolveOgImage({
+  featureOg: features?.og,
+  workerOgUrl: workers?.og,
+  categorySlug: Astro.props.categorySlug,
+  slug: Astro.props.slug,
+  explicitImage: Astro.props.image,
+  defaultOgImage: seo.defaultOgImage,
+});
+
+const fullTitle = `${title} | ${siteName}`;
+const fullImageUrl = new URL(image, siteUrl).href;
+
+// AI-friendly summary from description or the first slice of content.
+const aiSummary =
+  description ||
+  (content
+    ? content
+        .substring(0, 200)
+        .replace(/[\n\r]/g, ' ')
+        .replace(/[#*]/g, '')
+        .trim() + '...'
+    : '');
+
+// sameAs: repo + any configured social handles (rendered regardless of the
+// features.social UI gate — these are canonical identity signals for crawlers).
+const bare = (h: string) => h.replace(/^@/, '');
+const sameAs = [links.repo];
+if (links.social.twitter) sameAs.push(`https://x.com/${bare(links.social.twitter)}`);
+if (links.social.instagram)
+  sameAs.push(`https://www.instagram.com/${bare(links.social.instagram)}`);
+if (links.social.threads)
+  sameAs.push(`https://www.threads.com/@${bare(links.social.threads)}`);
+
+const orgBlock = {
+  '@type': 'Organization',
+  name: siteName,
+  url: siteUrl,
+  logo: {
+    '@type': 'ImageObject',
+    url: new URL(seo.defaultOgImage, siteUrl).href,
+    width: 1200,
+    height: 630,
+  },
+};
+
+const generateJSONLD = () => {
+  if (type === 'article' && datePublished) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: title,
+      description,
+      author: orgBlock,
+      publisher: orgBlock,
+      datePublished,
+      dateModified: dateModified || datePublished,
+      inLanguage: lang,
+      url,
+      image: {
+        '@type': 'ImageObject',
+        url: fullImageUrl,
+        width: 1200,
+        height: 630,
+      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+      ...(tags && tags.length > 0 && { keywords: tags.join(', ') }),
+      ...(category && { articleSection: category }),
+    };
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: `${siteName} — Knowledge Base`,
+    description: tagline,
+    url: siteUrl,
+    inLanguage: lang,
+    publisher: orgBlock,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${siteUrl}/explore?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+    sameAs,
+  };
+};
+
+const jsonLD = generateJSONLD();
+
+const organizationLD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteName,
+  alternateName: [name, domain],
+  url: siteUrl,
+  logo: new URL(seo.defaultOgImage, siteUrl).href,
+  description: tagline,
+  inLanguage: ENABLED_LANGUAGE_CODES,
+  knowsAbout: categories.map((c) => `${name} ${c.title}`),
+  sameAs,
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: links.email,
+    contactType: 'Customer Support',
+  },
+};
+
+const websiteLD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteName,
+  url: siteUrl,
+  inLanguage: ENABLED_LANGUAGE_CODES,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteUrl}/explore?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+  publisher: { '@type': 'Organization', name: siteName, url: siteUrl },
+};
+
+// CollectionPage — homepage only. Indexes the category hubs for AI crawlers.
+const isHomepage = (() => {
+  try {
+    return new URL(url).pathname.replace(/\/+$/, '/') === '/';
+  } catch {
+    return false;
+  }
+})();
+
+const homepageCollectionLD = isHomepage
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      '@id': url,
+      url,
+      name: title,
+      description,
+      inLanguage: lang,
+      isPartOf: { '@type': 'WebSite', '@id': siteUrl, name: siteName },
+      mainEntity: {
+        '@type': 'ItemList',
+        name: `${siteName} — ${categories.length} curated knowledge domains`,
+        numberOfItems: categories.length,
+        itemListElement: categories.map((c, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item: {
+            '@type': 'CollectionPage',
+            '@id': `${siteUrl}/${c.slug}`,
+            url: `${siteUrl}/${c.slug}`,
+            name: c.title,
+          },
+        })),
+      },
+    }
+  : null;
+
+const dynamicKeywords = [
+  name,
+  ...categories.map((c) => `${name} ${c.title}`),
+  ...(category ? [`${name} ${category}`] : []),
+  ...(tags && tags.length > 0 ? tags : []),
+].join(', ');
+
+// BreadcrumbList for content pages.
+const generateBreadcrumbLD = () => {
+  const currentPath = new URL(url).pathname;
+  if (currentPath === '/') return null;
+
+  const baseItems = [
+    { '@type': 'ListItem', position: 1, name: siteName, item: siteUrl },
+  ];
+
+  if (
+    category &&
+    (currentPath.endsWith(`/${category}`) ||
+      currentPath.endsWith(`/${category}/`))
+  ) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        ...baseItems,
+        { '@type': 'ListItem', position: 2, name: category, item: url },
+      ],
+    };
+  }
+
+  if (category && type === 'article') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        ...baseItems,
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: category,
+          item: `${siteUrl}/${category}`,
+        },
+        { '@type': 'ListItem', position: 3, name: title, item: url },
+      ],
+    };
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      ...baseItems,
+      { '@type': 'ListItem', position: 2, name: title, item: url },
+    ],
+  };
+};
+
+const breadcrumbLD = generateBreadcrumbLD();
+const canonical = url;
+const twitterHandle = seo.twitterHandle;
+---
+
+<!-- Basic Meta Tags -->
+<meta name="description" content={description} />
+<meta name="keywords" content={dynamicKeywords} />
+<meta name="author" content={siteName} />
+<meta name="generator" content="Astro" />
+<meta name="theme-color" content="#0c4a6e" />
+<meta name="format-detection" content="telephone=no" />
+
+<!-- Additional SEO Meta Tags -->
+<meta name="revisit-after" content="7 days" />
+<meta name="distribution" content="global" />
+<meta name="rating" content="general" />
+
+<!-- AI-friendly summary meta tag -->
+<meta name="ai-summary" content={aiSummary} />
+
+<!-- Canonical URL -->
+<link rel="canonical" href={canonical} />
+
+<!-- RSS Feed -->
+<link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href={`${siteUrl}/rss.xml`} />
+
+<!-- Preconnect to external resources -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<!-- DNS prefetch -->
+<link rel="dns-prefetch" href="//github.com" />
+
+<!-- Language alternates (single enabled language) -->
+<link rel="alternate" hreflang={DEFAULT_LANGUAGE.hreflang} href={canonical} />
+<link rel="alternate" hreflang="x-default" href={canonical} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={type} />
+<meta property="og:url" content={url} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={fullImageUrl} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={`${title} - ${siteName}`} />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:locale" content="en_US" />
+{datePublished && <meta property="article:published_time" content={datePublished} />}
+{dateModified && <meta property="article:modified_time" content={dateModified} />}
+{tags && tags.map((tag: string) => <meta property="article:tag" content={tag} />)}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+{twitterHandle && <meta name="twitter:site" content={twitterHandle} />}
+{twitterHandle && <meta name="twitter:creator" content={twitterHandle} />}
+<meta name="twitter:url" content={url} />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={fullImageUrl} />
+<meta name="twitter:image:alt" content={`${title} - ${siteName}`} />
+
+<!-- Additional SEO -->
+<meta name="robots" content="index, follow" />
+<meta name="googlebot" content="index, follow" />
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json" set:html={JSON.stringify(jsonLD, null, 2)} />
+<script type="application/ld+json" set:html={JSON.stringify(organizationLD, null, 2)} />
+<script type="application/ld+json" set:html={JSON.stringify(websiteLD, null, 2)} />
+{
+  homepageCollectionLD && (
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(homepageCollectionLD, null, 2)}
+    />
+  )
+}
+{
+  breadcrumbLD && (
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbLD, null, 2)}
+    />
+  )
+}

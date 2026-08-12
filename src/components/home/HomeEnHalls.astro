@@ -1,0 +1,29 @@
+---
+import placeConfig from '../../../place.config';
+
+const { halls } = placeConfig.home.exhibitions;
+---
+
+<>
+  {
+    halls.map((hall) => (
+      <div class="exhibition-hall">
+        <div class="hall-divider">
+          <div class="hall-line" />
+          <span class="hall-label">{hall.label}</span>
+          <div class="hall-line" />
+        </div>
+        <div class="hall-body">
+          {hall.paragraphs.map((para) => (
+            <p>
+              {para.text}
+              <a href={para.pillHref} class="topic-pill">
+                {para.pillIcon} {para.pillLabel}
+              </a>
+            </p>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</>

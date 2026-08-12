@@ -1,0 +1,170 @@
+---
+/**
+ * /latest — the chronological axis. The rest of the site is curation-first and
+ * deliberately recency-blind; /latest is the "what shipped recently" home,
+ * newest-first by git ship time with a category filter.
+ *
+ * Server-rendered (static, single honest lastmod, indexable) from
+ * src/data/latest.json (built by scripts/core/build-latest.mjs from knowledge/
+ * frontmatter + git content-dates). Categories/colors from place.config.ts.
+ */
+import Layout from '../layouts/Layout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { getCategoryConfigs } from '../utils/categoryConfig';
+// Prebuilt by scripts/core/build-latest.mjs.
+import latestData from '../data/latest.json';
+
+const cats = getCategoryConfigs();
+const articles: Array<{
+  title: string;
+  description: string;
+  category: string;
+  slug: string;
+  href: string;
+  date: string;
+  readingTime: number | null;
+  image: string;
+  tags: string[];
+}> = (latestData as any).byLang?.en ?? [];
+
+// Group by day (YYYY-MM-DD); articles already newest-first.
+const days: string[] = [];
+const dayMap = new Map<string, typeof articles>();
+for (const a of articles) {
+  const d = a.date.slice(0, 10);
+  if (!dayMap.has(d)) {
+    dayMap.set(d, []);
+    days.push(d);
+  }
+  dayMap.get(d)!.push(a);
+}
+
+// Present categories, config order.
+const presentCats = Object.entries(cats)
+  .map(([slug, cfg]) => ({ slug, ...cfg }))
+  .filter((c) => articles.some((a) => a.category === c.slug));
+
+const fmtDayFull = (d: string) =>
+  new Date(`${d}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    weekday: 'short',
+  });
+---
+
+<Layout title="Latest" description="Recently added and updated articles, newest first.">
+  <section class="mx-auto max-w-[var(--container-wide)] px-6 pt-12 pb-2 max-[768px]:px-4 max-[768px]:pt-10">
+    <h1 class="text-[clamp(2rem,5vw,3rem)] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)]">
+      Latest
+    </h1>
+    <p class="mt-2 text-[1.05rem] text-[color:var(--color-ink-soft)]">
+      Recently added and updated articles, newest first.
+    </p>
+  </section>
+
+  <div class="mx-auto max-w-[var(--container-wide)] px-6 pb-24 max-[768px]:px-4">
+    <!-- Category filter chips -->
+    <div
+      id="latest-filters"
+      class="sticky top-[64px] z-20 -mx-4 mb-6 flex flex-wrap gap-2 border-b border-[color:var(--color-border-visible)] bg-[color:var(--color-bg)]/95 px-4 py-3 backdrop-blur-sm max-[768px]:top-[56px] max-[768px]:flex-nowrap max-[768px]:overflow-x-auto"
+    >
+      <button
+        class="latest-chip whitespace-nowrap rounded-full border border-[#10b981] bg-[#10b981] px-3 py-1.5 text-xs font-semibold text-white transition-all"
+        data-cat="all"
+      >
+        All<span class="ml-1 opacity-70">{articles.length}</span>
+      </button>
+      {
+        presentCats.map((c) => {
+          const count = articles.filter((a) => a.category === c.slug).length;
+          return (
+            <button
+              class="latest-chip whitespace-nowrap rounded-full border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[color:var(--color-ink-soft)] transition-all hover:border-[color:var(--color-ink-soft)] hover:bg-[color:var(--color-bg-soft)]"
+              data-cat={c.slug}
+            >
+              {c.icon} {c.name}
+              <span class="ml-1 opacity-60">{count}</span>
+            </button>
+          );
+        })
+      }
+    </div>
+
+    {articles.length === 0 && <p class="py-16 text-center text-[color:var(--color-ink-soft)]">No articles yet.</p>}
+
+    <div id="latest-timeline" class="flex flex-col gap-10">
+      {
+        days.map((day) => (
+          <section class="latest-day" data-day={day}>
+            <h2 class="mb-4 text-[0.95rem] font-bold uppercase tracking-[0.1em] text-[#94a3b8]">
+              {fmtDayFull(day)}
+              <span class="ml-2 font-mono text-[0.8rem] font-normal normal-case tracking-normal text-[#cbd5e1]">
+                {dayMap.get(day)!.length}
+              </span>
+            </h2>
+            <div class="flex flex-col gap-4">
+              {dayMap.get(day)!.map((a) => {
+                const cfg = cats[a.category] || ({} as (typeof cats)[string]);
+                return (
+                  <ArticleCard
+                    density="detailed"
+                    href={a.href}
+                    title={a.title}
+                    description={a.description}
+                    categoryLabel={cfg.name}
+                    categoryIcon={cfg.icon}
+                    categoryColor={cfg.color || '#64748b'}
+                    coverImage={a.image || undefined}
+                    readingTime={a.readingTime ? `${a.readingTime} min read` : undefined}
+                    tags={a.tags}
+                    openIn="same-tab"
+                    dataAttrs={{ 'data-cat': a.category }}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        ))
+      }
+    </div>
+  </div>
+</Layout>
+
+<script is:inline>
+  (function () {
+    var chips = document.querySelectorAll('.latest-chip');
+    // Cards carry data-cat (via ArticleCard dataAttrs); scope to the timeline so
+    // the filter chips (also data-cat) are not matched as rows.
+    var rows = document.querySelectorAll('#latest-timeline [data-cat]');
+    var dayGroups = document.querySelectorAll('.latest-day');
+
+    function apply(cat) {
+      rows.forEach(function (r) {
+        r.style.display =
+          cat === 'all' || r.getAttribute('data-cat') === cat ? '' : 'none';
+      });
+      dayGroups.forEach(function (g) {
+        var visible = g.querySelectorAll(
+          '[data-cat]:not([style*="display: none"])',
+        ).length;
+        g.style.display = visible ? '' : 'none';
+      });
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        chips.forEach(function (c) {
+          var active = c === chip;
+          c.classList.toggle('border-[#10b981]', active);
+          c.classList.toggle('bg-[#10b981]', active);
+          c.classList.toggle('text-white', active);
+          c.classList.toggle('border-[color:var(--color-border-visible)]', !active);
+          c.classList.toggle('bg-[color:var(--color-surface-raised)]', !active);
+          c.classList.toggle('text-[color:var(--color-ink-soft)]', !active);
+        });
+        apply(chip.getAttribute('data-cat'));
+      });
+    });
+  })();
+</script>

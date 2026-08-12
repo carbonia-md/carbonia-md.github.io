@@ -1,0 +1,92 @@
+---
+/**
+ * TimelineDay — shared "day node" shell; the same skeleton for both the /latest
+ * and /changelog time axes.
+ *
+ * Left column is a gradient dot + connector line, right column is the day
+ * heading + count badge + <slot/>.
+ *
+ * Consumer-script hooks:
+ * - `.timeline-day`        — day group root node
+ * - `.timeline-day-badge`  — count badge (updated after filtering)
+ * - `extraClass`           — page-specific hook (latest-day / changelog-day-group)
+ */
+interface Props {
+  /** anchor id (latest-day-2026-06-10 / day-2026-06-10) */
+  id: string;
+  /** day heading (pre-formatted by the caller, includes weekday) */
+  title: string;
+  /** count badge text ("7 articles" / "12 updates"); empty string hides it */
+  badge?: string;
+  /** the last day skips the connector line */
+  isLast?: boolean;
+  /** accent color (dot gradient / line / badge) */
+  accent?: 'emerald' | 'blue';
+  /** day heading font */
+  titleStyle?: 'serif' | 'sans';
+  /** page-specific hook class */
+  extraClass?: string;
+  /** pass-through data-* (filter scripts' data-day, etc.) */
+  dataAttrs?: Record<string, string | undefined>;
+}
+
+const {
+  id,
+  title,
+  badge,
+  isLast = false,
+  accent = 'emerald',
+  titleStyle = 'sans',
+  extraClass = '',
+  dataAttrs = {},
+} = Astro.props;
+
+const ACCENTS = {
+  emerald: {
+    dot: 'bg-[linear-gradient(135deg,#10b981,#059669)] ring-4 ring-[#ecfdf5]',
+    line: 'bg-[#6ee7b7]',
+    badge: 'bg-[#f0f9ff] text-[#059669]',
+  },
+  blue: {
+    dot: 'bg-[linear-gradient(135deg,#3b82f6,#8b5cf6)] ring-4 ring-[#eff6ff]',
+    line: 'bg-[#93c5fd]',
+    badge: 'bg-[#f1f5f9] text-[#64748b]',
+  },
+}[accent];
+
+const titleClass =
+  titleStyle === 'serif'
+    ? "font-serif text-[1.05rem] font-bold text-[#0e3a5c] max-[768px]:text-[0.98rem]"
+    : 'text-[1.15rem] font-extrabold text-[#1e293b] max-[768px]:text-[1.05rem]';
+---
+
+<section
+  id={id}
+  class={`timeline-day grid scroll-mt-[176px] grid-cols-[26px_1fr] gap-x-4 max-[768px]:grid-cols-[18px_1fr] max-[768px]:gap-x-3 ${extraClass}`}
+  {...dataAttrs}
+>
+  <div class="flex flex-col items-center">
+    <div
+      class={`mt-[0.4rem] h-3 w-3 flex-shrink-0 rounded-full ${ACCENTS.dot}`}
+    >
+    </div>
+    {!isLast && <div class={`mt-2 w-[2px] flex-1 ${ACCENTS.line}`} />}
+  </div>
+  <div class="pb-8 max-[768px]:pb-6">
+    <div class="mb-3 flex flex-wrap items-center gap-2">
+      <h2 class={`m-0 ${titleClass}`}>{title}</h2>
+      {
+        badge && (
+          <span
+            class={`timeline-day-badge rounded-full px-2.5 py-[0.2rem] text-[0.72rem] font-semibold ${ACCENTS.badge}`}
+          >
+            {badge}
+          </span>
+        )
+      }
+    </div>
+    <div class="flex flex-col gap-3">
+      <slot />
+    </div>
+  </div>
+</section>

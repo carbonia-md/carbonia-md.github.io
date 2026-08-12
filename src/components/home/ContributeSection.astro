@@ -1,0 +1,56 @@
+---
+import placeConfig from '../../../place.config';
+
+const { contribute } = placeConfig.home;
+const { links } = placeConfig;
+---
+
+<section
+  class="contribute-home-section relative m-0 overflow-hidden rounded-2xl px-8 py-20 text-center"
+  aria-labelledby="contribute-heading"
+>
+  <div
+    class="pointer-events-none absolute inset-0 opacity-50"
+    style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2394a3b8' fill-opacity='0.05' fill-rule='nonzero'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;);"
+    aria-hidden="true"
+  >
+  </div>
+  <div class="relative z-[2]">
+    <h2
+      id="contribute-heading"
+      class="mb-6 text-[2.25rem] font-bold text-[color:var(--color-ink)]"
+    >
+      {contribute.heading}
+    </h2>
+    <p
+      class="mx-auto mb-10 max-w-[700px] text-[1.2rem] leading-[1.7] text-[color:var(--color-ink-soft)]"
+    >
+      {contribute.description}
+    </p>
+    <div
+      class="flex flex-wrap justify-center gap-6 max-[768px]:flex-col max-[768px]:items-center"
+    >
+      <a
+        href="/contribute"
+        class="rounded-lg bg-[#1e40af] px-10 py-4 text-[1.1rem] font-semibold text-white no-underline shadow-[0_4px_12px_rgba(30,64,175,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1d4ed8] hover:shadow-[0_6px_16px_rgba(30,64,175,0.4)]"
+        >{contribute.guideLabel}</a
+      >
+      <a
+        href={links.repo}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-lg border-2 border-[#1e40af] bg-[color:var(--color-surface-raised)] px-10 py-4 text-[1.1rem] font-semibold text-[#1e40af] no-underline transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1e40af] hover:text-white"
+        >{contribute.githubLabel}</a
+      >
+    </div>
+  </div>
+</section>
+
+<style>
+  .contribute-home-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  }
+  :global([data-theme='dark']) .contribute-home-section {
+    background: linear-gradient(135deg, var(--color-bg-soft) 0%, var(--color-surface) 100%);
+  }
+</style>

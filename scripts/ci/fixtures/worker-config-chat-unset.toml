@@ -1,0 +1,32 @@
+# wrangler.generated.toml -- GENERATED. Do not edit, do not commit.
+#
+# Written by scripts/deploy/gen-worker-config.mjs (npm run worker-config) from
+# place.config.ts and workers/chat/wrangler.toml. Regenerate after either
+# changes; edits here are overwritten. This file carries this instance's own
+# account-scoped deployment identity, which is why it is gitignored: workers/ is
+# scanned by both machine gates (AGENTS.md iron rule 2).
+#
+# Derived name: "selftest-place-chat" (<place-slug>-chat, from place.name).
+
+name = "selftest-place-chat"
+main = "src/index.mjs"
+compatibility_date = "2026-08-07"
+
+[vars]
+ALLOWED_ORIGIN = "https://selftest.example"
+SITE_NAME = "Selftest Place"
+RATE_LIMIT_MAX = "20"
+RATE_LIMIT_WINDOW_SECONDS = "3600"
+# Cosine score a chunk must reach to be retrieved. Nothing clears it -> no excerpts,
+# no citations, and the model is told to say the knowledge base does not cover the
+# question. Tuned per corpus; docs/runbook/DEPLOY.md has the measurement procedure.
+RELEVANCE_FLOOR = "0.46"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "selftest-place-chat"
+database_id = ""
+migrations_dir = "migrations"

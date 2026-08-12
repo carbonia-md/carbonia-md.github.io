@@ -1,0 +1,16 @@
+# genericity-denylist.txt — place-specific terms that must never appear in
+# framework-owned code (see scripts/ci/check-genericity.sh). One term per line,
+# case-insensitive, substring match. Blank lines and lines starting with # are
+# ignored. This file is itself excluded from the scan (it necessarily contains the
+# very terms it forbids).
+#
+# Scope depends on mode. Template mode (the `.sekai-template` marker is present):
+# the WHOLE repository. Instance mode: this gate scans src/, scripts/, tests/,
+# workers/, .agents/skills/; the English-only gate (scripts/ci/check-english-only.mjs)
+# currently enumerates the same roots, but each gate derives its own list from its own
+# script, so the two sets are stated separately and never merged. The terms below are
+# the pre-cut place names — they must be absent everywhere in the template.
+laguna
+lagunabeach
+taiwan
+twmd

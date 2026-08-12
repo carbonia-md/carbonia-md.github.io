@@ -1,0 +1,544 @@
+---
+/**
+ * /graph — the knowledge graph. A D3 force layout of every synced article node
+ * plus one hub node per configured category, wired by category, subcategory,
+ * shared-tag, and Hub-wikilink edges. Clicking a node navigates to the article.
+ *
+ * Ported from the fork's src/pages/graph.astro. All place/category identity is
+ * genericized: the hub list, node colors, labels, and knowledge/ folder mapping
+ * derive from place.config.ts + src/utils/categoryConfig.ts — none of the fork's
+ * hardcoded slug/title/hex tables survive. Articles read via the established
+ * getCollection('en') convention; Hub files (underscore-prefixed, never synced)
+ * are read from knowledge/, keyed by the config title↔slug map. D3 is CDN-loaded
+ * and page-scoped; the graph data is emitted as an application/json island the
+ * client parses (and scripts/core/check-graph.mjs asserts against post-build).
+ */
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { readdir, readFile } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+import placeConfig from '../../place.config';
+import { getCategoryConfig } from '../utils/categoryConfig';
+
+const { name } = placeConfig.place;
+
+// Category identity flows from config — no hardcoded categories[]/categoryColors/
+// categoryNames/categoryMapping tables (genericity gate; clean-rebuild rule).
+const categories = placeConfig.categories.map((c) => c.slug);
+const categoryColor = (slug: string): string =>
+  getCategoryConfig(slug)?.color ?? '#475569';
+const categoryLabel = (slug: string): string => {
+  const cat = placeConfig.categories.find((c) => c.slug === slug);
+  return cat ? `${cat.icon} ${cat.title}` : slug;
+};
+// slug → knowledge/ folder name. Sync projects knowledge/{Title}/ →
+// src/content/en/{slug}/, so Hub-wikilink resolution walks knowledge/ keyed by
+// the config title.
+const categoryFolders = new Map(
+  placeConfig.categories.map((c) => [c.slug, c.title]),
+);
+
+// Center node id — a fixed, place-free graph anchor referenced by the layout.
+const CENTER_ID = 'graph-root';
+
+const nodes: any[] = [];
+const edges: any[] = [];
+const tagMap: Record<string, string[]> = {}; // tag → article node ids
+
+// Articles from the content collection. Entry id is "{categorySlug}/{slug}".
+const validSlugs = new Set(categories);
+const allArticles = (await getCollection('en'))
+  .map((entry) => {
+    const parts = entry.id.split('/');
+    const category = parts[0];
+    const slug = parts.slice(1).join('/').replace(/\.md$/, '');
+    return {
+      category,
+      slug,
+      data: {
+        title: entry.data.title || slug,
+        tags: entry.data.tags || [],
+        subcategory: entry.data.subcategory || '',
+      },
+    };
+  })
+  .filter((a) => validSlugs.has(a.category) && !a.slug.startsWith('_'));
+
+// Center node
+nodes.push({ id: CENTER_ID, label: name, group: 'center', size: 30 });
+
+// Special nodes (site chrome, not category palette)
+nodes.push({
+  id: 'about',
+  label: '📖 About',
+  group: 'special',
+  color: '#6366f1',
+  size: 14,
+  url: '/about',
+});
+nodes.push({
+  id: 'contribute',
+  label: '✋ Contribute',
+  group: 'special',
+  color: '#22c55e',
+  size: 14,
+  url: '/contribute',
+});
+edges.push({ source: CENTER_ID, target: 'about' });
+edges.push({ source: CENTER_ID, target: 'contribute' });
+
+for (const cat of categories) {
+  const catArticles = allArticles.filter((a) => a.category === cat);
+  const color = categoryColor(cat);
+
+  // Category hub node — one per configured category, article count aside.
+  nodes.push({
+    id: cat,
+    label: categoryLabel(cat),
+    group: cat,
+    color,
+    size: 20,
+    url: `/${cat}`,
+  });
+  edges.push({ source: CENTER_ID, target: cat });
+
+  const subcatSet = new Set<string>();
+
+  for (const article of catArticles) {
+    const slug = article.slug;
+    const nodeId = `${cat}/${slug}`;
+    const subcat = article.data.subcategory || '';
+
+    nodes.push({
+      id: nodeId,
+      label: article.data.title,
+      group: cat,
+      color,
+      size: 8,
+      url: `/${cat}/${encodeURIComponent(slug)}`,
+    });
+
+    if (subcat) {
+      // Virtual subcategory node clusters its articles under the hub.
+      const subcatId = `${cat}/__sub__${subcat}`;
+      if (!subcatSet.has(subcat)) {
+        subcatSet.add(subcat);
+        nodes.push({
+          id: subcatId,
+          label: subcat,
+          group: cat,
+          color,
+          size: 5,
+          isSubcategory: true,
+        });
+        edges.push({ source: cat, target: subcatId });
+      }
+      edges.push({ source: subcatId, target: nodeId });
+    } else {
+      edges.push({ source: cat, target: nodeId });
+    }
+
+    for (const tag of article.data.tags) {
+      if (!tagMap[tag]) tagMap[tag] = [];
+      tagMap[tag].push(nodeId);
+    }
+  }
+}
+
+// Cross-category edges via shared tags (max 3 per tag to limit O(n²) explosion).
+for (const [, articleIds] of Object.entries(tagMap)) {
+  if (articleIds.length >= 2) {
+    let count = 0;
+    for (let i = 0; i < articleIds.length - 1 && count < 3; i++) {
+      for (let j = i + 1; j < articleIds.length && count < 3; j++) {
+        const catA = articleIds[i].split('/')[0];
+        const catB = articleIds[j].split('/')[0];
+        if (catA !== catB) {
+          edges.push({ source: articleIds[i], target: articleIds[j] });
+          count++;
+        }
+      }
+    }
+  }
+}
+
+// Parse Hub wikilinks → Hub→article edges. Hub files (underscore-prefixed) live
+// only in knowledge/, never synced to src/content; folder resolves via the
+// place.config title↔slug map.
+for (const [cat, folder] of categoryFolders) {
+  try {
+    const hubDir = resolve(process.cwd(), 'knowledge', folder);
+    const files = await readdir(hubDir);
+    const hubFile = files.find((f) => f.startsWith('_') && f.includes('Hub'));
+    if (!hubFile) continue;
+    const content = await readFile(join(hubDir, hubFile), 'utf-8');
+    const wikilinks = content.match(/\[\[([^\]|]+?)(?:\|[^\]]+?)?\]\]/g) || [];
+    for (const wl of wikilinks) {
+      const target = wl
+        .replace(/\[\[/, '')
+        .replace(/\]\]/, '')
+        .split('|')[0]
+        .trim();
+      const matchNode = nodes.find(
+        (n) =>
+          n.label === target ||
+          n.id === `${cat}/${target}` ||
+          n.id === `${cat}/${encodeURIComponent(target)}`,
+      );
+      if (matchNode && matchNode.id !== cat) {
+        const exists = edges.some(
+          (e) =>
+            (e.source === cat && e.target === matchNode.id) ||
+            (e.source === matchNode.id && e.target === cat),
+        );
+        if (!exists) edges.push({ source: cat, target: matchNode.id });
+      }
+      // Cross-category Hub link (a Hub mentions an article from another category).
+      if (!matchNode) {
+        for (const [otherCat] of categoryFolders) {
+          if (otherCat === cat) continue;
+          const crossNode = nodes.find(
+            (n) => n.label === target && n.group === otherCat,
+          );
+          if (crossNode) {
+            edges.push({ source: cat, target: crossNode.id });
+            break;
+          }
+        }
+      }
+    }
+  } catch {}
+}
+
+// Escape `<` so a title containing the literal "</script>" cannot terminate the
+// application/json island early (set:html does no escaping); JSON.parse restores it.
+const graphData = JSON.stringify({ nodes, edges }).replace(/</g, '\\u003c');
+---
+
+<Layout title="🕸️ Knowledge Graph">
+  <main class="graph-page flex h-screen flex-col">
+    <div
+      class="flex flex-wrap items-center gap-4 bg-[#1a1a2e] px-[var(--space-page-x)] py-4 text-white max-[768px]:items-start max-[768px]:px-4 max-[768px]:py-[0.9rem]"
+    >
+      <h1
+        class="m-0 font-[var(--font-editorial)] text-[clamp(1.25rem,2.4vw,1.8rem)] font-extrabold [letter-spacing:var(--title-letter-spacing)] [line-height:var(--title-line-height)] max-[768px]:text-[1.12rem] max-[768px]:leading-[1.3]"
+      >
+        🕸️ Knowledge Graph
+      </h1>
+      <p
+        class="m-0 max-w-[34rem] text-[0.98rem] leading-[1.6] text-white/[0.82] opacity-[0.78] max-[768px]:order-3 max-[768px]:w-full max-[768px]:text-[0.9rem]"
+      >
+        All knowledge nodes and connections in {name}
+      </p>
+      <div
+        class="ml-auto flex items-center gap-2 max-[768px]:order-4 max-[768px]:ml-0 max-[768px]:w-full max-[768px]:flex-wrap"
+      >
+        <input
+          id="graph-search"
+          type="search"
+          placeholder="Search nodes or articles"
+          aria-label="Search knowledge graph nodes"
+          class="w-[200px] rounded-md border border-white/30 bg-white/10 px-[0.8rem] py-[0.4rem] text-[0.9rem] text-white outline-none transition-[border-color,background] duration-200 placeholder:text-white/50 focus:border-[#3b82f6] focus:bg-white/15 max-[768px]:w-full"
+        />
+        <span
+          id="search-count"
+          class="whitespace-nowrap text-[0.8rem] text-white/70"></span>
+      </div>
+    </div>
+    <div id="graph-container" class="flex-1 overflow-hidden bg-[color:var(--color-bg)]"></div>
+    <div
+      id="tooltip"
+      class="pointer-events-none absolute z-[100] hidden rounded-md bg-[rgba(26,26,46,0.9)] px-[0.8rem] py-[0.4rem] text-[0.85rem] text-white"
+    >
+    </div>
+  </main>
+</Layout>
+
+<!-- Graph data island: parsed by the client script below and asserted post-build
+     by scripts/core/check-graph.mjs (DoD node/edge-count contract). -->
+<script type="application/json" id="graph-data" is:inline set:html={graphData}
+></script>
+
+<script define:vars={{ centerId: CENTER_ID }}>
+  const data = JSON.parse(document.getElementById('graph-data').textContent);
+
+  const script = document.createElement('script');
+  script.src = 'https://d3js.org/d3.v7.min.js';
+  script.onload = () => initGraph(data);
+  document.head.appendChild(script);
+
+  function initGraph(data) {
+    const container = document.getElementById('graph-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const isCompact = width < 768;
+
+    const svg = d3
+      .select('#graph-container')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const g = svg.append('g');
+
+    // Zoom
+    const zoomBehavior = d3.zoom().on('zoom', (event) => {
+      g.attr('transform', event.transform);
+    });
+    svg.call(zoomBehavior);
+
+    function zoomToFit() {
+      const bounds = g.node().getBBox();
+      const midX = bounds.x + bounds.width / 2;
+      const midY = bounds.y + bounds.height / 2;
+      const scale =
+        0.85 / Math.max(bounds.width / width, bounds.height / height);
+      svg
+        .transition()
+        .duration(750)
+        .call(
+          zoomBehavior.transform,
+          d3.zoomIdentity
+            .translate(width / 2 - scale * midX, height / 2 - scale * midY)
+            .scale(scale),
+        );
+    }
+
+    const centerNode = data.nodes.find((n) => n.id === centerId);
+    if (centerNode) {
+      centerNode.fx = width / 2;
+      centerNode.fy = height / 2;
+    }
+
+    // ── Hover neighbour map: built from raw edge ids BEFORE forceLink mutates
+    // source/target into node objects. id → Set of directly-connected ids. ──
+    const neighbours = new Map();
+    const addAdj = (a, b) => {
+      if (!neighbours.has(a)) neighbours.set(a, new Set());
+      neighbours.get(a).add(b);
+    };
+    for (const e of data.edges) {
+      const s = typeof e.source === 'object' ? e.source.id : e.source;
+      const t = typeof e.target === 'object' ? e.target.id : e.target;
+      if (s != null && t != null) {
+        addAdj(s, t);
+        addAdj(t, s);
+      }
+    }
+
+    const simulation = d3
+      .forceSimulation(data.nodes)
+      .alphaDecay(0.045)
+      .force(
+        'link',
+        d3
+          .forceLink(data.edges)
+          .id((d) => d.id)
+          .distance((d) => {
+            if (d.source.id === centerId || d.target.id === centerId)
+              return 350;
+            // Subcategory ↔ article: tight
+            if (d.source.isSubcategory || d.target.isSubcategory) return 40;
+            // Same group: medium
+            if (
+              d.source.group &&
+              d.target.group &&
+              d.source.group === d.target.group
+            )
+              return 60;
+            return 150;
+          })
+          .strength(1),
+      )
+      .force('charge', d3.forceManyBody().strength(-340))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force(
+        'collision',
+        d3.forceCollide().radius((d) => d.size + 3),
+      );
+
+    // Links
+    const link = g
+      .append('g')
+      .selectAll('line')
+      .data(data.edges)
+      .join('line')
+      .attr('stroke', '#999')
+      .attr('stroke-width', 1.2)
+      .attr('stroke-opacity', 0.6);
+
+    // Nodes
+    const node = g
+      .append('g')
+      .selectAll('circle')
+      .data(data.nodes)
+      .join('circle')
+      .attr('r', (d) => d.size)
+      .attr('fill', (d) => {
+        if (d.group === 'center') return '#1a1a2e';
+        if (d.isSubcategory) return d.color + 'cc'; // slightly transparent
+        return d.color || '#ccc';
+      })
+      .attr('stroke', (d) => (d.isSubcategory ? d.color : '#fff'))
+      .attr('stroke-width', (d) => (d.isSubcategory ? 1.5 : 2))
+      .attr('cursor', 'pointer')
+      .call(
+        d3
+          .drag()
+          .on('start', (event, d) => {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+          })
+          .on('drag', (event, d) => {
+            d.fx = event.x;
+            d.fy = event.y;
+          })
+          .on('end', (event, d) => {
+            if (!event.active) simulation.alphaTarget(0);
+            if (d.id !== centerId) {
+              d.fx = null;
+              d.fy = null;
+            }
+          }),
+      );
+
+    // Labels
+    const label = g
+      .append('g')
+      .selectAll('text')
+      .data(data.nodes)
+      .join('text')
+      .text((d) => d.label)
+      .attr('font-size', (d) => {
+        if (d.group === 'center') return isCompact ? '14px' : '16px';
+        if (d.size >= 20) return isCompact ? '12px' : '13px';
+        if (d.isSubcategory) return isCompact ? '7px' : '8px';
+        return isCompact ? '9px' : '9px';
+      })
+      .attr('font-weight', (d) => (d.size >= 14 ? 'bold' : 'normal'))
+      .attr('text-anchor', 'middle')
+      .attr('dy', (d) => d.size + 14)
+      .attr('fill', 'var(--color-ink)')
+      .attr('stroke', 'var(--color-bg)')
+      .attr('stroke-width', 3)
+      .attr('paint-order', 'stroke')
+      .attr('stroke-linejoin', 'round')
+      .attr('pointer-events', 'none');
+
+    // Click
+    node.on('click', (event, d) => {
+      if (d.url) window.location.href = d.url;
+    });
+
+    // Hover
+    const tooltip = document.getElementById('tooltip');
+    // Edge endpoint id helper (source/target are node objects post-forceLink).
+    const endId = (v) => (typeof v === 'object' ? v.id : v);
+    function resetFocus() {
+      link.attr('stroke', '#999');
+      // Restore to the active search state if one is set, else full opacity.
+      if (searchInput && searchInput.value.trim()) {
+        applySearch(searchInput.value);
+        return;
+      }
+      node
+        .attr('opacity', 1)
+        .attr('stroke', (n) => (n.isSubcategory ? n.color : '#fff'))
+        .attr('stroke-width', (n) => (n.isSubcategory ? 1.5 : 2));
+      label.attr('opacity', 1);
+      link.attr('opacity', 0.5);
+    }
+    node
+      .on('mouseover', (event, d) => {
+        tooltip.textContent = d.label;
+        tooltip.style.display = 'block';
+        tooltip.style.left = event.pageX + 10 + 'px';
+        tooltip.style.top = event.pageY - 10 + 'px';
+        // Focus: hovered node + its direct neighbours stay opaque; fade the rest,
+        // and highlight the connecting links. Reuses the search dimming pattern.
+        const keep = new Set([d.id, ...(neighbours.get(d.id) || [])]);
+        node.attr('opacity', (n) => (keep.has(n.id) ? 1 : 0.1));
+        label.attr('opacity', (n) => (keep.has(n.id) ? 1 : 0.08));
+        link
+          .attr('opacity', (l) =>
+            endId(l.source) === d.id || endId(l.target) === d.id ? 0.85 : 0.02,
+          )
+          .attr('stroke', (l) =>
+            endId(l.source) === d.id || endId(l.target) === d.id
+              ? '#2563eb'
+              : '#ddd',
+          );
+        d3.select(event.target)
+          .attr('stroke', '#3b82f6')
+          .attr('stroke-width', 3);
+      })
+      .on('mouseout', () => {
+        tooltip.style.display = 'none';
+        resetFocus();
+      });
+
+    // Search
+    const searchInput = document.getElementById('graph-search');
+    const searchCount = document.getElementById('search-count');
+
+    function applySearch(query) {
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) {
+        node
+          .attr('opacity', 1)
+          .attr('stroke', (d) => (d.isSubcategory ? d.color : '#fff'))
+          .attr('stroke-width', (d) => (d.isSubcategory ? 1.5 : 2));
+        link.attr('opacity', 0.5);
+        label.attr('opacity', 1);
+        if (searchCount) searchCount.textContent = '';
+        return;
+      }
+
+      const matchedIds = new Set(
+        data.nodes
+          .filter((n) =>
+            String(n.label || '')
+              .toLowerCase()
+              .includes(normalized),
+          )
+          .map((n) => n.id),
+      );
+
+      node
+        .attr('opacity', (d) => (matchedIds.has(d.id) ? 1 : 0.12))
+        .attr('stroke', (d) => (matchedIds.has(d.id) ? '#3b82f6' : '#fff'))
+        .attr('stroke-width', (d) => (matchedIds.has(d.id) ? 3 : 2));
+      label.attr('opacity', (d) => (matchedIds.has(d.id) ? 1 : 0.15));
+      link.attr('opacity', (d) => {
+        const s = typeof d.source === 'object' ? d.source.id : d.source;
+        const t = typeof d.target === 'object' ? d.target.id : d.target;
+        return matchedIds.has(s) || matchedIds.has(t) ? 0.75 : 0.06;
+      });
+
+      if (searchCount) {
+        searchCount.textContent =
+          matchedIds.size > 0 ? `${matchedIds.size} results` : 'No results';
+      }
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (event) =>
+        applySearch(event.target.value),
+      );
+    }
+
+    let ticked = 0;
+    simulation.on('tick', () => {
+      link
+        .attr('x1', (d) => d.source.x)
+        .attr('y1', (d) => d.source.y)
+        .attr('x2', (d) => d.target.x)
+        .attr('y2', (d) => d.target.y);
+      node.attr('cx', (d) => d.x).attr('cy', (d) => d.y);
+      label.attr('x', (d) => d.x).attr('y', (d) => d.y);
+      ticked++;
+      if (ticked === 100) zoomToFit();
+    });
+  }
+</script>

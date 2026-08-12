@@ -1,0 +1,57 @@
+---
+import placeConfig from '../../../place.config';
+
+const { doors } = placeConfig.home;
+
+const TONE_BG: Record<string, string> = {
+  green: 'hover:bg-[rgba(45,80,22,0.06)] hover:border-[rgba(45,80,22,0.35)]',
+  blue: 'hover:bg-[rgba(59,130,246,0.06)] hover:border-[rgba(59,130,246,0.35)]',
+  amber: 'hover:bg-[rgba(245,158,11,0.08)] hover:border-[rgba(245,158,11,0.4)]',
+  plum: 'hover:bg-[rgba(124,58,237,0.06)] hover:border-[rgba(124,58,237,0.35)]',
+};
+
+const TONE_ICON_BG: Record<string, string> = {
+  green: 'bg-[rgba(45,80,22,0.08)]',
+  blue: 'bg-[rgba(59,130,246,0.08)]',
+  amber: 'bg-[rgba(245,158,11,0.1)]',
+  plum: 'bg-[rgba(124,58,237,0.08)]',
+};
+---
+
+<section
+  class="mx-auto my-12 max-w-[1100px] px-8 max-[768px]:my-8 max-[480px]:px-4"
+  aria-label="Quick navigation"
+>
+  <div
+    class="grid grid-cols-4 gap-3 max-[900px]:grid-cols-2 max-[900px]:gap-4 max-[480px]:grid-cols-1"
+  >
+    {
+      doors.map((door) => (
+        <a
+          href={door.href}
+          class:list={[
+            'group flex flex-col items-start gap-3 rounded-xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] p-5 no-underline shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.08)] max-[480px]:flex-row max-[480px]:items-center max-[480px]:gap-4 max-[480px]:p-4',
+            TONE_BG[door.tone],
+          ]}
+        >
+          <div
+            class:list={[
+              'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-[1.7rem] leading-none transition-transform duration-300 group-hover:scale-110 max-[480px]:h-11 max-[480px]:w-11 max-[480px]:text-[1.5rem]',
+              TONE_ICON_BG[door.tone],
+            ]}
+          >
+            {door.icon}
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-[1rem] font-bold leading-tight text-[color:var(--color-ink)] max-[768px]:text-[0.95rem]">
+              {door.title}
+            </span>
+            <span class="text-[0.82rem] leading-snug text-[color:var(--color-ink-soft)] max-[768px]:text-[0.8rem]">
+              {door.sub}
+            </span>
+          </div>
+        </a>
+      ))
+    }
+  </div>
+</section>

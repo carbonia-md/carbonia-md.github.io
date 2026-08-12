@@ -1,0 +1,108 @@
+---
+/**
+ * [category]/index.astro — category hub route.
+ *
+ * Derives static paths from place.config.categories, reads articles from the
+ * content collection, and renders via category-hub.template.astro.
+ */
+import { getCollection } from 'astro:content';
+import CategoryHubTemplate from '../../templates/category-hub.template.astro';
+import placeConfig from '../../../place.config';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('en');
+  const validSlugs = new Set(placeConfig.categories.map((c) => c.slug));
+
+  const articlesByCategory = new Map<string, any[]>();
+  for (const slug of validSlugs) {
+    articlesByCategory.set(slug, []);
+  }
+
+  for (const article of articles) {
+    const parts = article.id.split('/');
+    const category = parts.length > 1 ? parts[0] : 'uncategorized';
+    if (!validSlugs.has(category)) continue;
+
+    const slug = parts.length > 1 ? parts.slice(1).join('/') : article.id;
+    const cleanSlug = slug.replace(/\.md$/, '');
+    const body = article.body ?? '';
+    const wordCount = body.replace(/\s+/g, ' ').trim().split(' ').length;
+    const readingTime = Math.max(1, Math.round(wordCount / 200));
+    const fnCount = (body.match(/^\[\^\d+\]:/gm) || []).length;
+
+    articlesByCategory.get(category)!.push({
+      slug: cleanSlug,
+      title: article.data.title || cleanSlug,
+      description: article.data.description || '',
+      readingTime,
+      date: article.data.date ? new Date(article.data.date).toISOString().slice(0, 10) : null,
+      featured: article.data.featured || false,
+      tags: article.data.tags || [],
+      image: null,
+      subcategory: article.data.subcategory || '',
+      footnotes: fnCount,
+    });
+  }
+
+  return [...validSlugs].map((category) => {
+    const catArticles = articlesByCategory.get(category)!.sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      if ((b.footnotes || 0) !== (a.footnotes || 0))
+        return (b.footnotes || 0) - (a.footnotes || 0);
+      return a.title.localeCompare(b.title);
+    });
+
+    // Compute top picks inline (Astro tree-shakes non-exported helpers)
+    let topPicks: any[] = [];
+    if (catArticles.length > 0) {
+      const tryThreshold = (featThr: number, normalThr: number) =>
+        catArticles.filter((a) => {
+          const thr = a.featured ? featThr : normalThr;
+          return (a.footnotes || 0) >= thr;
+        });
+
+      let candidates = tryThreshold(8, 15);
+      if (candidates.length < 2) candidates = tryThreshold(3, 8);
+      if (candidates.length === 0) candidates = catArticles.filter((a) => a.featured);
+
+      if (candidates.length > 0) {
+        const sorted = [...candidates].sort((a, b) => {
+          if (a.featured !== b.featured) return a.featured ? -1 : 1;
+          if ((b.footnotes || 0) !== (a.footnotes || 0))
+            return (b.footnotes || 0) - (a.footnotes || 0);
+          return String(b.date || '').localeCompare(String(a.date || ''));
+        });
+
+        const result: any[] = [];
+        const seenSub = new Set<string>();
+        for (const a of sorted) {
+          const sub = a.subcategory || '';
+          if (!seenSub.has(sub)) {
+            result.push(a);
+            seenSub.add(sub);
+          }
+          if (result.length >= 5) break;
+        }
+        if (result.length < 5) {
+          for (const a of sorted) {
+            if (!result.includes(a)) result.push(a);
+            if (result.length >= 5) break;
+          }
+        }
+        topPicks = result;
+      }
+    }
+
+    return {
+      params: { category },
+      props: { category, hubContent: '', topPicks, articles: catArticles },
+    };
+  });
+}
+
+const { category } = Astro.params;
+const props = Astro.props;
+---
+
+<CategoryHubTemplate {...props} category={category!} />

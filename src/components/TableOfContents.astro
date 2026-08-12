@@ -1,0 +1,88 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+
+// Only show h2 and h3
+const tocHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  tocHeadings.length > 1 && (
+    <nav
+      class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto py-6 [scrollbar-color:rgba(26,60,52,0.15)_transparent] [scrollbar-width:thin]"
+      aria-label="Table of contents"
+      id="toc"
+    >
+      <p class="mb-5 px-1 font-['Inter',system-ui,sans-serif] text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#9aa89e]">
+        Contents
+      </p>
+      <ol class="m-0 flex list-none flex-col gap-[0.1rem] p-0">
+        {tocHeadings.map((h, i) => (
+          <li class={h.depth === 3 ? 'pl-2' : ''}>
+            <a
+              href={`#${h.slug}`}
+              class="toc-link flex items-baseline gap-[0.6rem] rounded-md border-l-2 border-transparent px-[0.6rem] py-[0.42rem] no-underline transition-[background-color,color] duration-150 hover:bg-[rgba(26,60,52,0.05)] hover:text-[#0e3a5c] [&.active]:border-l-[#0369a1] [&.active]:bg-[rgba(0,109,119,0.06)] [&.active]:text-[#0369a1]"
+              data-toc-id={h.slug}
+            >
+              <span class="w-[1.6rem] flex-shrink-0 font-['Inter',system-ui,sans-serif] text-[0.65rem] [font-variant-numeric:tabular-nums] text-[#b8c4be]">
+                {h.depth === 2
+                  ? String(
+                      tocHeadings.filter((x, j) => x.depth === 2 && j <= i).length,
+                    ).padStart(2, '0')
+                  : ''}
+              </span>
+              <span
+                class={`font-['Inter',system-ui,sans-serif] leading-[1.45] [.toc-link:hover_&]:text-inherit [.toc-link.active_&]:text-inherit ${
+                  h.depth === 2
+                    ? 'text-[0.82rem] font-medium text-[#3a4f44]'
+                    : 'text-[0.78rem] text-[#7a8b7e]'
+                }`}
+              >
+                {h.text}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<script>
+  (function () {
+    const links = document.querySelectorAll<HTMLAnchorElement>('.toc-link');
+    if (!links.length) return;
+
+    const ids = Array.from(links).map((l) => l.dataset.tocId!);
+    const headingEls: HTMLElement[] = ids
+      .map((id) => document.getElementById(id) as HTMLElement)
+      .filter(Boolean);
+
+    if (!headingEls.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            links.forEach((l) => {
+              l.classList.toggle('active', l.dataset.tocId === id);
+            });
+          }
+        });
+      },
+      { rootMargin: '-12% 0px -72% 0px', threshold: 0 },
+    );
+
+    headingEls.forEach((el) => observer.observe(el));
+  })();
+</script>

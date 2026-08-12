@@ -1,0 +1,118 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  category: string;
+  categoryName: string;
+  categoryColor: string;
+  subcategory?: string;
+  coverImage?: string;
+}
+
+const {
+  title,
+  description,
+  category,
+  categoryName,
+  categoryColor,
+  subcategory,
+  coverImage,
+} = Astro.props;
+---
+
+<section
+  class="relative flex bg-[#0e3a5c] bg-cover bg-[center_30%] [background-image:var(--hero-bg,none)]"
+  style={coverImage ? `--hero-bg: url('${coverImage}')` : ''}
+>
+  <!-- Dark gradient overlay -->
+  <div
+    class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(10,22,19,0.35)_0%,rgba(10,22,19,0.55)_45%,rgba(10,22,19,0.82)_100%)]"
+    aria-hidden="true"
+  >
+  </div>
+
+  <div
+    class="relative z-10 mx-auto w-full max-w-[900px] px-8 pb-14 pt-8 max-[640px]:px-5 max-[640px]:pb-10 max-[640px]:pt-6"
+  >
+    <!-- Breadcrumb -->
+    <nav
+      class="mb-7 flex flex-wrap items-center gap-[0.35rem]"
+      aria-label="Breadcrumb"
+    >
+      <a
+        href="/"
+        class="whitespace-nowrap font-['Inter',system-ui,sans-serif] text-[0.78rem] text-[rgba(248,241,233,0.65)] no-underline transition-colors duration-200 hover:text-[#f8f1e9]"
+        >Home</a
+      >
+      <svg
+        class="flex-shrink-0 text-[rgba(248,241,233,0.3)]"
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+      <a
+        href={`/${category}`}
+        class="whitespace-nowrap font-['Inter',system-ui,sans-serif] text-[0.78rem] font-semibold no-underline transition-colors duration-200 hover:opacity-70"
+        style={`color:${categoryColor};`}>{categoryName}</a
+      >
+      {
+        subcategory && (
+          <>
+            <svg
+              class="flex-shrink-0 text-[rgba(248,241,233,0.3)]"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+            <span class="whitespace-nowrap font-['Inter',system-ui,sans-serif] text-[0.78rem] text-[rgba(248,241,233,0.75)]">
+              {subcategory}
+            </span>
+          </>
+        )
+      }
+      <svg
+        class="flex-shrink-0 text-[rgba(248,241,233,0.3)]"
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+      <span
+        class="max-w-[24ch] overflow-hidden text-ellipsis whitespace-nowrap font-['Inter',system-ui,sans-serif] text-[0.78rem] text-[rgba(248,241,233,0.85)]"
+        aria-current="page">{title}</span
+      >
+    </nav>
+
+    <!-- Title -->
+    <h1
+      class="mb-4 max-w-[820px] text-[clamp(2rem,5vw,3.4rem)] font-bold leading-[1.2] tracking-[0.01em] text-[#f8f1e9] max-[640px]:text-[1.85rem]"
+    >
+      {title}
+    </h1>
+
+    {
+      description && (
+        <p class="max-w-[680px] font-['Inter',system-ui,sans-serif] text-[clamp(0.95rem,2.2vw,1.1rem)] leading-[1.75] text-[rgba(248,241,233,0.75)]">
+          {description}
+        </p>
+      )
+    }
+  </div>
+</section>

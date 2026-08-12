@@ -1,0 +1,529 @@
+---
+import '../styles/global.css';
+import '../styles/shot-mode.css';
+import '../styles/dark-polish.css';
+import '../styles/article-modules.css';
+import SEO from '../components/SEO.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import BrandMark from '../components/BrandMark.astro';
+import ReaderSettings from '../components/ReaderSettings.astro';
+import HeadInlineScripts from '../components/HeadInlineScripts.astro';
+import placeConfig from '../../place.config';
+
+import type { Lang } from '../config/languages';
+
+interface Props {
+  title: string;
+  description?: string;
+  lang?: Lang;
+  image?: string;
+  type?: 'website' | 'article';
+  datePublished?: string;
+  dateModified?: string;
+  content?: string;
+  tags?: string[];
+  category?: string;
+  slug?: string;
+  categorySlug?: string;
+  noindex?: boolean;
+  /**
+   * Opt this surface into the floating ReaderSettings panel
+   * (light/auto/dark theme + text-size + plain-text link) and
+   * the FOUC-safe pre-paint theme init script.
+   *
+   * Contract for opting in: the surface MUST be dark-mode tested. Per-surface
+   * dark polish lives in `src/styles/dark-polish.css` scoped under the surface's
+   * <main class="..."> hook. Default: false. Article + hub templates opt in.
+   */
+  readerSettings?: boolean;
+}
+
+const { name, domain, tagline } = placeConfig.place;
+const { links } = placeConfig;
+const domainDot = `.${domain.split('.').pop()}`;
+const siteName = `${name}${domainDot}`;
+
+const {
+  title,
+  description = tagline,
+  image,
+  type,
+  datePublished,
+  dateModified,
+  content,
+  tags,
+  category,
+  slug,
+  categorySlug: propCategorySlug,
+  noindex,
+  readerSettings = true,
+  lang = 'en',
+} = Astro.props;
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isHome = currentPath === '/';
+const bodyClass = isHome ? 'page-home' : 'page-default';
+
+// GitHub blob base for the floating .md "view source" button.
+const ghBase = `${links.repo}/blob/main`;
+const slugToFolder: Record<string, string> = Object.fromEntries(
+  placeConfig.categories.map((c) => [c.slug, c.title]),
+);
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- Apple touch icons: 2026-04-11 fix. Cloudflare logs showed 130 req/day
+         404 on /apple-touch-icon.png + /apple-touch-icon-precomposed.png.
+         iOS/macOS Safari auto-probes these paths. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link
+      rel="apple-touch-icon-precomposed"
+      href="/apple-touch-icon-precomposed.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Typography System -->
+    <!-- Google Fonts: Inter only (Latin). CJK families dropped with the fork's
+         multi-language chrome; token font stacks live in tokens.css. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="preload"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <!-- Fallback for critical text -->
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <title>{title} | {siteName}</title>
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${siteName} RSS`}
+      href="/rss.xml"
+    />
+    <SEO
+      title={title}
+      description={description}
+      lang={lang}
+      image={image}
+      type={type}
+      datePublished={datePublished}
+      dateModified={dateModified}
+      content={content}
+      tags={tags}
+      category={category}
+      slug={slug}
+      categorySlug={propCategorySlug}
+    />
+    <!-- FOUC fix: hide <html> until fonts loaded (2026-05-11 picked up from
+         tboydar-agent PR #1012 / fixes #401). Combined with shot-mode +
+         reader-settings init below for complete pre-paint FOUC prevention. -->
+    <style>
+      html {
+        visibility: hidden;
+      }
+      html.fonts-loaded {
+        visibility: visible;
+      }
+    </style>
+    <script is:inline>
+      (function () {
+        if (document.fonts) {
+          document.fonts.ready.then(function () {
+            document.documentElement.classList.add('fonts-loaded');
+          });
+        } else {
+          // fallback for older browsers
+          document.documentElement.classList.add('fonts-loaded');
+        }
+      })();
+    </script>
+    <!-- Pre-paint inline scripts: shot-mode + reader-settings FOUC init.
+         2026-05-03 sleepy-colden Tier 2.6: extracted to src/components/HeadInlineScripts.astro
+         to keep Layout structure clean. Originally ~150 lines of inline logic lived here. -->
+    <HeadInlineScripts readerSettings={readerSettings} />
+  </head>
+  <body class={bodyClass}>
+    <Header />
+
+    <script is:inline>
+      // ── Search engine (MiniSearch with fallback) ──
+      var _searchEngine = null;
+      var _searchMode = 'loading';
+      var _fallbackIdx = null;
+
+      async function _initSearchEngine() {
+        try {
+          // 2026-06-13 RAG Phase 0: fetch per-lang shard for current page language
+          // (one shard per language; ja/ko/es/fr readers go from zero native results
+          // to full native corpus); fall back to legacy combined zh+en on 404.
+          var _docLang =
+            document.documentElement.getAttribute('lang') || 'en';
+          var res = await fetch('/kb/search-minisearch-' + _docLang + '.json');
+          if (!res.ok) res = await fetch('/kb/search-minisearch.json');
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var data = await res.json();
+          var MiniSearch = (
+            await import('https://cdn.jsdelivr.net/npm/minisearch@7/dist/es/index.min.js')
+          ).default;
+          _searchEngine = MiniSearch.loadJSON(JSON.stringify(data), {
+            idField: 'id',
+            // Field names still reference *_bigram; the index is not yet rebuilt (3.1).
+            // When 3.1 builds the Latin-only word-tokenized index, update these field
+            // names to match the new index schema.
+            fields: ['title_bigram', 'desc_bigram', 'tags_bigram'],
+            storeFields: ['t', 'd', 'u', 'tags', 'lang'],
+            tokenize: function (text) {
+              return text.split(/\s+/).filter(Boolean);
+            },
+            searchOptions: {
+              boost: { title_bigram: 6, tags_bigram: 4, desc_bigram: 2 },
+              prefix: true,
+            },
+          });
+          _searchMode = 'minisearch';
+        } catch (e) {
+          console.warn(
+            '[search] MiniSearch failed, falling back to indexOf:',
+            e,
+          );
+          try {
+            var res2 = await fetch('/kb/search-index.json');
+            if (res2.ok) _fallbackIdx = await res2.json();
+            else _fallbackIdx = [];
+          } catch (e2) {
+            _fallbackIdx = [];
+          }
+          _searchMode = 'fallback';
+        }
+      }
+
+      function _doSearch(q, lang) {
+        if (_searchMode === 'minisearch' && _searchEngine) {
+          var tokens = q.split(/\s+/).filter(Boolean);
+          var raw = _searchEngine.search(tokens.join(' '), {
+            prefix: true,
+            limit: 200,
+          });
+          var topScore = raw.length > 0 ? raw[0].score : 0;
+          var cutoff = topScore * 0.02;
+          var matches = raw
+            .filter(function (r) {
+              return r.score >= cutoff;
+            })
+            .slice(0, 30);
+          // Sort: current language first
+          matches.sort(function (a, b) {
+            var aLang = a.lang === lang ? 0 : 1;
+            var bLang = b.lang === lang ? 0 : 1;
+            return aLang - bLang;
+          });
+          return matches;
+        }
+        // Fallback: indexOf
+        var idx = _fallbackIdx || [];
+        var lq = q.toLowerCase();
+        var matches = idx.filter(function (item) {
+          return (
+            item.t.toLowerCase().indexOf(lq) !== -1 ||
+            item.d.toLowerCase().indexOf(lq) !== -1 ||
+            item.tags.some(function (tag) {
+              return String(tag).toLowerCase().indexOf(lq) !== -1;
+            })
+          );
+        });
+        matches.sort(function (a, b) {
+          return (a.lang === lang ? 0 : 1) - (b.lang === lang ? 0 : 1);
+        });
+        return matches;
+      }
+
+      function _renderResult(item) {
+        var langBadge = (item.lang || 'en').toUpperCase();
+        var title = item.t || '';
+        var desc = item.d || '';
+        return (
+          '<a class="search-item" href="' +
+          item.u +
+          '">' +
+          '<span class="search-item-lang">' +
+          langBadge +
+          '</span>' +
+          '<div class="search-item-text">' +
+          '<span class="search-item-title">' +
+          title +
+          '</span>' +
+          (desc ? '<span class="search-item-desc">' + desc + '</span>' : '') +
+          '</div></a>'
+        );
+      }
+
+      function initSearch() {
+        var lang = document.documentElement.getAttribute('lang') || 'en';
+        var input = document.getElementById('search-input');
+        if (!input) return;
+        var results = document.getElementById('search-results');
+        var modal = document.getElementById('search-modal');
+        var hintEmpty = 'Type to search across all articles';
+        var hintNone = 'No results found';
+
+        // GA4 search tracking (debounced)
+        var _gaDebounceTimer = null;
+        var _lastTrackedQuery = '';
+        var _lastMatchCount = 0;
+        var _currentQuery = '';
+
+        function _trackSearchQuery(query, count) {
+          if (query.length < 2) return;
+          if (query === _lastTrackedQuery) return;
+          _lastTrackedQuery = query;
+          if (typeof gtag === 'function') {
+            gtag('event', 'search_query', {
+              search_term: query,
+              results_count: count,
+              search_lang: lang,
+              search_mode: _searchMode,
+            });
+          }
+        }
+
+        function _trackSearchClick(query, title, url, position) {
+          if (typeof gtag === 'function') {
+            gtag('event', 'search_result_click', {
+              search_term: query,
+              click_title: title,
+              click_url: url,
+              click_position: position,
+            });
+          }
+        }
+
+        _initSearchEngine();
+
+        input.addEventListener('input', function () {
+          var q = this.value.trim();
+          _currentQuery = q;
+          if (!q) {
+            results.innerHTML =
+              '<div class="search-hint">' + hintEmpty + '</div>';
+            clearTimeout(_gaDebounceTimer);
+            return;
+          }
+          // Single-char queries are handled by prefix match
+          if (_searchMode === 'loading') {
+            results.innerHTML =
+              '<div class="search-hint">Loading...</div>';
+            return;
+          }
+          var matches = _doSearch(q, lang);
+          _lastMatchCount = matches.length;
+          if (matches.length === 0) {
+            results.innerHTML =
+              '<div class="search-hint">' + hintNone + '</div>';
+          } else {
+            var html = matches.slice(0, 12).map(_renderResult).join('');
+            if (matches.length > 12) {
+              html +=
+                '<div class="search-hint">...and ' +
+                (matches.length - 12) +
+                ' more</div>';
+            }
+            results.innerHTML = html;
+          }
+
+          // Debounce GA4 tracking: fire after 800ms of inactivity
+          clearTimeout(_gaDebounceTimer);
+          _gaDebounceTimer = setTimeout(function () {
+            _trackSearchQuery(q, _lastMatchCount);
+          }, 800);
+        });
+
+        // Track search result clicks via event delegation
+        results.addEventListener('click', function (e) {
+          var link = e.target.closest('.search-item');
+          if (!link) return;
+          var allLinks = results.querySelectorAll('.search-item');
+          var position = 1;
+          for (var i = 0; i < allLinks.length; i++) {
+            if (allLinks[i] === link) {
+              position = i + 1;
+              break;
+            }
+          }
+          var title =
+            link.querySelector('.search-item-title')?.textContent || '';
+          _trackSearchClick(
+            _currentQuery,
+            title,
+            link.getAttribute('href'),
+            position,
+          );
+        });
+
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && modal.classList.contains('open')) {
+            modal.classList.remove('open');
+          }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            modal.classList.toggle('open');
+            if (modal.classList.contains('open')) {
+              setTimeout(function () {
+                input.focus();
+              }, 100);
+            }
+          }
+          // Restore `/` shortcut (was removed during MiniSearch rewrite, issue #110)
+          if (
+            e.key === '/' &&
+            !modal.classList.contains('open') &&
+            !['INPUT', 'TEXTAREA', 'SELECT'].includes(
+              (document.activeElement || document.body).tagName,
+            ) &&
+            !(document.activeElement || document.body).isContentEditable
+          ) {
+            e.preventDefault();
+            modal.classList.add('open');
+            setTimeout(function () {
+              input.focus();
+            }, 100);
+          }
+        });
+      }
+
+      function _tryInit() {
+        if (document.getElementById('search-input')) {
+          initSearch();
+        } else {
+          setTimeout(_tryInit, 50);
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _tryInit);
+      } else {
+        _tryInit();
+      }
+    </script>
+
+    <!-- Screenshot mode (?shot=1) watermark — BrandMark (light variant) pinned bottom-right.
+         display: none controlled by shot-mode.css, shown only when ?shot=1.
+         Must be outside <main> to avoid being hidden by "hide everything inside main
+         except hero section" rule. -->
+    <div class="shot-watermark" aria-hidden="true">
+      <BrandMark variant="light" size={1.8} />
+    </div>
+
+    <main role="main">
+      <slot />
+    </main>
+
+    <Footer />
+
+    <!-- Floating .md button -->
+    <a
+      id="md-btn"
+      class="floating-md"
+      title="View Raw Markdown"
+      target="_blank"
+    >
+      .md
+    </a>
+
+    <!-- Reader settings: theme + size + plain-text link
+         (Issue #615 / idlccp1984 reader options, 2026-05-01 γ-late)
+         v1.2 (2026-05-04 zen-mendeleev): gated by explicit `readerSettings`
+         prop on Layout. Surfaces opt in by passing readerSettings={true}
+         (and audit dark CSS in dark-polish.css before doing so). -->
+    {readerSettings && <ReaderSettings lang={lang} />}
+
+    <script is:inline define:vars={{ ghBase, slugToFolder }}>
+      // Set .md button href based on current path. ghBase is injected from
+      // place.config.links.repo (no hardcoded repo URL).
+      const btn = document.getElementById('md-btn');
+      const pathname = window.location.pathname;
+
+      let target = '/README.md'; // Default fallback
+
+      // Handle special pages (non-content surfaces)
+      if (pathname === '/' || pathname === '/index.html') {
+        target = '/README.md';
+      } else if (pathname.includes('/contribute')) {
+        target = '/CONTRIBUTING.md';
+      } else if (pathname.includes('/graph')) {
+        target = '/src/templates/graph.template.astro';
+      } else if (pathname.includes('/map')) {
+        target = '/src/templates/map.template.astro';
+      } else if (pathname.includes('/explore')) {
+        target = '/src/templates/explore.template.astro';
+      } else if (pathname.includes('/latest')) {
+        target = '/src/templates/latest.template.astro';
+      } else if (pathname.includes('/about')) {
+        target = '/src/templates/about.template.astro';
+      } else if (pathname.includes('/changelog')) {
+        target = '/src/templates/changelog.template.astro';
+      } else {
+        // Content pages (categories or articles). Source lives in knowledge/.
+        const cleanPath = pathname
+          .replace(/^\//, '')
+          .replace(/\/$/, '')
+          .replace('index.html', '');
+        const parts = cleanPath.split('/');
+
+        if (parts.length > 0 && parts[0]) {
+          const catSlug = parts[0];
+          const catFolder = slugToFolder[catSlug] || catSlug;
+
+          if (parts.length === 1) {
+            // Category hub: point to the template (no _Hub.md files exist)
+            target = '/src/templates/category-hub.template.astro';
+          } else {
+            // Article: knowledge/Food/the-cliff-restaurant.md
+            const slug = decodeURIComponent(parts.slice(1).join('/'));
+            target = `/knowledge/${catFolder}/${slug}.md`;
+          }
+        }
+      }
+
+      btn.href = ghBase + target;
+
+      // Hash-based active state can only be detected client-side
+      if (window.location.hash === '#categories') {
+        document
+          .querySelectorAll('.nav-link[href$="/#categories"]')
+          .forEach((l) => l.classList.add('active'));
+      }
+    </script>
+
+    <!--
+      2026-04-27 Site-wide hash anchor smooth scroll + navbar offset
+      Uses pure CSS (see global.css scroll-padding-top):
+        - html { scroll-padding-top: 92px; scroll-behavior: smooth; }
+        - prefers-reduced-motion: scroll-behavior: auto
+      (Intentionally no scroll-margin-top on headings; additive = double offset)
+
+      Previously wrote rAF custom animation to work around Chrome "smooth scroll
+      cancelled" suspected bug. Actual cause: hidden tab throttles rAF to ~1Hz
+      (frozen), creating a testing illusion. Native smooth scroll works fine in
+      visible tabs. Lesson documented in global.css comment.
+    -->
+  </body>
+</html>
+
+<!--
+  All site-wide base styles moved to src/styles/global.css @layer base
+  as part of Tailwind refactor Phase 3 (2026-04-10). The layout no longer
+  carries any scoped or global CSS — it is purely a structural template.
+  See ADR-001 for the decision rationale and REFACTOR-LOG for drift notes.
+-->

@@ -1,0 +1,503 @@
+/**
+ * dark-polish.css — minimal dark-mode override layer for component-scoped surfaces.
+ *
+ * Why this file exists:
+ *   tokens.css flips the body bg/ink in one place via [data-theme='dark'].
+ *   But many component & page files (slug.astro × 6 langs, hero, sidebar,
+ *   cards, header) still carry hardcoded hex colors from before color
+ *   tokens existed. A full re-tokenization is a large refactor — this
+ *   file is the pragmatic v1 patch that keeps reading legible in dark
+ *   mode without rewriting every hex.
+ *
+ * Selector strategy:
+ *   We target the cross-file *class names* that hold the most visible
+ *   reading surfaces (.prose, .hero-title overrides, etc). All rules
+ *   are gated on :root[data-theme='dark'], so light mode is untouched.
+ *
+ * NOT in scope for v1:
+ *   - Header/Nav internals (Header.astro is 1,759 lines; needs its own pass)
+ *   - Category-specific hero gradients (each kept light by intent)
+ *   - SVG illustrations / data viz colors
+ *
+ * Born: Issue #615 / idlccp1984 reader options, 2026-05-01 γ-late.
+ */
+
+:root[data-theme='dark'] .prose {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose h1,
+:root[data-theme='dark'] .prose h2,
+:root[data-theme='dark'] .prose h3,
+:root[data-theme='dark'] .prose h4,
+:root[data-theme='dark'] .prose h5,
+:root[data-theme='dark'] .prose h6 {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose h2 {
+  /* The default --color-border (12% ink) sits at ~rgba(226,232,240,0.12)
+   * which all but vanishes against #050505. Lift the alpha for the
+   * structural lines (h2 underline, table cell borders) so they read
+   * as actual dividers instead of barely-there ghosts. */
+  border-bottom-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+:root[data-theme='dark'] .prose p,
+:root[data-theme='dark'] .prose li {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose strong,
+:root[data-theme='dark'] .prose em,
+:root[data-theme='dark'] .prose b,
+:root[data-theme='dark'] .prose i {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose a {
+  color: var(--color-accent);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--color-accent) 50%,
+    transparent
+  );
+}
+:root[data-theme='dark'] .prose a:hover {
+  text-decoration-color: var(--color-accent);
+}
+:root[data-theme='dark'] .prose blockquote:not(.tw-quote-text) {
+  color: var(--color-ink-soft);
+  border-left-color: var(--color-accent);
+  /* The light-mode rule paints `rgba(26,60,52,0.04)` over cream — readable.
+   * On #050505 a 4% wash literally vanishes. Lift to ~6-8% ink with a
+   * subtle horizontal fade so the quote reads as a distinct surface. */
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-ink) 8%, transparent),
+    color-mix(in srgb, var(--color-ink) 2%, transparent)
+  );
+}
+:root[data-theme='dark'] .prose code {
+  background-color: color-mix(in srgb, var(--color-ink) 8%, transparent);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose pre {
+  background-color: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose hr {
+  border-color: var(--color-border);
+}
+/* :not(.tw-heatmap-table ...) — tw-heatmap module has its own colors (cascade leak fix 2026-06-12) */
+:root[data-theme='dark'] .prose table:not(.tw-heatmap-table) {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] .prose table:not(.tw-heatmap-table) th,
+:root[data-theme='dark'] .prose table:not(.tw-heatmap-table) td {
+  color: var(--color-ink);
+  /* Same reason as the h2 underline: 12% ink is invisible on near-black,
+   * lift to 28% for visible cell borders. */
+  border-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+:root[data-theme='dark'] .prose table:not(.tw-heatmap-table) th {
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+:root[data-theme='dark'] .prose table:not(.tw-heatmap-table) tr:hover td {
+  background: color-mix(in srgb, var(--color-ink) 3%, transparent);
+}
+
+/* Global "card" surfaces — many components use these class fragments.
+   Catch the visible-bg ones with a broad pattern. */
+:root[data-theme='dark']
+  [class*='card']:not([class*='category-card']):not([class*='article-card']):not([class*='place-card']) {
+  background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
+  border-color: var(--color-border);
+}
+
+/* TableOfContents / sidebar containers */
+:root[data-theme='dark'] .table-of-contents,
+:root[data-theme='dark'] .article-sidebar,
+:root[data-theme='dark'] [class*='sidebar'] {
+  color: var(--color-ink);
+}
+
+/* Header + Hero: flatten to body bg in dark mode so the page reads as
+ * a single continuous surface. The default white-ish translucent header
+ * + dark-teal hero looked like three stacked stripes; user feedback
+ * (2026-05-03) was to unify them. */
+:root[data-theme='dark'] header#main-header,
+:root[data-theme='dark'] header[class*='global-header'],
+:root[data-theme='dark'] .site-header {
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Header design-token overrides. Header.astro defines its full palette
+ * via CSS vars on `header { ... }`; we re-declare the chrome-relevant
+ * ones here so nav text, separators, search, GitHub icon, kbd hint,
+ * language pill and burger all flip together without touching Header. */
+:root[data-theme='dark'] header {
+  --header-bg: var(--color-bg);
+  --header-border: var(--color-border);
+  --nav-color: var(--color-ink-soft);
+  --nav-hover-color: var(--color-ink);
+  --nav-hover-bg: color-mix(in srgb, var(--color-ink) 8%, transparent);
+  --sep-color: var(--color-border);
+  --arrow-color: var(--color-ink-soft);
+  --logo-color: var(--color-ink);
+  --search-border: var(--color-border);
+  --search-color: var(--color-ink-soft);
+  --kbd-bg: color-mix(in srgb, var(--color-ink) 6%, transparent);
+  --kbd-color: var(--color-ink-soft);
+  --kbd-border: var(--color-border);
+  --gh-color: var(--color-ink-soft);
+  --lang-bg: color-mix(in srgb, var(--color-ink) 6%, transparent);
+  --lang-border: var(--color-border);
+  --lang-color: var(--color-ink-soft);
+  --burger-bg: color-mix(in srgb, var(--color-ink) 6%, transparent);
+  --burger-border: var(--color-border);
+  --burger-color: var(--color-ink);
+  --glass-border: var(--color-border);
+  --glass-shadow: rgba(0, 0, 0, 0.5);
+  --glass-inset: color-mix(in srgb, var(--color-ink) 4%, transparent);
+}
+
+/* Dropdowns: the header scopes `.dropdown-menu` and `.lang-dropdown-menu`
+ * via Astro hashing, but the rules use plain class selectors internally
+ * and CSS specificity is the same; we win via the extra
+ * `:root[data-theme='dark']` qualifier. */
+:root[data-theme='dark'] header .dropdown-menu,
+:root[data-theme='dark'] header.scrolled .dropdown-menu {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:root[data-theme='dark'] header .dropdown-item,
+:root[data-theme='dark'] header.scrolled .dropdown-item {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] header .dropdown-item:hover,
+:root[data-theme='dark'] header.scrolled .dropdown-item:hover {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] header .dropdown-divider,
+:root[data-theme='dark'] header.scrolled .dropdown-divider {
+  background: var(--color-border);
+}
+:root[data-theme='dark'] header .dropdown-section-header,
+:root[data-theme='dark'] header.scrolled .dropdown-section-header {
+  color: var(--color-ink-soft);
+}
+
+/* Language switcher dropdown panel */
+:root[data-theme='dark'] header .lang-dropdown-menu {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:root[data-theme='dark'] header .lang-dropdown-item {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] header .lang-dropdown-item:hover {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] header .lang-dropdown-item.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* ArticleHero — `bg-[#0e3a5c]` dark-teal hero band → body bg. */
+:root[data-theme='dark'] main.article-page section[class*='bg-[#0e3a5c]'] {
+  background-color: var(--color-bg);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Article template overrides (zh-TW + en + ja + ko + es + fr).
+ *
+ * src/templates/article.template.astro uses Tailwind arbitrary values
+ * (bg-[#f8f1e9] cream / text-[#0e3a5c] dark teal / etc) extensively
+ * because tokenization predates the dark-mode work. Refactoring all
+ * occurrences across 6 language pages is a large change; instead we
+ * override at the class-attribute level so the template stays untouched.
+ *
+ * Selector strategy: `[class*="bg-[#f8f1e9]"]` matches the literal
+ * Tailwind class string. Quoted attribute values don't need the bracket
+ * escapes that bare class selectors would.
+ * ────────────────────────────────────────────────────────────────── */
+
+/* Cream backgrounds (main + explore section + random-explore strip) → body bg */
+:root[data-theme='dark'] main.article-page,
+:root[data-theme='dark'] main.article-page [class*='bg-[#f8f1e9]'] {
+  background-color: var(--color-bg);
+}
+
+/* "bg-white" cards (other-category cards, random button) → dark surface.
+ * Use ~= (whitespace-separated whole word) so variants like
+ * `[&_#tts-play]:bg-white/10` on the TTS wrapper don't accidentally
+ * paint a dark-grey rectangle behind the hero's audio button. */
+:root[data-theme='dark'] main.article-page [class~='bg-white'] {
+  background-color: var(--color-surface);
+}
+
+/* Dark-teal text (#0e3a5c) inside article-page → light ink. Excludes
+ * elements that ALSO sit on a dark-teal background (the edit/share CTAs
+ * keep their cream-on-teal contrast). */
+:root[data-theme='dark']
+  main.article-page
+  [class*='text-[#0e3a5c]']:not([class*='bg-[#0e3a5c]']) {
+  color: var(--color-ink);
+}
+
+/* Muted greys used for chrome/labels → soft ink */
+:root[data-theme='dark'] main.article-page [class*='text-[#5a4a42]'],
+:root[data-theme='dark'] main.article-page [class*='text-[#6a7d72]'],
+:root[data-theme='dark'] main.article-page [class*='text-[#7a8b7e]'],
+:root[data-theme='dark'] main.article-page [class*='text-[#9aa89e]'],
+:root[data-theme='dark'] main.article-page [class*='text-[#b0bdb4]'],
+:root[data-theme='dark'] main.article-page [class*='text-[#b8c4be]'] {
+  color: var(--color-ink-soft);
+}
+
+/* TOC inactive titles + sidebar meta labels (#3a4f44 / #4a5e52 dark teal
+ * body text) → primary ink. These are the largest blocks of "invisible"
+ * text users hit first when reading on dark. */
+:root[data-theme='dark'] main.article-page [class*='text-[#3a4f44]'],
+:root[data-theme='dark'] main.article-page [class*='text-[#4a5e52]'] {
+  color: var(--color-ink);
+}
+
+/* ArticleSidebar uses Tailwind descendant variants
+ * `[&_.meta-row]:text-[#4a5e52]` etc, which compile to rules that
+ * target `.meta-row` directly — not the parent we matched above. We
+ * have to repeat the override at the leaf-class level. Mapped:
+ *   - .meta-row / .share-row (primary metadata) → ink-soft so it sits
+ *     visibly secondary to body prose without disappearing
+ *   - .meta-row--subtle / *_svg (icons + faded rows) → ink-soft too,
+ *     since the further-muted shade collapses into the bg on dark
+ *   - hover state → primary ink (the original light-mode rule darkened
+ *     on hover; in dark we brighten on hover instead) */
+:root[data-theme='dark'] main.article-page .meta-row,
+:root[data-theme='dark'] main.article-page .meta-row--subtle,
+:root[data-theme='dark'] main.article-page .meta-row svg,
+:root[data-theme='dark'] main.article-page .share-row,
+:root[data-theme='dark'] main.article-page .share-row svg {
+  color: var(--color-ink-soft);
+}
+:root[data-theme='dark'] main.article-page .share-row:hover,
+:root[data-theme='dark'] main.article-page .share-row:hover svg {
+  color: var(--color-ink);
+}
+
+/* Cyan-teal accent (#0369a1 — used for source links, TOC active state,
+ * "share", category accents) → use the dark accent token so links pop
+ * against the near-black background. */
+:root[data-theme='dark'] main.article-page [class*='text-[#0369a1]'] {
+  color: var(--color-accent);
+}
+:root[data-theme='dark'] main.article-page [class*='border-l-[#0369a1]'] {
+  border-left-color: var(--color-accent);
+}
+:root[data-theme='dark'] main.article-page [class*='bg-[rgba(0,109,119'] {
+  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* Translucent dark-teal borders → token border */
+:root[data-theme='dark'] main.article-page [class*='border-[rgba(26,60,52'] {
+  border-color: var(--color-border);
+}
+
+/* Translucent dark-teal panel backgrounds (sources box, share-button hover
+ * surface, share-button rest state) → soft surface */
+:root[data-theme='dark'] main.article-page [class*='bg-[rgba(26,60,52'] {
+  background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+
+/* AI disclaimer warm-orange tint — keep semantic accent but desaturate
+ * panel + soften border so it doesn't glare on dark */
+:root[data-theme='dark'] main.article-page [class*='bg-[rgba(193,125,94'] {
+  background-color: color-mix(in srgb, #c17d5e 14%, transparent);
+}
+:root[data-theme='dark'] main.article-page [class*='border-[rgba(193,125,94'] {
+  border-color: color-mix(in srgb, #c17d5e 30%, transparent);
+}
+
+/* TOC active link / sticky sidebar internal text → ensure readable. */
+:root[data-theme='dark'] .table-of-contents a,
+:root[data-theme='dark'] .article-sidebar a {
+  color: var(--color-ink-soft);
+}
+:root[data-theme='dark'] .table-of-contents a:hover,
+:root[data-theme='dark'] .article-sidebar a:hover {
+  color: var(--color-ink);
+}
+
+/* TOC active state — TableOfContents.astro hard-codes light-mode teal
+ * (#0369a1 border + rgba(0,109,119,0.06) bg + #0369a1 text) in arbitrary
+ * Tailwind variants `[&.active]:...`. These wash out against the dark
+ * (#050505) page background — the active chapter becomes indistinguishable
+ * from inactive ones. Override the three properties with accent-derived
+ * tints that read clearly on dark. */
+:root[data-theme='dark'] .toc-link.active {
+  border-left-color: var(--color-accent) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--color-accent) 14%,
+    transparent
+  ) !important;
+  color: var(--color-accent) !important;
+}
+:root[data-theme='dark'] .toc-link.active span {
+  color: var(--color-accent) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Category hub overrides (main.category-page).
+ *
+ * Mirrors the article-page strategy above: the template
+ * (src/templates/category-hub.template.astro) uses Tailwind arbitrary
+ * values + scoped class selectors hard-wired to the slate palette
+ * (#1a1a2e / #334155 / #475569 / #64748b / #94a3b8 / #e2e8f0 / etc).
+ * Re-tokenizing the template is a large refactor; we patch at the
+ * class-attribute / leaf-class level instead so the hub template
+ * stays untouched.
+ *
+ * Born: 2026-05-04 zen-mendeleev — observer asked for reader settings
+ * (text-size + dark mode) on hub pages parallel to article pages.
+ * Layout.astro now exposes a `readerSettings` prop; hub opts in;
+ * this block is the per-surface dark polish that opt-in requires.
+ * ────────────────────────────────────────────────────────────────── */
+
+/* Page background — hub doesn't paint its own bg, it inherits from
+ * <body>, which tokens.css already flips. The header strip uses a
+ * category-color tint var and keeps its accent in dark (intentional;
+ * matches how the article-page hero band stays accent-tinted). */
+
+/* Slate-text Tailwind arbitrary classes throughout the hub chrome
+ * (breadcrumb, header meta, sidebar nav, subcategory nav, results
+ * count, etc) → primary ink */
+:root[data-theme='dark'] main.category-page [class*='text-[#1a1a2e]'],
+:root[data-theme='dark'] main.category-page [class*='text-[#1e293b]'],
+:root[data-theme='dark'] main.category-page [class*='text-[#334155]'] {
+  color: var(--color-ink);
+}
+
+/* Muted-slate utilities → ink-soft */
+:root[data-theme='dark'] main.category-page [class*='text-[#475569]'],
+:root[data-theme='dark'] main.category-page [class*='text-[#64748b]'],
+:root[data-theme='dark'] main.category-page [class*='text-[#6b7280]'],
+:root[data-theme='dark'] main.category-page [class*='text-[#94a3b8]'],
+:root[data-theme='dark'] main.category-page [class*='text-[#9ca3af]'] {
+  color: var(--color-ink-soft);
+}
+
+/* White / pale-slate panel backgrounds (hub essay card, mobile
+ * subcategory chips, article-count chip) → dark surface tokens */
+:root[data-theme='dark'] main.category-page [class~='bg-white'],
+:root[data-theme='dark'] main.category-page [class*='bg-[#f8fafc]'],
+:root[data-theme='dark'] main.category-page [class*='bg-[#f1f5f9]'] {
+  background-color: var(--color-surface);
+}
+
+/* Pale-slate borders → token border */
+:root[data-theme='dark'] main.category-page [class*='border-[#e2e8f0]'] {
+  border-color: var(--color-border);
+}
+
+/* Hub essay prose — scoped class survives Astro hashing because we
+ * use the leaf class name. Specificity wins over the scoped rule
+ * via the extra :root[data-theme='dark'] qualifier. */
+:root[data-theme='dark'] main.category-page .hub-prose,
+:root[data-theme='dark'] main.category-page .hub-prose p,
+:root[data-theme='dark'] main.category-page .hub-prose li,
+:root[data-theme='dark'] main.category-page .hub-prose strong,
+:root[data-theme='dark'] main.category-page .hub-prose em {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] main.category-page .hub-prose h2,
+:root[data-theme='dark'] main.category-page .hub-prose h3 {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-border);
+}
+:root[data-theme='dark'] main.category-page .hub-prose a {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-ink-soft);
+}
+:root[data-theme='dark'] main.category-page .hub-prose a:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+/* Topic-pill (wikilinks resolved to article links) — keep accent
+ * tint but rebuild on the dark bg so the chip stays a chip */
+:root[data-theme='dark'] main.category-page .hub-prose a.topic-pill {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+:root[data-theme='dark'] main.category-page .hub-prose a.topic-pill:hover {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+:root[data-theme='dark'] main.category-page .hub-prose blockquote {
+  color: var(--color-ink-soft);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-ink) 8%, transparent),
+    color-mix(in srgb, var(--color-ink) 2%, transparent)
+  );
+}
+:root[data-theme='dark'] main.category-page .hub-prose blockquote.pull-quote {
+  color: var(--color-ink);
+  background: none;
+}
+:root[data-theme='dark'] main.category-page .hub-prose code {
+  background: color-mix(in srgb, var(--color-ink) 8%, transparent);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] main.category-page .hub-prose pre {
+  background: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] main.category-page .hub-prose th,
+:root[data-theme='dark'] main.category-page .hub-prose td {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+:root[data-theme='dark'] main.category-page .hub-prose th {
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+:root[data-theme='dark'] main.category-page .hub-prose em:not(.topic-pill) {
+  color: var(--color-ink-soft);
+}
+
+/* Article list rows — title #1e293b → ink, desc/time → ink-soft.
+ * #16a34a (citations green) reads fine on dark, leave intact. */
+:root[data-theme='dark'] main.category-page .row-title {
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] main.category-page .row-desc,
+:root[data-theme='dark'] main.category-page .row-time,
+:root[data-theme='dark'] main.category-page .no-results {
+  color: var(--color-ink-soft);
+}
+:root[data-theme='dark'] main.category-page .article-row {
+  border-bottom-color: var(--color-border);
+}
+:root[data-theme='dark'] main.category-page .article-row:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+:root[data-theme='dark'] main.category-page .article-row.is-featured {
+  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
+}
+
+/* Subcategory side-nav active state — uses var(--categoryColor) so
+ * the rgba(45,80,22,…) hardcoded fallback bleeds through on dark.
+ * Re-paint with a token-mix so the active chip reads as accent
+ * regardless of the per-category color. */
+:root[data-theme='dark'] main.category-page .subcat-nav-link.active {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+/* Filter input — pale border + slate placeholder vanish on dark */
+:root[data-theme='dark'] main.category-page input#articleFilter {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-ink);
+}
+:root[data-theme='dark'] main.category-page input#articleFilter::placeholder {
+  color: var(--color-ink-soft);
+}

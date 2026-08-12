@@ -1,0 +1,146 @@
+/* ── Screenshot mode (?shot=1) global overrides ────────────────────────
+ * Used by the OG image generator (scripts/core/generate-og-images.mjs).
+ * Applies to all language article pages.
+ *
+ * Two override sets separated by [data-og='1']:
+ *   - Base (`?shot=1`): 4.5rem large type + 18vh anchor position (poster feel)
+ *   - OG (`?shot=1&og=1`): 3.75rem slightly smaller + 12vh compact position
+ *     + line-clamp (batch image stability, long titles shown fully)
+ * ──────────────────────────────────────────────────────────────────── */
+
+/* ═══ Base: shot mode (?shot=1 default) ════════════════════════════════ */
+
+html[data-shot='1'],
+html[data-shot='1'] body {
+  background: #0e3a5c !important;
+}
+
+html[data-shot='1'] #header-container,
+html[data-shot='1'] body > footer,
+html[data-shot='1'] #md-btn,
+html[data-shot='1'] #search-modal,
+html[data-shot='1'] astro-dev-toolbar,
+html[data-shot='1'] .reading-progress,
+html[data-shot='1'] main.article-page > *:not(section:first-of-type) {
+  display: none !important;
+}
+
+html[data-shot='1'] main.article-page {
+  min-height: 100vh !important;
+  background: #0e3a5c !important;
+  position: relative !important;
+}
+
+/* Hero anchored to top-third, poster-style golden-ratio anchor */
+html[data-shot='1'] main.article-page > section:first-of-type {
+  min-height: 100vh !important;
+  align-items: flex-start !important;
+  padding-top: 18vh !important;
+  padding-bottom: 8vh !important;
+}
+
+/* Inner container tight padding */
+html[data-shot='1'] main.article-page > section > div:nth-child(2) {
+  max-width: none !important;
+  width: 100% !important;
+  padding: 0 6vw !important;
+}
+
+/* Hide category badge + TTS reader wrapper */
+html[data-shot='1']
+  main.article-page
+  > section
+  > div:nth-child(2)
+  > div:first-of-type,
+html[data-shot='1']
+  main.article-page
+  > section
+  > div:nth-child(2)
+  > div:last-of-type {
+  display: none !important;
+}
+
+/* H1 — 4.5rem poster impact, no line-clamp. */
+html[data-shot='1'] main.article-page .hero-title {
+  font-size: 4.5rem !important; /* 72px */
+  line-height: 1.22 !important;
+  margin-bottom: 1.5rem !important;
+  max-width: none !important;
+}
+
+/* Description — wide variant */
+html[data-shot='1'] main.article-page > section > div:nth-child(2) > p {
+  font-size: 1.35rem !important; /* ~21.6px */
+  max-width: min(900px, 100%) !important;
+  line-height: 1.7 !important;
+}
+
+/* Breadcrumb */
+html[data-shot='1'] main.article-page > section > div:nth-child(2) > nav {
+  margin-bottom: 1.6rem !important;
+}
+html[data-shot='1'] main.article-page > section > div:nth-child(2) > nav a,
+html[data-shot='1'] main.article-page > section > div:nth-child(2) > nav span {
+  font-size: 0.95rem !important;
+}
+
+/* Shot-mode watermark — BrandMark (light) fixed bottom-right */
+.shot-watermark {
+  display: none;
+}
+html[data-shot='1'] .shot-watermark {
+  display: block;
+  position: fixed;
+  right: 48px;
+  bottom: 40px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Neutralise fixed-header reserved top offset */
+html[data-shot='1'] body > main {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* ═══ OG mode override (?shot=1&og=1) ═══════════════════════════════
+ * For batch OG image generator:
+ *   - Force the brand serif (Google Fonts Layout preloaded)
+ *   - Slightly smaller 3.75rem, fits more text
+ *   - 12vh / 6vh padding, compact layout
+ *   - line-clamp 2/3, prevents long titles from overflowing or covering watermark
+ *   - description max-width 75% + line-clamp 3, avoids bottom-right watermark
+ * ──────────────────────────────────────────────────────────────────── */
+
+html[data-shot='1'][data-og='1'] main.article-page > section:first-of-type {
+  padding-top: 12vh !important;
+  padding-bottom: 6vh !important;
+}
+
+html[data-shot='1'][data-og='1'] main.article-page .hero-title {
+  font-family: var(--font-title) !important;
+  font-weight: 900 !important;
+  font-size: 3.75rem !important; /* 60px */
+  line-height: 1.2 !important;
+  margin-bottom: 1.25rem !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+html[data-shot='1'][data-og='1']
+  main.article-page
+  > section
+  > div:nth-child(2)
+  > p {
+  font-family: var(--font-title) !important;
+  font-size: 1.2rem !important; /* 19.2px */
+  max-width: min(860px, 75%) !important;
+  line-height: 1.65 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 4 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+

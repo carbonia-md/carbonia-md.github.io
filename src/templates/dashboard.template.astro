@@ -1,0 +1,217 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/dashboard.css';
+import { useTranslations, getLangFromUrl } from '../i18n/utils';
+import placeConfig from '../../place.config';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+let dashData = null;
+try {
+  const jsonPath = resolve(process.cwd(), 'src/data/dashboard-lite.json');
+  const raw = readFileSync(jsonPath, 'utf8');
+  dashData = JSON.parse(raw);
+} catch {
+  // Graceful degradation: JSON absent at build time
+}
+
+const available = dashData?.available === true;
+const rollup = dashData?.rollup;
+const immune = dashData?.immune;
+const perArticle = dashData?.perArticle || [];
+
+const categorySlugMap = new Map(placeConfig.categories.map((c) => [c.title, c.slug]));
+
+function categoryToSlug(cat: string): string | undefined {
+  return categorySlugMap.get(cat);
+}
+---
+
+<Layout
+  title={t('nav.dashboard')}
+  description="Article health rollup and immune score dashboard"
+>
+  <main class="dashboard">
+    <!-- Hero -->
+    <section
+      class="page-hero-dashboard-shell relative mb-4 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#1a1a2e_0%,#2d1b69_60%,#1a1a2e_100%)] p-6 text-white"
+    >
+      <svg
+        class="pointer-events-none absolute left-0 top-1/2 h-[60px] w-full -translate-y-1/2 opacity-60"
+        viewBox="0 0 600 60"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path
+          class="ekg-line"
+          d="M0,30 L120,30 L140,30 L155,8 L165,52 L175,20 L185,38 L195,30 L280,30 L300,30 L315,8 L325,52 L335,20 L345,38 L355,30 L440,30 L460,30 L475,8 L485,52 L495,20 L505,38 L515,30 L600,30"
+          fill="none"
+          stroke="rgba(139,92,246,0.25)"
+          stroke-width="2"></path>
+      </svg>
+      <div class="relative">
+        <h1 class="text-2xl font-bold">
+          <span class="text-[1.8rem]">🔬</span> {t('nav.dashboard')}
+        </h1>
+        <p class="mt-1 text-sm opacity-80">Article health and immune system overview</p>
+      </div>
+    </section>
+
+    {available ? (
+      <>
+        <!-- Vital Signs -->
+        <section class="section" id="vitals">
+          <h2 class="section-title">📊 Health Rollup</h2>
+          <div class="vitals-grid">
+            <div class="vital-card" data-vital="heartbeat">
+              <div class="vital-emoji">📝</div>
+              <div class="vital-value">{rollup.total}</div>
+              <div class="vital-label">Articles</div>
+              <div class="vital-desc">Total articles scanned</div>
+            </div>
+            <div class="vital-card" data-vital="cells">
+              <div class="vital-emoji">✅</div>
+              <div class="vital-value">{rollup.allPass}</div>
+              <div class="vital-label">Passing</div>
+              <div class="vital-desc">Zero hard violations</div>
+            </div>
+            <div class="vital-card" data-vital="immunity">
+              <div class="vital-emoji">🛡️</div>
+              <div class="vital-value">{rollup.passRate}%</div>
+              <div class="vital-label">Pass Rate</div>
+              <div class="vital-desc">Hard-check pass rate</div>
+            </div>
+            <div class="vital-card" data-vital="dna">
+              <div class="vital-emoji">⚠️</div>
+              <div class="vital-value">{rollup.totalWarn}</div>
+              <div class="vital-label">Warnings</div>
+              <div class="vital-desc">Total warn-level findings</div>
+            </div>
+            <div class="vital-card" data-vital="revision">
+              <div class="vital-emoji">ℹ️</div>
+              <div class="vital-value">{rollup.totalInfo}</div>
+              <div class="vital-label">Info</div>
+              <div class="vital-desc">Informational findings</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Immune System -->
+        <section class="section" id="immune">
+          <h2 class="section-title">🛡️ Immune Score</h2>
+          <p class="section-subtitle">
+            6-dimension weighted formula measuring editorial defense strength
+          </p>
+
+          <div class="immune-overview">
+            <div class="immune-score-display">
+              <div class="immune-score-value">{immune.score}</div>
+              <div class="immune-score-label">{immune.status}</div>
+            </div>
+          </div>
+
+          <h3 class="subsection-title">Dimensions</h3>
+          <div class="defense-lines">
+            {Object.entries(immune.components).map(([dim, val]) => {
+              const weight = immune.weights[dim];
+              const pct = typeof val === 'number' ? val : 0;
+              const indicator = pct >= 80 ? '🟢' : pct >= 50 ? '🟡' : '🔴';
+              return (
+                <div class="defense-line">
+                  <span class="defense-status">{indicator}</span>
+                  <strong>{dim.replace(/_/g, ' ')}</strong>
+                  <span class="defense-desc">
+                    {Math.round(pct)}% (weight: {Math.round(weight * 100)}%)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <!-- Article Registry -->
+        <section class="section" id="registry">
+          <h2 class="section-title">📋 Article Health Detail</h2>
+          <p class="section-subtitle">Per-article check results from article-health</p>
+
+          <div class="registry-table-wrapper">
+            <table class="registry-table">
+              <thead>
+                <tr>
+                  <th>Article</th>
+                  <th>Category</th>
+                  <th>Hard</th>
+                  <th>Warn</th>
+                  <th>Info</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perArticle.map((a) => {
+                  const slug = categoryToSlug(a.category);
+                  return (
+                    <tr>
+                      <td>{slug ? <a href={`/${slug}/${a.slug}`}>{a.slug}</a> : <span>{a.slug}</span>}</td>
+                      <td>{a.category}</td>
+                      <td>{a.hard}</td>
+                      <td>{a.warn}</td>
+                      <td>{a.info}</td>
+                      <td>{a.passed ? '✅' : '❌'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </>
+    ) : (
+      <section class="section" data-degraded>
+        <p class="section-subtitle">
+          Dashboard data is not available. Run <code>npm run prebuild:dashboard</code> to generate it.
+        </p>
+      </section>
+    )}
+
+    <footer class="dashboard-footer">
+      {available && dashData.generated && (
+        <p>Generated: {dashData.generated.slice(0, 10)}</p>
+      )}
+    </footer>
+  </main>
+</Layout>
+
+<style>
+  .immune-overview {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+  }
+  .immune-score-display {
+    text-align: center;
+    padding: 1.5rem 2.5rem;
+    background: var(--color-surface-raised);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+  }
+  .immune-score-value {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--color-ink);
+    line-height: 1.1;
+  }
+  .immune-score-label {
+    font-size: 0.9rem;
+    color: var(--color-ink-soft);
+    margin-top: 0.3rem;
+    font-weight: 500;
+  }
+  .defense-status {
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+</style>

@@ -1,0 +1,579 @@
+---
+/**
+ * SystemDiagram.astro — animated, config-driven architecture diagram.
+ *
+ * Renders the sekai-kb framework as a hub-and-spoke organism: the published
+ * knowledge base at the center, with the content pipeline, reader surfaces, AI
+ * corpus, and correction loops radiating out as animated pipes. It is the
+ * reader-facing rendering of the §B architecture; `docs/diagrams/*.drawio`
+ * remain the engineering SSOT.
+ *
+ * Generic by construction (LB-32):
+ *   - center shape = this instance's boundary polygon
+ *     (`public/data/boundary.geojson`) fitted to the hub, with a brand circle
+ *     fallback when no boundary file ships (the template case);
+ *   - place name at the hub + the knowledge-domain legend come from
+ *     `place.config.ts` (name, categories/colors) — no place strings here;
+ *   - every feature organ is keyed to `place.config.features`; a flag that is
+ *     off renders its whole loop dimmed, with no code change (Phases 6/7 flip
+ *     features by config alone);
+ *   - English-only, zero i18n dependency. Design-referenced on the v1 archive's
+ *     ecosystem diagram for visual grammar only; that component carries the
+ *     fork's i18n layer, CJK fonts, and a hardcoded boundary path — none of it
+ *     is ported here.
+ *
+ * Node/organ labels are framework architecture terms (SSOT, Prebuild, Graph,
+ * …), not place identity, so they stay in this generic component.
+ */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import placeConfig from '../../place.config';
+import { getCategoryConfigs } from '../utils/categoryConfig';
+
+const { name } = placeConfig.place;
+const features = placeConfig.features;
+const cats = getCategoryConfigs();
+
+// ── Loop colors (the four flows the legend explains) ────────────────────────
+// Design-system chrome, not a place palette (categoryConfig owns category color).
+const LOOP = {
+  pipeline: '#38bdf8', // content pipeline: SSOT → prebuild → site   (solid)
+  reader: '#7aa8d4', // reader surfaces served from the site         (solid)
+  diffusion: '#c9a96a', // AI corpus + outward reach                 (long-dash)
+  feedback: '#d4856a', // corrections + signals returning to SSOT    (dash)
+} as const;
+type LoopKey = keyof typeof LOOP;
+
+// ── The organism: hub-and-spoke around the central place ────────────────────
+// `dir: 'in'`  → organ feeds the hub (particle flows organ → center).
+// `dir: 'out'` → hub serves the organ (particle flows center → organ).
+// `feature`    → keyed to place.config.features; off ⇒ the loop renders dimmed.
+type Organ = {
+  label: string;
+  sub: string;
+  loop: LoopKey;
+  dir: 'in' | 'out';
+  feature?: keyof typeof features;
+};
+
+// Clockwise from the top; even angular spacing keeps the ring readable for any
+// instance regardless of which features are on.
+const ORGANS: Organ[] = [
+  { label: 'SSOT', sub: 'knowledge/', loop: 'pipeline', dir: 'in' },
+  { label: 'Prebuild', sub: 'scripts/core', loop: 'pipeline', dir: 'in' },
+  { label: 'Graph', sub: '/graph', loop: 'reader', dir: 'out', feature: 'graph' },
+  { label: 'Map', sub: '/map', loop: 'reader', dir: 'out', feature: 'map' },
+  { label: 'AI corpus', sub: '/kb · /llms.txt', loop: 'diffusion', dir: 'out' },
+  { label: 'Dashboard', sub: '/dashboard', loop: 'reader', dir: 'out', feature: 'dashboard' },
+  { label: 'Soundscape', sub: 'ambient audio', loop: 'reader', dir: 'out', feature: 'soundscape' },
+  { label: 'Readers', sub: 'humans', loop: 'reader', dir: 'out' },
+  { label: 'Feedback', sub: 'corrections', loop: 'feedback', dir: 'in', feature: 'feedback' },
+  { label: 'Chat', sub: 'ask the KB', loop: 'feedback', dir: 'in', feature: 'chat' },
+  { label: 'Social', sub: 'outward reach', loop: 'diffusion', dir: 'out', feature: 'social' },
+  { label: 'Analytics', sub: 'usage signal', loop: 'feedback', dir: 'in', feature: 'analytics' },
+  { label: 'Contributors', sub: 'GitHub PRs', loop: 'pipeline', dir: 'in' },
+];
+
+// ── Geometry ────────────────────────────────────────────────────────────────
+const VW = 1000;
+const VH = 760;
+const cx = VW / 2;
+const cy = VH / 2 - 8;
+const ringR = 288; // distance hub → organ centers
+const nodeR = 30; // organ circle radius
+const hubR = 96; // clearance around the center shape (pipe start/end)
+const boundaryBox = 168; // target size the boundary shape is fitted into
+
+const TAU = Math.PI * 2;
+const round = (n: number) => Math.round(n * 10) / 10;
+
+const nodes = ORGANS.map((o, i) => {
+  const a = -Math.PI / 2 + (i * TAU) / ORGANS.length;
+  const ux = Math.cos(a);
+  const uy = Math.sin(a);
+  const nx = cx + ringR * ux;
+  const ny = cy + ringR * uy;
+  // Pipe endpoints trimmed to the hub edge and the node edge so the flow line
+  // never disappears under the center shape or the node circle.
+  const hub = { x: round(cx + hubR * ux), y: round(cy + hubR * uy) };
+  const edge = { x: round(nx - nodeR * ux), y: round(ny - nodeR * uy) };
+  const from = o.dir === 'in' ? edge : hub; // particle start
+  const to = o.dir === 'in' ? hub : edge; // particle end
+  const off = o.feature ? !features[o.feature] : false;
+  return {
+    ...o,
+    i,
+    x: round(nx),
+    y: round(ny),
+    color: LOOP[o.loop],
+    dash: o.loop === 'feedback' ? '5 5' : o.loop === 'diffusion' ? '10 6' : undefined,
+    pipeId: `sd-pipe-${i}`,
+    // Path is authored in flow direction so animateMotion runs the right way.
+    d: `M${from.x},${from.y} L${to.x},${to.y}`,
+    labelBelow: uy > -0.35, // labels below the node, except the top of the ring
+    off,
+  };
+});
+
+// Two staggered particles per pipe, dur scaled to spoke length for even speed.
+// An off feature's loop carries no flow (the pipe + node dim; no particles).
+const particles = nodes.flatMap((n) => {
+  if (n.off) return [];
+  const len = Math.hypot(n.x - cx, n.y - cy);
+  const dur = `${round(2 + len / 160)}s`;
+  return [0, 0.5].map((frac) => ({
+    pipeId: n.pipeId,
+    color: n.color,
+    dur,
+    begin: `${round(frac * (2 + len / 160))}s`,
+  }));
+});
+
+// ── Center shape: instance boundary fitted to the hub, or brand-circle fallback ─
+// Optional build-time file: readFileSync + try/catch (never a dynamic import —
+// an absent file must degrade, not crash the build). See
+// .agent-toolkit/rules/optional-build-time-json-readfilesync.md.
+function boundaryPath(): string | null {
+  let raw: string;
+  try {
+    raw = readFileSync(resolve(process.cwd(), 'public/data/boundary.geojson'), 'utf8');
+  } catch {
+    return null; // template ships no boundary — use the brand circle
+  }
+  try {
+    const geo = JSON.parse(raw);
+    // First polygonal feature (skip any Point/LineString features).
+    const feats: any[] = Array.isArray(geo?.features) ? geo.features : [];
+    const geom = feats
+      .map((f) => f?.geometry)
+      .find((g) => g?.type === 'Polygon' || g?.type === 'MultiPolygon');
+    if (!geom) return null;
+    // Exterior rings only: a Polygon's ring[0] is its outer boundary and the
+    // rest are holes; a MultiPolygon is a list of such [outer, ...holes]. Taking
+    // every ring (coordinates.flat()) would let a hole or an islet outrank the
+    // mainland by vertex count.
+    const exteriors: number[][][] =
+      geom.type === 'Polygon'
+        ? [geom.coordinates[0]]
+        : geom.coordinates.map((poly: number[][][]) => poly[0]);
+    let ring: number[][] = [];
+    for (const r of exteriors) if (Array.isArray(r) && r.length > ring.length) ring = r;
+    if (ring.length < 4) return null;
+
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    for (const [lng, lat] of ring) {
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+    // Longitude degrees shrink by cos(latitude); without this correction the
+    // silhouette draws too wide and disagrees with Leaflet's rendering of the
+    // same file on /map. k projects lng onto the same metric scale as lat at the
+    // shape's mid-latitude (a local equirectangular fit, good for a small area).
+    const midLat = ((minLat + maxLat) / 2) * (Math.PI / 180);
+    const k = Math.cos(midLat);
+    const w = (maxLng - minLng) * k;
+    const h = maxLat - minLat;
+    if (!(w > 0) || !(h > 0)) return null;
+    const scale = boundaryBox / Math.max(w, h);
+    const ox = cx - (w * scale) / 2;
+    const oy = cy - (h * scale) / 2;
+    const pt = ([lng, lat]: number[]) =>
+      `${round(ox + (lng - minLng) * k * scale)},${round(oy + (maxLat - lat) * scale)}`; // flip lat → svg y
+    return `M${ring.map(pt).join(' L')} Z`;
+  } catch {
+    return null;
+  }
+}
+
+const centerShape = boundaryPath();
+const domainTld = `.${placeConfig.place.domain.split('.').pop()}`;
+
+// Knowledge-domain legend rows come from place.config categories (config-driven,
+// so a re-placed instance gets its own domains for free).
+const domains = placeConfig.categories.map((c) => ({
+  title: c.title,
+  icon: c.icon,
+  color: cats[c.slug]?.color ?? '#475569',
+}));
+
+// Legend for the four flows.
+const flows: Array<{ key: LoopKey; label: string }> = [
+  { key: 'pipeline', label: 'Content pipeline' },
+  { key: 'reader', label: 'Reader surfaces' },
+  { key: 'diffusion', label: 'AI corpus & reach' },
+  { key: 'feedback', label: 'Corrections & signal' },
+];
+---
+
+<figure class="system-diagram">
+  <figcaption class="sd-head">
+    <p class="sd-eyebrow">System architecture</p>
+    <h2 class="sd-title">How {name}{domainTld} works</h2>
+    <p class="sd-intro">
+      One knowledge base at the center; the content pipeline, reader surfaces,
+      AI corpus, and correction loops flow around it. Loops for features this
+      instance has turned off are dimmed.
+    </p>
+    <ul class="sd-legend" aria-label="Flow legend">
+      {
+        flows.map((f) => (
+          <li>
+            <span class="sd-dot" style={`--c:${LOOP[f.key]}`} />
+            {f.label}
+          </li>
+        ))
+      }
+    </ul>
+  </figcaption>
+
+  <div class="sd-stage">
+    <svg
+      class="sd-svg"
+      viewBox={`0 0 ${VW} ${VH}`}
+      role="img"
+      aria-labelledby="sd-title"
+      aria-describedby="sd-desc"
+    >
+      <title id="sd-title">System architecture of {name}</title>
+      <desc id="sd-desc">
+        Hub-and-spoke diagram: {name} at the center, surrounded by the SSOT,
+        prebuild, reader surfaces, AI corpus, and correction loops of the sekai-kb
+        framework, with disabled features shown dimmed.
+      </desc>
+
+      <defs>
+        {
+          (Object.keys(LOOP) as LoopKey[]).map((k) => (
+            <marker
+              id={`sd-arrow-${k}`}
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,1 L9,5 L0,9 z" fill={LOOP[k]} opacity="0.95" />
+            </marker>
+          ))
+        }
+        <radialGradient id="sd-aura" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color={LOOP.pipeline} stop-opacity="0.45" />
+          <stop offset="55%" stop-color={LOOP.pipeline} stop-opacity="0.12" />
+          <stop offset="100%" stop-color={LOOP.pipeline} stop-opacity="0" />
+        </radialGradient>
+      </defs>
+
+      <!-- Center: breathing aura + instance boundary (or brand circle) -->
+      <g class="sd-center">
+        <circle class="sd-center-aura" cx={cx} cy={cy} r={hubR + 30} fill="url(#sd-aura)" />
+        {
+          centerShape ? (
+            <path
+              class="sd-shape"
+              d={centerShape}
+              fill="#0e3a5c"
+              fill-opacity="0.08"
+              stroke="#0e3a5c"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+          ) : (
+            <circle
+              class="sd-shape"
+              cx={cx}
+              cy={cy}
+              r={boundaryBox / 2}
+              fill="#0e3a5c"
+              fill-opacity="0.08"
+              stroke="#0e3a5c"
+              stroke-width="2"
+            />
+          )
+        }
+        <text class="sd-center-name" x={cx} y={cy - 4} text-anchor="middle">{name}</text>
+        <text class="sd-center-tld" x={cx} y={cy + 18} text-anchor="middle">
+          {domainTld} · knowledge base
+        </text>
+      </g>
+
+      <!-- Pipes (also the motion paths) -->
+      <g class="sd-pipes" fill="none">
+        {
+          nodes.map((n) => (
+            <path
+              id={n.pipeId}
+              class:list={['sd-pipe', { dimmed: n.off }]}
+              d={n.d}
+              stroke={n.color}
+              stroke-width="1.6"
+              stroke-dasharray={n.dash}
+              opacity="0.55"
+              marker-end={`url(#sd-arrow-${n.loop})`}
+            />
+          ))
+        }
+      </g>
+
+      <!-- Particles flowing along each pipe -->
+      <g class="sd-particles">
+        {
+          particles.map((p) => (
+            <circle r="2.6" fill={p.color}>
+              <animateMotion dur={p.dur} begin={p.begin} repeatCount="indefinite" rotate="auto">
+                <mpath href={`#${p.pipeId}`} />
+              </animateMotion>
+              <animate
+                attributeName="opacity"
+                values="0;1;1;0"
+                keyTimes="0;0.15;0.85;1"
+                dur={p.dur}
+                begin={p.begin}
+                repeatCount="indefinite"
+              />
+            </circle>
+          ))
+        }
+      </g>
+
+      <!-- Organ nodes + labels -->
+      <g class="sd-nodes">
+        {
+          nodes.map((n) => (
+            <g
+              class:list={['sd-organ', { dimmed: n.off }]}
+              data-feature={n.feature ?? null}
+            >
+              <circle cx={n.x} cy={n.y} r={nodeR} fill="#ffffff" stroke={n.color} stroke-width="2" />
+              <circle cx={n.x} cy={n.y} r="6" fill={n.color} />
+              <text
+                class="sd-node-label"
+                x={n.x}
+                y={n.labelBelow ? n.y + nodeR + 16 : n.y - nodeR - 18}
+                text-anchor="middle"
+              >
+                {n.label}
+              </text>
+              <text
+                class="sd-node-sub"
+                x={n.x}
+                y={n.labelBelow ? n.y + nodeR + 32 : n.y - nodeR - 4}
+                text-anchor="middle"
+              >
+                {n.sub}
+              </text>
+            </g>
+          ))
+        }
+      </g>
+    </svg>
+  </div>
+
+  <!-- Knowledge domains, from place.config categories -->
+  <ul class="sd-domains" aria-label="Knowledge domains">
+    {
+      domains.map((d) => (
+        <li>
+          <span class="sd-domain-swatch" style={`--c:${d.color}`}>{d.icon}</span>
+          {d.title}
+        </li>
+      ))
+    }
+  </ul>
+</figure>
+
+<style>
+  .system-diagram {
+    margin: 0;
+    padding: 2.5rem 1rem 3rem;
+    max-width: var(--container-wide, 1380px);
+    margin-inline: auto;
+  }
+
+  .sd-head {
+    max-width: 720px;
+    margin: 0 auto 1.25rem;
+    text-align: center;
+  }
+
+  .sd-eyebrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7aa8d4;
+    margin: 0 0 0.4rem;
+  }
+
+  .sd-title {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #0e3a5c;
+    margin: 0 0 0.6rem;
+  }
+
+  .sd-intro {
+    color: #64748b;
+    font-size: 1.02rem;
+    line-height: 1.6;
+    margin: 0 0 1rem;
+  }
+
+  .sd-legend,
+  .sd-domains {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 1.1rem;
+  }
+
+  .sd-legend li,
+  .sd-domains li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #475569;
+  }
+
+  .sd-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--c);
+    flex: 0 0 auto;
+  }
+
+  .sd-stage {
+    margin: 0 auto;
+  }
+
+  .sd-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sd-shape {
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  .sd-center-aura {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: sd-breathe 4.5s ease-in-out infinite;
+  }
+
+  @keyframes sd-breathe {
+    0%,
+    100% {
+      opacity: 0.5;
+      transform: scale(0.94);
+    }
+    50% {
+      opacity: 0.95;
+      transform: scale(1.06);
+    }
+  }
+
+  .sd-center-name {
+    font-family: var(--font-title, sans-serif);
+    font-weight: 800;
+    font-size: 1.4rem;
+    fill: #0e3a5c;
+  }
+
+  .sd-center-tld {
+    font-size: 0.72rem;
+    fill: #64748b;
+    letter-spacing: 0.02em;
+  }
+
+  .sd-node-label {
+    font-weight: 700;
+    font-size: 0.86rem;
+    fill: #1f2937;
+  }
+
+  .sd-node-sub {
+    font-size: 0.68rem;
+    fill: #6b7280;
+  }
+
+  /* A feature turned off in place.config.features: the whole loop dims. */
+  .sd-organ.dimmed,
+  .sd-pipe.dimmed {
+    opacity: 0.16;
+    filter: grayscale(1);
+    transition: opacity 0.3s;
+  }
+
+  .sd-domain-swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    background: color-mix(in srgb, var(--c) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  }
+
+  .sd-domains {
+    margin-top: 1.5rem;
+  }
+
+  /* Wide fixed diagram scrolls horizontally on small screens rather than
+     squashing the ring. */
+  @media (max-width: 820px) {
+    .sd-stage {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sd-svg {
+      min-width: 760px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sd-svg * {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script>
+  // Pause the SMIL particle animations when the diagram is off-screen (and
+  // permanently for reduced-motion users) — SMIL is not covered by the CSS
+  // reduced-motion killswitch above.
+  const svgs = document.querySelectorAll<SVGSVGElement>('.sd-svg');
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (svgs.length) {
+    if (reduce) {
+      svgs.forEach((svg) => svg.pauseAnimations?.());
+    } else if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const svg = entry.target as SVGSVGElement;
+            if (entry.isIntersecting) svg.unpauseAnimations?.();
+            else svg.pauseAnimations?.();
+          }
+        },
+        { rootMargin: '120px' },
+      );
+      svgs.forEach((svg) => observer.observe(svg));
+    }
+  }
+</script>

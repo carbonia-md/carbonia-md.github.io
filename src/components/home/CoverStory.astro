@@ -1,0 +1,95 @@
+---
+import placeConfig from '../../../place.config';
+
+const { coverStory } = placeConfig.home;
+
+type Variant = {
+  dot: string;
+  line: string;
+  labelColor: string;
+  labelBg: string;
+};
+const BLUE: Variant = {
+  dot: '#3b82f6',
+  line: 'linear-gradient(180deg,#3b82f6,#e2e8f0)',
+  labelColor: '#3b82f6',
+  labelBg: '#eff6ff',
+};
+const GREEN: Variant = {
+  dot: '#059669',
+  line: 'linear-gradient(180deg,#059669,#e2e8f0)',
+  labelColor: '#059669',
+  labelBg: '#ecfdf5',
+};
+const YELLOW: Variant = {
+  dot: '#fbbf24',
+  line: 'linear-gradient(180deg,#fbbf24,#e2e8f0)',
+  labelColor: '#b45309',
+  labelBg: '#fffbeb',
+};
+
+const quotes = coverStory.quotes.map((q, i) => ({
+  ...q,
+  variant:
+    i === coverStory.quotes.length - 1 ? YELLOW : i % 2 === 1 ? GREEN : BLUE,
+}));
+---
+
+<section class="bg-[color:var(--color-bg-alt)] px-8 py-24">
+  <div class="mx-auto max-w-[780px]">
+    <h2
+      class="mb-4 text-center font-serif text-[2rem] font-light tracking-normal text-[color:var(--color-ink)]"
+    >
+      {coverStory.heading}
+    </h2>
+    <p
+      class="mb-12 text-center text-[1.1rem] font-semibold leading-[2] text-[color:var(--color-ink-soft)]"
+    >
+      {coverStory.lead}
+    </p>
+    <div class="flex flex-col">
+      {
+        quotes.map((q, i) => (
+          <div class="grid grid-cols-[28px_1fr] gap-x-4">
+            <div class="flex flex-col items-center">
+              <div
+                class="mt-[0.35rem] h-3 w-3 flex-shrink-0 rounded-full border-2 border-white outline outline-2"
+                style={`background:${q.variant.dot};outline-color:${q.variant.dot};`}
+              />
+              {i < quotes.length - 1 && (
+                <div
+                  class="mt-1 min-h-[2rem] w-[2px] flex-1"
+                  style={`background:${q.variant.line};`}
+                />
+              )}
+            </div>
+            <div class="pb-8">
+              <span
+                class="mb-2 inline-block rounded px-2 py-[0.15rem] text-[0.72rem] font-bold"
+                style={`color:${q.variant.labelColor};background:${q.variant.labelBg};`}
+              >
+                {q.era}
+              </span>
+              <blockquote class="m-0 text-[1.05rem] font-semibold not-italic leading-[1.9] text-[color:var(--color-ink)]">
+                {q.quote}
+                <cite class="mt-[0.4rem] block text-[0.8rem] not-italic text-[color:var(--color-ink-soft)]">
+                  {q.cite}
+                </cite>
+              </blockquote>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <div
+      class="mt-12 text-center text-[1.05rem] leading-[1.9] text-[color:var(--color-ink-soft)] [&>p>strong]:text-[color:var(--color-ink)] [&>p]:mb-4"
+    >
+      {coverStory.closing.map((line) => <p>{line}</p>)}
+      <a
+        href="/about"
+        class="mt-2 inline-block font-medium text-[#3b82f6] no-underline hover:underline"
+        >{coverStory.aboutLinkText}</a
+      >
+    </div>
+  </div>
+</section>

@@ -1,0 +1,101 @@
+---
+/**
+ * BrandMark — site wordmark + favicon dot, reusable across contexts.
+ *
+ * Genericized (task 1.1a): the wordmark reads from `place.config` — the main
+ * text is `place.name`, the accent dot is the domain's TLD (e.g. `.md`). No
+ * place literals; re-placing the site changes the wordmark via config alone.
+ *
+ * Three variants cover every current use case:
+ *   - `auto`  : inherits `--logo-color` / `--dot-color` CSS vars from the
+ *               surrounding element (Header drives colour by scroll/hero state).
+ *   - `light` : forced white wordmark + accent dot (shot-mode watermark).
+ *   - `dark`  : forced dark wordmark + accent dot (light backgrounds).
+ *
+ * `href` turns the mark into an <a>; omit for a bare <span>. Size is a numeric
+ * rem value so callers tune the wordmark without a new CSS class per size.
+ */
+import placeConfig from '../../place.config';
+
+interface Props {
+  href?: string;
+  variant?: 'auto' | 'light' | 'dark';
+  /** Wordmark font size in rem. Default 1.3 matches nav. */
+  size?: number;
+  /** Accessibility label (only applied when `href` is set, i.e. is a link). */
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  href,
+  variant = 'auto',
+  size = 1.3,
+  ariaLabel,
+  class: extraClass = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'span';
+const fontSize = `${size}rem`;
+
+const brandName = placeConfig.place.name;
+const brandSuffix = placeConfig.place.brandSuffix ?? `.${placeConfig.place.domain.split('.').pop()}`;
+---
+
+<Tag
+  href={href}
+  aria-label={href ? ariaLabel : undefined}
+  class:list={['brand-mark', `brand-mark--${variant}`, extraClass]}
+  style={`--brand-size: ${fontSize};`}
+>
+  <span class="brand-text">{brandName}<span class="brand-dot">{brandSuffix}</span></span>
+</Tag>
+
+<style>
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+    font-family: var(--font-title);
+    font-weight: 700;
+    font-size: var(--brand-size, 1.3rem);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .brand-dot {
+    font-family: var(--font-interface);
+    font-weight: 600;
+    transition: color 0.45s;
+  }
+
+  /* auto: colours come from parent via CSS vars (Header.astro pattern) */
+  .brand-mark--auto {
+    color: var(--logo-color, #1a1a2e);
+    transition:
+      color 0.45s,
+      transform 0.3s;
+  }
+  .brand-mark--auto .brand-dot {
+    color: var(--dot-color, #00d4aa);
+  }
+  a.brand-mark--auto:hover {
+    transform: translateY(-1px);
+  }
+
+  /* light: hardcoded white + accent (shot-mode watermark etc.) */
+  .brand-mark--light {
+    color: #ffffff;
+  }
+  .brand-mark--light .brand-dot {
+    color: #60a5fa;
+  }
+
+  /* dark: for light backgrounds where we want a specific dark wordmark */
+  .brand-mark--dark {
+    color: #1a1a2e;
+  }
+  .brand-mark--dark .brand-dot {
+    color: #60a5fa;
+  }
+</style>

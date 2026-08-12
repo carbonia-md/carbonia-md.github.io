@@ -1,0 +1,78 @@
+---
+/**
+ * TimelineDayNav — shared left-side date jump rail (month -> day + count),
+ * sticky, desktop only.
+ *
+ * Extracted from fork's changelog.template + latest.template. Date formatting
+ * is done by the caller; this component only handles structure and accent color.
+ *
+ * Consumer-script hooks:
+ * - `.timeline-nav-month` — month section (collapses empty months)
+ * - `.timeline-nav-link`  — day link (data-day / active class toggle)
+ * - `.timeline-nav-count` — day count (updated after filtering)
+ */
+interface NavDay {
+  key: string; // YYYY-MM-DD (data-day + anchor)
+  label: string;
+  count: number;
+}
+interface NavMonth {
+  key: string; // YYYY-MM
+  label: string;
+  days: NavDay[];
+}
+interface Props {
+  months: NavMonth[];
+  /** anchor prefix (latest-day- / day-), prepended to day.key */
+  anchorPrefix: string;
+  /** hover accent color */
+  accent?: 'emerald' | 'blue';
+  /** nav id reused by existing page scripts (changelog: date-nav) */
+  navId?: string;
+  /** sticky offset */
+  top?: string;
+}
+
+const {
+  months,
+  anchorPrefix,
+  accent = 'emerald',
+  navId,
+  top = '132px',
+} = Astro.props;
+
+const hoverClass =
+  accent === 'emerald'
+    ? 'hover:bg-[#f0f9ff] hover:text-[#065f46]'
+    : 'hover:bg-[#f1f5f9] hover:text-[#1e293b]';
+---
+
+<nav
+  id={navId}
+  class="sticky max-h-[calc(100vh-10rem)] overflow-y-auto pr-2 max-lg:hidden"
+  style={`top:${top}; scrollbar-color: rgba(26,60,52,0.12) transparent; scrollbar-width: thin;`}
+>
+  {
+    months.map((month) => (
+      <div class="timeline-nav-month mb-5" data-month={month.key}>
+        <h3 class="mb-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#94a3b8]">
+          {month.label}
+        </h3>
+        <div class="flex flex-col gap-0.5">
+          {month.days.map((day) => (
+            <a
+              href={`#${anchorPrefix}${day.key}`}
+              class={`timeline-nav-link flex items-center justify-between rounded-md px-2.5 py-1.5 text-[0.8rem] text-[#64748b] no-underline transition-colors ${hoverClass}`}
+              data-day={day.key}
+            >
+              <span>{day.label}</span>
+              <span class="timeline-nav-count text-[0.7rem] text-[#94a3b8]">
+                {day.count}
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</nav>

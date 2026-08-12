@@ -1,0 +1,493 @@
+---
+/**
+ * /soundscape — the audio axis: one native HTML5 player per manifest entry,
+ * grouped into the categories the manifest declares.
+ *
+ * No player library and no client framework. `<audio controls preload="none">`
+ * is the whole player: the browser's own transport, and nothing on the wire
+ * until a reader presses play. There is no `<script>` on this page at all.
+ *
+ * Entries come from `knowledge/sounds/_manifest.md` through `src/lib/sounds.ts`,
+ * which is absent-safe — an instance with no manifest, an empty list, or a
+ * missing asset renders the empty state or drops the offending entry, and the
+ * build stays green either way. A flat `sounds` list (the shape the first
+ * release shipped) normalizes to one implicit category that renders no heading,
+ * so an existing manifest keeps rendering exactly as it did.
+ *
+ * The page always builds. `features.soundscape` gates only the Header and
+ * Footer entry points, exactly as /map, /graph, and /dashboard do.
+ *
+ * All copy comes from src/i18n/ui.ts; place identity comes from the manifest
+ * and place.config.ts. Every colour resolves through the theme tokens in
+ * src/styles/tokens.css, so both themes are legible from one set of rules and
+ * no hex is written here.
+ */
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { builtRoutes } from '../lib/built-routes';
+import { readSoundscape } from '../lib/sounds';
+import placeConfig from '../../place.config';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+/**
+ * A category's manifest `article` is checked against the routes this build
+ * produces (`src/lib/built-routes.ts`), so a stale link is dropped with a
+ * build-time warning instead of shipping a 404 — which is also what keeps the
+ * post-build internal-link check green.
+ */
+const knownRoutes = builtRoutes(placeConfig, await getCollection('en'));
+
+// Build-time read. Warnings (a missing asset, a malformed entry, an `article`
+// that resolves to nothing) are emitted to the build log by the reader itself,
+// so they show up in the astro build output.
+const { categories, entries } = readSoundscape(process.cwd(), { knownRoutes });
+
+const wantedCount = categories.reduce((n, category) => n + category.wishlist.length, 0);
+
+/** `{n}` plural label, with a dedicated singular so "1 recordings" cannot happen. */
+const count = (n: number, plural: string, one: string) =>
+  n === 1 ? t(one) : t(plural).replace('{n}', String(n));
+
+const stats = [
+  count(entries.length, 'soundscape.count', 'soundscape.count.one'),
+  count(wantedCount, 'soundscape.stats.wanted', 'soundscape.stats.wanted.one'),
+  count(categories.length, 'soundscape.stats.categories', 'soundscape.stats.categories.one'),
+];
+
+/** Date shown per entry: the manifest date is already ISO-8601, so slicing is safe. */
+const day = (iso: string) => iso.slice(0, 10);
+
+/**
+ * A contributor link is rendered only for a scheme this page is willing to emit.
+ * The manifest is reviewed repository content, not user input, but a link target
+ * is the one manifest value that becomes executable if it carries a `javascript:`
+ * scheme, so it is checked rather than trusted.
+ */
+const isLinkable = (url: string) =>
+  url.startsWith('https://') || url.startsWith('http://') || url.startsWith('/');
+---
+
+<Layout
+  title={t('soundscape.meta.title')}
+  description={t('soundscape.meta.description')}
+  lang={lang}
+>
+  <main class="soundscape">
+    <section class="hero">
+      <h1>{t('soundscape.hero.title')}</h1>
+      <p class="hero-subtitle">{t('soundscape.hero.subtitle')}</p>
+      {/* Always rendered, zeros included: an instance with nothing published yet
+          is a real state of the collection, and "0 recordings, 0 wanted" says so
+          more honestly than an absent line. */}
+      <p class="stats">
+        {
+          stats.map((stat, i) => (
+            <>
+              {i > 0 && <span class="stat-sep" aria-hidden="true"></span>}
+              <span class="stat">{stat}</span>
+            </>
+          ))
+        }
+      </p>
+    </section>
+
+    {
+      categories.length === 0 ? (
+        <section class="empty">
+          <h2>{t('soundscape.empty.title')}</h2>
+          <p>{t('soundscape.empty.description')}</p>
+        </section>
+      ) : (
+        categories.map((category) => (
+          <section class="category" id={category.id}>
+            {category.title && (
+              <h2 class="category-title">
+                {category.icon && (
+                  <span class="category-icon" aria-hidden="true">
+                    {category.icon}
+                  </span>
+                )}
+                {category.title}
+              </h2>
+            )}
+
+            {category.entries.length === 0 ? (
+              <p class="category-empty">{t('soundscape.category.empty')}</p>
+            ) : (
+              <ul class="clip-grid">
+                {category.entries.map((entry) => (
+                  <li class="clip">
+                    <div class="clip-head">
+                      <h3 class="clip-title">
+                        {entry.icon && (
+                          <span class="clip-icon" aria-hidden="true">
+                            {entry.icon}
+                          </span>
+                        )}
+                        {entry.title}
+                      </h3>
+                      <p class="clip-location">{entry.location}</p>
+                    </div>
+
+                    {entry.description && <p class="clip-description">{entry.description}</p>}
+
+                    <audio controls preload="none" src={entry.file}>
+                      {t('soundscape.unsupported')}
+                    </audio>
+
+                    <p class="clip-credit">
+                      {entry.contributor && (
+                        <>
+                          {entry.contributorUrl && isLinkable(entry.contributorUrl) ? (
+                            <a
+                              class="clip-contributor"
+                              href={entry.contributorUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {entry.contributor}
+                            </a>
+                          ) : (
+                            <span class="clip-contributor">{entry.contributor}</span>
+                          )}
+                          {' '}
+                        </>
+                      )}
+                      {entry.credit}
+                      {entry.date && (
+                        <>
+                          {' '}
+                          <time datetime={entry.date}>{day(entry.date)}</time>
+                        </>
+                      )}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {category.wishlist.length > 0 && (
+              <div class="wishlist">
+                <h3 class="wishlist-title">{t('soundscape.wishlist.title')}</h3>
+                <ul class="wishlist-grid">
+                  {category.wishlist.map((item) => (
+                    <li class="wish">
+                      <span class="wish-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span class="wish-text">{item.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {category.article && (
+              <a class="category-article" href={category.article}>
+                {t('soundscape.category.article')}
+              </a>
+            )}
+          </section>
+        ))
+      )
+    }
+
+    <section class="contribute">
+      <h2 class="contribute-title">{t('soundscape.contribute.title')}</h2>
+      <ol class="contribute-steps">
+        <li>{t('soundscape.contribute.step.one')}</li>
+        <li>{t('soundscape.contribute.step.two')}</li>
+        <li>{t('soundscape.contribute.step.three')}</li>
+      </ol>
+      <a class="contribute-cta" href="/contribute">{t('soundscape.contribute.cta')}</a>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  /* Every colour below resolves through src/styles/tokens.css, which is what
+     makes the dark theme a token flip rather than a second stylesheet. */
+  .soundscape {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 5.5rem var(--space-page-x, 1.5rem) 5rem;
+  }
+
+  .hero {
+    margin-bottom: var(--space-6, 2.5rem);
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  .hero-subtitle {
+    margin: 0.6rem auto 0;
+    max-width: 60ch;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 0.9rem 0 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-ink-soft);
+  }
+
+  .stat-sep {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-border);
+  }
+
+  .category {
+    margin-top: var(--space-7, 3rem);
+    scroll-margin-top: 5rem;
+  }
+
+  .category-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 1.1rem;
+    font-size: var(--title-subsection-size, 1.5rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  .category-icon {
+    font-size: 1.1em;
+    line-height: 1;
+  }
+
+  .clip-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .clip {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface);
+    padding: 1.1rem 1.25rem 1.25rem;
+  }
+
+  .clip-head {
+    margin-bottom: 0.6rem;
+  }
+
+  .clip-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  .clip-icon {
+    line-height: 1;
+  }
+
+  .clip-location {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-ink-soft);
+  }
+
+  .clip-description {
+    margin: 0 0 0.85rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--color-ink-soft);
+  }
+
+  /* The browser's own transport is the player. Only the box model is ours, so
+     every platform keeps the controls its users already know. */
+  .clip audio {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: auto;
+  }
+
+  .clip-credit {
+    margin: 0.85rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+  }
+
+  .clip-contributor {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  a.clip-contributor {
+    color: var(--color-accent);
+  }
+
+  .category-empty {
+    margin: 0;
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 1.5rem 1.25rem;
+    font-size: 0.92rem;
+    color: var(--color-ink-soft);
+  }
+
+  .wishlist {
+    margin-top: 1.25rem;
+    padding: 1.1rem 1.25rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-soft);
+  }
+
+  .wishlist-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-ink-soft);
+  }
+
+  .wishlist-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.5rem 1rem;
+  }
+
+  .wish {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--color-ink);
+  }
+
+  .wish-icon {
+    line-height: 1;
+  }
+
+  .category-article {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
+  .contribute {
+    margin-top: var(--space-8, 4rem);
+    padding: 1.75rem 1.5rem 2rem;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-soft);
+  }
+
+  .contribute-title {
+    margin: 0;
+    font-size: var(--title-subsection-size, 1.5rem);
+    font-weight: 800;
+    color: var(--color-ink);
+  }
+
+  .contribute-steps {
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.5rem;
+    max-width: 70ch;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  .contribute-steps li::marker {
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  .contribute-cta {
+    display: inline-block;
+    margin-top: 1.25rem;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-chip, 16px);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .contribute-cta:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .empty {
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+
+  .empty h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  .empty p {
+    margin: 0.6rem auto 0;
+    max-width: 46ch;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+  }
+
+  @media (max-width: 768px) {
+    .soundscape {
+      padding: 4.5rem 1rem 4rem;
+    }
+    .clip {
+      padding: 1rem;
+    }
+    .contribute {
+      padding: 1.5rem 1.15rem 1.75rem;
+    }
+  }
+</style>

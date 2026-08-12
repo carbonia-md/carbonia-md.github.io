@@ -1,0 +1,172 @@
+# article-health.config.toml — declarative config for the SSOT article-health tool.
+#
+# Design proposal: reports/article-health-ssot-design-2026-05-04.md
+# Canonical writing-quality rules: docs/playbook/ARTICLE-PLAYBOOK.md
+#
+# Checks are auto-discovered from lib/article_health/checks/ (run
+# `article-health --list-checks` for the live list). This repo is English-only;
+# all checks operate on English content.
+#
+# rationale-presence: checks the frontmatter rationale block has 4 required keys
+# (why_this_hook / whats_excluded / where_it_hedges / whos_pushing_back) + 1
+# optional (which_framing). Missing rationale is WARN for the configured
+# strict_categories and INFO otherwise; HARD for typo'd key names. Plugin only
+# checks key presence, NOT content depth (a terse fill is OK). Strict/skip
+# categories are configured under [checks.rationale-presence.options] above.
+#
+# image-alt + seo-meta added 2026-05-16 — Phase 4-5 of the immune-score redesign.
+# P0 gap from TOOL-INVENTORY. Both default WARN (soft-launch for legacy heal):
+# image-alt catches empty/generic/filename alt text; seo-meta catches frontmatter
+# title/desc length + brand-prefix + title-desc duplication (canonical
+# ARTICLE-PLAYBOOK §5 SEO Metadata four principles, 120-160 chars).
+#
+# link-target added 2026-05-04 jovial-feistel session — Phase 1 (casing,
+# HARD, auto-fix) caught 649 `]( /lang/UpperCase/...)` broken-routing
+# violations across 209 files; Phase 2 (existence, WARN) cross-checks
+# every link target against `knowledge/{lang}/{Category}/*.md` filesystem.
+# Source-layer counterpart of post-build `verify-internal-links.sh`.
+
+[meta]
+version = 1
+canonical_doc = "docs/playbook/ARTICLE-PLAYBOOK.md"
+phase = "7-pre-commit-wired"
+
+# ── Per-check severity / options ─────────────────────────────────────────────
+# Plugin defaults are set in each module (DEFAULT_SEVERITY). Override here.
+
+[checks.rationale-presence.options]
+# Category coupling for the rationale check lives here, not in code, so the tool
+# stays place-generic (it ships to sekai-kb). Values are place.config category
+# titles (the knowledge/ folder names). `strict_categories` → missing rationale
+# is WARN (release-pr escalates to a ship blocker); every other category → INFO.
+# `skip_categories` → exempt from the rationale check entirely (meta/site pages).
+strict_categories = ["History"]
+skip_categories = ["About"]
+
+# ── Stage profiles ───────────────────────────────────────────────────────────
+
+[profiles.pre-commit]
+# Pre-commit hook gate. HARD violations block; WARN reported but allowed.
+# 2026-05-11: aligned with the ci-deploy profile — run all plugins via `*` to
+# avoid the asymmetric "pre-commit passes, ci-deploy fails" ship (root cause of a
+# CI emergency where two files missing featured/subcategory weren't in the old
+# 7-check pre-commit list but were in ci-deploy's `*` scope; a squash-merged
+# contributor PR skips pre-commit, and the maintainer's local heal commit didn't
+# catch it either).
+#
+# Symmetry principle: a local commit and main's automatic CI should run the same
+# check set to avoid false-positive ships. WARN stays advisory (doesn't block);
+# only HARD blocks the commit.
+#
+# History — pre-commit was originally 7 checks mapped to legacy inline checks,
+# upgraded one plugin at a time across phases 1-10. All plugins are stable now, so
+# aligning pre-commit with ci-deploy adds no risk (fail_on=hard unchanged, only
+# the scope widens).
+checks = "*"
+fail_on = "hard"
+
+[profiles."rewrite-stage-3"]
+# REWRITE-PIPELINE Stage 3 (Verify): prose-health score ≤ 3 budget. The English
+# port (2026-06-29) recalibrated the score thresholds to LB's short locals-guide
+# corpus — all 18 legacy en articles land ≤ 2, so the gate stays advisory for
+# them while still failing genuine AI-slop. Canonical rules: ARTICLE-PLAYBOOK §6 Voice.
+checks = ["prose-health"]
+fail_on = "score-budget"
+
+[profiles."rewrite-stage-3-5"]
+# Stage 3.5 FactCheck — citation health + correction-anxiety scan (v6.2) +
+# verbatim-quote fidelity (v7.0). correction-meta WARN default (advisory in the
+# gate); a callout-triggered EVOLVE is treated as must-fix by REWRITE Step
+# 3.2-bis (surfaced here for human/agent judgment).
+# quote-fidelity added 2026-06-10 (REWRITE v7.0 Step 3.6.1) — QF1 compares quotes
+# verbatim against the researchReport SSOT (catches writer abbreviation/rephrasing
+# drift), QF2 lists superlatives as INFO. Soft-launch WARN (a legacy report
+# missing its quote library would false-positive); reassess HARD after vc≥3.
+checks = ["footnote-format", "footnote-density", "correction-meta", "quote-fidelity"]
+fail_on = "hard"
+
+[profiles."rewrite-stage-4"]
+# Stage 4 Format.
+# chronicle-lead added 2026-05-09 (REWRITE v3.0 D Wave 1) — new articles running
+# the stage-4 profile hard-fail; legacy soft-launched via WARN default, then HARD
+# default after follow-up heal commits fixed 17 existing violations.
+# word-count added 2026-05-10 — English word-count depth threshold;
+# triggered when an article still read as thin/front-loaded after an EVOLVE pass,
+# so the maintainer mandated a plugin gate. Soft-launch WARN default;
+# rewrite-stage-4 promotes it to HARD (a new article must pass).
+# image-health (count gate) added 2026-05-11 — a post-ship callout ("why so few
+# images?") exposed that the three-beat narrative rhythm in Step 4.3.1 wasn't
+# instrumented in article-health (DNA #15). min_images=3 matches the depth-article
+# ideal of a hero + 1-2 scene-mid images; rewrite-stage-4 promotes to HARD.
+# media-richness added 2026-06-04 (directive to raise media requirements + refine
+# the text/image ratio) — paragraph-rhythm upgraded to a media-density band (floor
+# 0.7 media-poor / ceiling 1.2 / hard 1.5+ with median<55), calibrated against a
+# rich-media exemplar corpus; media-richness adds a length-scaled count target
+# (images+video ~1 per 1.1k words, long pieces toward ≥8, INFO) + a multimodal
+# nudge. NOTE: these numeric thresholds were calibrated on a long-form corpus and
+# are uncalibrated for short-form content (see ARTICLE-PLAYBOOK §8 Numeric Thresholds).
+# Legacy heal path: the sub-list below accumulates audit findings into batched heal commits.
+checks = ["frontmatter-format", "format-structure", "wikilink-target", "link-target", "chronicle-lead", "word-count", "image-health", "paragraph-rhythm", "media-richness", "viz-health"]
+fail_on = "hard"
+
+[profiles."rewrite-stage-4".severity_overrides]
+frontmatter-format = "hard"
+chronicle-lead = "hard"
+word-count = "hard"
+# viz-health promoted to HARD: a new article containing data charts must cite the
+# source and must not use "as shown above/below" AI-blind pointer phrases. HARD for
+# rewrite-stage-4 (new-article self-check); pre-commit / legacy stay at default WARN.
+viz-health = "hard"
+# paragraph-rhythm: soft launch - stays at default WARN. Will upgrade to HARD
+# via severity_override here after vc≥3 cases collected from production
+# (per chronicle-lead / word-count / image-health staged promotion pattern).
+
+# Options overrides use the `options_overrides` table (per the config.py
+# ProfileConfig schema).
+[profiles."rewrite-stage-4".options_overrides.word-count]
+# word_count.py counts English words (min_words). Key name + value match the
+# plugin's DEFAULT_MIN_WORDS (250, calibrated to a short-form, locals-guide corpus).
+min_words = 250
+
+[profiles."rewrite-stage-4".options_overrides.image-health]
+# Raise the media-completeness floor: length_scaled →
+# effective_min = max(min_images, round(prose-words / words_per_media)); base 3 is
+# the short-depth floor. Rich-media exemplars pass, text-only fails. Prose-word
+# count excludes the references/footnote section.
+min_images = 3
+length_scaled = true
+words_per_media = 400
+min_images_severity = "hard"
+zero_images_severity = "hard"
+
+[profiles."rewrite-stage-4-5"]
+# Stage 4.5 Media — keep an ad-hoc entry point for running image-health on its own
+# (rewrite-stage-4 already includes image-health and the count gate).
+checks = ["image-health"]
+fail_on = "hard"
+
+[profiles."rewrite-stage-4-5".options_overrides.image-health]
+min_images = 3
+length_scaled = true
+words_per_media = 400
+min_images_severity = "hard"
+zero_images_severity = "hard"
+
+[profiles.release-pr]
+# Run everything, strict (both HARD and WARN trigger a fail). For manual release review.
+checks = "*"
+fail_on = "warn"
+
+[profiles.ci-deploy]
+# CI auto-deploy gate — run everything, block only HARD violations. WARN is
+# advisory (for the dashboard + human review) and shouldn't block a deploy. Added
+# 2026-05-04: the thousands of existing advisory WARNs couldn't be fixed at the CI
+# trigger point, so the strict release review (release-pr) and the deploy gate
+# (ci-deploy) were split into two separate purposes.
+checks = "*"
+fail_on = "hard"
+
+[profiles.dashboard]
+# Run everything, never block, JSON output for site dashboards.
+checks = "*"
+fail_on = "never"

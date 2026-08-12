@@ -1,0 +1,44 @@
+# Credential leak scan (second layer beyond .gitignore)
+cred_fail=0
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  [ ! -f "$f" ] && continue
+  case "$f" in
+    *.png|*.jpg|*.jpeg|*.gif|*.webp|*.pdf|*.zip|*.woff*|*.ttf|*.otf|*.ico|*.mp4|*.mp3) continue ;;
+  esac
+  if grep -l '"type":[[:space:]]*"service_account"' "$f" > /dev/null 2>&1; then
+    echo "CREDENTIAL LEAK: $f looks like a Google service account JSON"
+    cred_fail=1
+  fi
+  if grep -lE 'BEGIN (RSA )?PRIVATE KEY' "$f" > /dev/null 2>&1; then
+    echo "CREDENTIAL LEAK: $f contains a private key"
+    cred_fail=1
+  fi
+  if grep -lE 'AIza[0-9A-Za-z_-]{35}' "$f" > /dev/null 2>&1; then
+    echo "CREDENTIAL LEAK: $f contains a suspected Google API key (AIza...)"
+    cred_fail=1
+  fi
+  if grep -lE '(CF|CLOUDFLARE)_(API_)?TOKEN[[:space:]]*=[[:space:]]*["'"'"']?[A-Za-z0-9_-]{40,}' "$f" > /dev/null 2>&1; then
+    echo "CREDENTIAL LEAK: $f contains a suspected Cloudflare API token"
+    cred_fail=1
+  fi
+  if grep -lE '(sk|pk)_(live|test)_[A-Za-z0-9]{24,}' "$f" > /dev/null 2>&1; then
+    echo "CREDENTIAL LEAK: $f contains a suspected sk_/pk_ API key"
+    cred_fail=1
+  fi
+done <<EOF
+$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+EOF
+if [ "$cred_fail" = "1" ]; then
+  echo ""
+  echo "Credential leak detected. If this is a test fixture, use --no-verify."
+  exit 1
+fi
+
+# Frontmatter validation on staged knowledge/ files
+node scripts/core/test-frontmatter.mjs --staged
+
+# article-health on staged knowledge/ files
+if git diff --cached --name-only --diff-filter=ACM | grep -q '^knowledge/.*\.md$'; then
+  uv run python scripts/tools/article-health.py --staged --profile=pre-commit --quiet
+fi

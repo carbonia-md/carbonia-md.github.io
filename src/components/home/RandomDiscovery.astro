@@ -1,0 +1,109 @@
+---
+import placeConfig from '../../../place.config';
+
+const { randomDiscovery } = placeConfig.home;
+const { categories } = placeConfig;
+
+const routedCats = categories.map((c) => c.slug);
+---
+
+<section
+  class="relative mx-auto my-16 max-w-[600px] overflow-hidden rounded-3xl border border-[rgba(245,158,11,0.2)] bg-[linear-gradient(135deg,#fffbeb_0%,#fef3c7_50%,#fed7aa_100%)] px-8 py-12 text-center max-[480px]:mx-4 max-[480px]:my-12 max-[480px]:px-4 max-[480px]:py-8"
+>
+  <div
+    class="pointer-events-none absolute inset-0 opacity-60"
+    style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f59e0b' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M15 0L20 10L30 15L20 20L15 30L10 20L0 15L10 10Z'/%3E%3C/g%3E%3C/svg%3E&quot;);"
+    aria-hidden="true"
+  >
+  </div>
+  <div class="relative z-[2]">
+    <button
+      id="random-discovery-btn"
+      class="relative mb-6 min-w-[280px] cursor-pointer overflow-hidden rounded-[20px] border-none bg-[linear-gradient(135deg,#f59e0b,#d97706)] px-12 py-6 text-[1.3rem] font-bold text-white shadow-[0_8px_25px_rgba(245,158,11,0.3)] transition-all duration-300 hover:-translate-y-1 hover:bg-[linear-gradient(135deg,#d97706,#b45309)] hover:shadow-[0_12px_30px_rgba(245,158,11,0.4)] active:scale-95 [&::before]:content-[''] [&::before]:absolute [&::before]:left-[-100%] [&::before]:top-0 [&::before]:h-full [&::before]:w-full [&::before]:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)] [&::before]:transition-[left] [&::before]:duration-500 hover:[&::before]:left-full max-[480px]:min-w-[250px] max-[480px]:px-8 max-[480px]:py-[1.2rem] max-[480px]:text-[1.1rem]"
+    >
+      <span
+        class="mr-2 inline-block text-[1.8rem] [animation:dice-roll_2s_ease-in-out_infinite]"
+        >🎲</span
+      >
+      <span
+        class="random-text mb-[0.3rem] block text-[1.3rem] leading-tight max-[480px]:text-[1.1rem]"
+        >{randomDiscovery.button}</span
+      >
+      <span
+        class="random-subtitle block text-[0.9rem] font-medium leading-none opacity-90 max-[480px]:text-[0.85rem]"
+        >{randomDiscovery.subtitle}</span
+      >
+    </button>
+    <p class="m-0 text-base font-semibold leading-[1.6] text-[#92400e]">
+      {randomDiscovery.description}
+    </p>
+  </div>
+</section>
+
+<script is:inline define:vars={{ routedCats }}>
+  document.addEventListener('DOMContentLoaded', async function () {
+    var randomBtn = document.getElementById('random-discovery-btn');
+    var articles = [];
+
+    try {
+      var res = await fetch('/kb/topics.json');
+      if (res.ok) {
+        var raw = await res.json();
+        articles = raw
+          .filter(function (a) {
+            var s = (a.url || '').split('/');
+            var urlCat = s.length >= 2 ? s[s.length - 2].toLowerCase() : '';
+            return routedCats.indexOf(urlCat) !== -1;
+          })
+          .map(function (a) {
+            return { title: a.title, url: a.url, category: a.category || '' };
+          });
+      }
+    } catch (e) {
+      articles = [];
+    }
+
+    if (randomBtn && articles.length > 0) {
+      var shuffled = articles.slice();
+      for (var i = shuffled.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = shuffled[i];
+        shuffled[i] = shuffled[j];
+        shuffled[j] = tmp;
+      }
+      var currentIndex = 0;
+
+      randomBtn.addEventListener('click', function () {
+        if (currentIndex >= shuffled.length) {
+          currentIndex = 0;
+          for (var i = shuffled.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = tmp;
+          }
+        }
+        var randomArticle = shuffled[currentIndex++];
+        var textEl = randomBtn.querySelector('.random-text');
+        var subtitleEl = randomBtn.querySelector('.random-subtitle');
+        randomBtn.style.pointerEvents = 'none';
+        var ticks = 0;
+        var totalTicks = 8;
+        var interval = setInterval(function () {
+          var temp = articles[Math.floor(Math.random() * articles.length)];
+          textEl.textContent = temp.title;
+          if (subtitleEl) subtitleEl.textContent = temp.category || '';
+          ticks++;
+          if (ticks >= totalTicks) {
+            clearInterval(interval);
+            textEl.textContent = randomArticle.title;
+            if (subtitleEl) subtitleEl.textContent = randomArticle.category || '';
+            setTimeout(function () {
+              window.location.href = randomArticle.url;
+            }, 600);
+          }
+        }, 100);
+      });
+    }
+  });
+</script>

@@ -1,0 +1,366 @@
+name: Deploy to GitHub Pages
+
+# Genericity + build run on every PR and every push to main; deploy runs only on
+# push to main. This is the CI that drives every subsequent task's PR to green
+# (SPEC §Negative requirements) and the structural genericity gate (ADR 002).
+# The fork's deploy.yml is structural reference only — no OG/Playwright/i18n jobs
+# (the scaffold has no content pipeline yet; those arrive with the pages that need
+# them in later phases).
+
+on:
+  push:
+    branches: [main]
+    tags: ['sekai-kb-v*']
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: read-only by default. Only the deploy job gets the Pages
+# write + OIDC scopes, so the genericity/build jobs — which execute PR-authored
+# code (npm ci postinstall, npm run build) — cannot touch Pages or mint tokens.
+permissions:
+  contents: read
+
+# One in-flight run per ref. On a PR, a new push cancels the superseded build
+# (save CI minutes). On main, cancel-in-progress is false so a rapid second push
+# never kills an in-flight production deploy; runs queue instead. The
+# github-pages environment gives the final deploy-race protection.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  genericity:
+    name: Genericity + English-only gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Check for place-specific strings in src/, scripts/, tests/, workers/, .agents/skills/
+        run: bash scripts/ci/check-genericity.sh
+      - name: Check for CJK codepoints (English-only) in src/, scripts/, tests/, workers/, .agents/skills/
+        run: node scripts/ci/check-english-only.mjs
+      - name: Scan-root scope statements match both gates' SCAN_ROOTS
+        run: node scripts/ci/check-scan-root-docs.mjs
+      - name: Version ownership contract
+        run: npm run version:check
+      # The soundscape manifest schema is implemented once, in src/lib/sounds.ts, and
+      # restated in prose by the engineering spec and by the manifest's own body. This
+      # derives all five field lists from the reader and fails when either document
+      # disagrees, so a schema edit cannot ship a stale field list to adopters.
+      - name: Soundscape schema statements match src/lib/sounds.ts
+        run: npm run schema-docs
+      - name: Self-test — both gates scan .agents/skills/ and workers/ in instance mode
+        run: bash scripts/ci/check-skills-gated.sh
+      # A Worker script name, a D1 database_name, and ALLOWED_ORIGIN are all
+      # account-scoped deployment identity, and the denylist gate cannot see them: a
+      # real origin whose domain carries no denylisted term passes it cleanly. This
+      # asserts every committed workers/*/wrangler.toml still holds the framework
+      # placeholders, and it fails in an adopter's checkout too — which is the point,
+      # since an adopter is who would otherwise paste their own origin in.
+      - name: Committed worker configs carry framework placeholders only
+        run: npm run worker-config:check
+      - name: Self-test — the worker config gate fails on every planted defect class
+        run: npm run worker-config:selftest
+      - name: Self-test — the scan-root docs guard fails on doc, script, and anchor drift
+        run: bash scripts/ci/check-scan-root-docs-selftest.sh
+      # ADR 008: the maintainer docs adoption strips, the instance-owned merge=ours
+      # list, and the build-pipeline job lists are all derived from their sources and
+      # compared against the prose that restates them; nothing an adopter keeps may
+      # link into a stripped path.
+      - name: Framework maintainer-doc contract (strip list, dangling links, derived enumerations)
+        run: npm run framework-docs
+      - name: Self-test — the maintainer-doc guard fails on every planted defect class
+        run: npm run framework-docs:selftest
+
+      # ADR 004/005: every phase closes with a tagged release that instance #1 adopts.
+      # Template mode only — an adopted instance has no framework ROADMAP to check.
+      - name: ROADMAP exit-gate contract (tag, instance adoption, confirm, packet defined)
+        run: npm run roadmap-gates
+      - name: Self-test — the exit-gate guard fails on every planted defect class
+        run: npm run roadmap-gates:selftest
+
+  test:
+    name: Test
+    needs: genericity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: npm ci --force
+      - run: npm run test:ci
+      # Snippet queue format contract: only `approved` publishes, an over-length
+      # draft is refused rather than truncated, and a malformed queue stops the
+      # run. The human gate in that pipeline is these assertions, so they are a
+      # CI gate rather than a suite someone may remember to run.
+      - name: Snippet queue contract
+        run: npm run test:snippet
+      # The soundscape ingest writes every published file through ffmpeg so the
+      # recording's capture metadata (coordinates, timestamp, device, OS) never
+      # reaches public/. Proving that requires actually running the conversion, so
+      # the writer suite below needs ffmpeg here. The validation gate deliberately
+      # does NOT: it reads the container in JavaScript, so it still runs in the
+      # build job and in an adopter's postbuild chain, neither of which has ffmpeg.
+      - name: Install ffmpeg for the soundscape ingest suite
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      # Soundscape manifest contract: the three absent-safe cases the page's DoD
+      # names (no manifest at all, an empty list, an entry whose audio file is
+      # missing) plus the gray-matter date normalization. The page has no server
+      # and no player library, so src/lib/sounds.ts is where every one of those
+      # degradations happens; a suite CI does not run would not keep it true.
+      # The same npm script runs the ingest writer's suite, which asserts that both
+      # the conversion and the mp3 re-mux path publish a file with no tag.
+      - name: Soundscape manifest contract
+        run: npm run test:soundscape
+      # Soundscape manifest validation: imports field arrays from src/lib/sounds.ts
+      # and exits nonzero on missing required fields, unresolved files, path escape,
+      # duplicate category ids, or a published file that still carries a metadata
+      # tag. The postbuild chain also runs it, but CI runs it independently so a
+      # broken manifest is caught before the build job.
+      - name: Soundscape manifest validation gate
+        run: npm run sounds:check
+      - name: Self-test — the soundscape gate fails on every planted defect class
+        run: npm run sounds:selftest
+      - name: Install Chromium for feedback widget contract tests
+        run: npx playwright install --with-deps chromium
+      - name: Feedback widget browser contract
+        run: npm run test:feedback
+      # Chat surface contract: the four flag/endpoint gate combinations, the evaluation
+      # set's reader and the runner's exit codes (including the absent-manifest zero),
+      # and the page client driven in Chromium against a real streaming server. The
+      # runner is the Phase 7 feature proof's machine half, so the suite that pins its
+      # failure classes is a CI gate rather than one someone may remember to run.
+      - name: Chat page, gate, contexts, and evaluation runner contract
+        run: npm run test:chat
+      # The printable QR sheet: the URL a scanned code resolves to, and the round trip
+      # proving each card's own inline code decodes back to that URL. A wrong code is
+      # invisible until somebody prints it, mounts it, and scans it, so the encoding is
+      # gated here rather than left to the manual scan at deploy time.
+      - name: QR sheet contract
+        run: npm run test:qr
+      # Cloudflare Worker unit suites (node:test, no runtime dependency). The runner
+      # walks workers/ for *.test.mjs, so a worker added in a later phase is gated
+      # here the moment its first suite lands — no second edit to this workflow. It
+      # also fails closed on a workers/ tree that has lost its suites, which the
+      # native `node --test <glob>` form does not (a zero-match glob exits 0).
+      - name: Worker unit suites
+        run: npm run test:workers
+      - name: OG image resolve matrix
+        run: npm run test:og
+      # Corpus embeddings: the chunker, the int8 quantization round-trip, the Workers
+      # AI request contract (against a stubbed fetch -- no network, no credentials),
+      # and the zero-chunk coverage failure. The artifact these produce is gitignored
+      # and rebuilt at deploy time, so this suite is the only thing that keeps the
+      # schema 7.2b, 9.1, and 11.2 read from drifting.
+      - name: Corpus embedding chunker and artifact contract
+        run: npm run test:embeddings
+      - run: npm run framework-release:selftest
+      - run: npm run article-health:test
+      - run: npm run article-health -- --all --profile=ci-deploy
+      # The PlaceConfig declaration exists once, in place.config.ts, and the init
+      # wizard re-emits it rather than carrying a copy. Before this gate the copy
+      # existed and had lost five keys, two of them prompted by prompt-table.mjs,
+      # so every config the wizard emitted set properties its own interface did
+      # not declare. This repository runs no typechecker (the build strips types),
+      # which is why the drift needs a gate of its own rather than a compile step.
+      - name: PlaceConfig declaration is stated once and matches the wizard and prompt table
+        run: npm run place-config:check
+      - name: Self-test — the PlaceConfig declaration gate fails on every planted defect class
+        run: npm run place-config:selftest
+      - name: Dev-plugin action references match the declared release
+        run: npm run dev-plugin:check
+      # Dev-plugin rule registry: assert every rule under rules_dir is tier-classified
+      # (project-bootstrap discovery contract). The dev plugin ships the checker, so
+      # this repository vendors none: the composite action runs the copy of
+      # resolve_project_rules.py --check that shipped with the tag it is pinned at.
+      # Pin an immutable dev-vX.Y.Z release tag — never `main`, never a moving major.
+      # The action detects .agent-toolkit/dev.md itself and skips with exit 0 when it
+      # is absent, so no `if [ -f ... ]` guard is needed for an adopter stripped by
+      # `npm run init`; the init-check job below proves that on a real stripped tree.
+      - name: Rule registry
+        uses: wilsonkichoi/agent-toolkit/.github/actions/check-rules@dev-v0.0.72
+      # Non-vacuity, in place of the retired check-rule-registry.mjs --selftest. The
+      # upstream repository-validation job proves the checker's own contract; this
+      # proves THIS workflow's wiring of it still fails a deliberately unclassified
+      # rule file, so the step above can never pass vacuously.
+      #
+      # Guarded on dev-plugin state, unlike the `Rule registry` step itself. This
+      # workflow is framework-owned and ships to every adopter on upgrade, and an
+      # adopter stripped by `npm run init` has no rules to guard: for them these three
+      # steps would install uv and couple their CI to an upstream diagnostic string in
+      # order to prove the wiring of a step that can only ever skip. The guard is on
+      # the proof, never on the gate.
+      - name: Rule registry self-test fixture
+        if: hashFiles('.agent-toolkit/dev.md') != ''
+        env:
+          FIXTURE: ${{ runner.temp }}/check-rules-unclassified
+        run: |
+          set -euo pipefail
+          mkdir -p "$FIXTURE/.agent-toolkit/rules"
+          printf 'Fixture project instructions.\n' >"$FIXTURE/AGENTS.md"
+          printf -- '---\ncontext_file: AGENTS.md\nrules_dir: .agent-toolkit/rules/\n---\n\n## Rules\n\nFixture.\n' \
+            >"$FIXTURE/.agent-toolkit/dev.md"
+          printf 'No tier frontmatter, so rule discovery must hard-stop here.\n' \
+            >"$FIXTURE/.agent-toolkit/rules/unclassified.md"
+      - name: Rule registry self-test (must fail)
+        id: rules-selftest
+        if: hashFiles('.agent-toolkit/dev.md') != ''
+        continue-on-error: true
+        uses: wilsonkichoi/agent-toolkit/.github/actions/check-rules@dev-v0.0.72
+        with:
+          path: ${{ runner.temp }}/check-rules-unclassified
+      - name: Rule registry self-test verdict
+        if: hashFiles('.agent-toolkit/dev.md') != ''
+        env:
+          OUTCOME: ${{ steps.rules-selftest.outcome }}
+          RESULT: ${{ steps.rules-selftest.outputs.result }}
+          STATUS: ${{ steps.rules-selftest.outputs.status }}
+          REPORT: ${{ steps.rules-selftest.outputs.report }}
+        run: |
+          set -euo pipefail
+          fail() { echo "rule-registry self-test FAILED: $*" >&2; exit 1; }
+          [ "$OUTCOME" = failure ] || fail "expected the fixture step to fail, got '$OUTCOME'"
+          [ "$RESULT" = checked ] || fail "expected result 'checked', got '$RESULT'"
+          [ "$STATUS" = 1 ] || fail "expected status '1', got '$STATUS'"
+          case "$REPORT" in
+            *"rules_dir contains unclassified Markdown"*) ;;
+            *) fail "report does not name the unclassified-rule diagnostic: $REPORT" ;;
+          esac
+          case "$REPORT" in
+            *".agent-toolkit/rules/unclassified.md"*) ;;
+            *) fail "report does not name the offending file: $REPORT" ;;
+          esac
+          echo "rule-registry self-test OK: the pinned action rejects an unclassified rule file."
+      # Upgrade determinism: a framework tag merge must preserve the instance's
+      # dev-plugin state — stripped stays stripped on shared AND unrelated history,
+      # installed keeps its adopter-owned config byte-for-byte, and either
+      # inconsistent state stops the upgrade (ADR 006 addendum) — and its
+      # maintainer-doc state, classified per path, where an absent path stays absent
+      # and a path the instance owns is never deleted or overwritten (ADR 008
+      # addendum), including the first upgrade to the release that introduces the
+      # strip list, where the path set can only come from the tag. It must also
+      # preserve FRAMEWORK-VERSION: `merge=ours` does not fire on a file the instance
+      # has not edited since the merge base, so the value is captured and restored
+      # and only the explicit post-verification bump moves it. Case 13 covers the
+      # bootstrap itself: every helper is run from the target tag, never from the
+      # instance's tree copy, which shipped with the release being left and would
+      # otherwise deny a release its own helper fix. It also covers the pre-merge
+      # divergence report (ADR 010 (e)): the framework-owned paths an instance
+      # changed since its merge base are enumerated with both values before the
+      # merge, nothing is auto-resolved, and an unrelated-history first merge
+      # claims no divergence at all. The harness builds
+      # disposable git repos and drives the same scripts/upgrade/ helpers users run,
+      # so it is framework-owned and never guarded away on an adopter.
+      - name: Upgrade state regressions (dev-plugin, maintainer docs, FRAMEWORK-VERSION, tag-first bootstrap, divergence report)
+        run: |
+          git config --global user.email "ci@example.invalid"
+          git config --global user.name "CI"
+          npm run upgrade:check
+          npm run upgrade:selftest
+          npm run upgrade:package-selftest
+
+  build:
+    name: Build
+    needs: [genericity, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      # --force: astro 6.4.8's @rolldown/binding-wasm32-wasi declares optional
+      # @emnapi/* sub-deps. npm 10.x's `npm ci` validates these across ALL
+      # platforms in the lockfile (even those skipped on the current OS). When the
+      # lock was generated on macOS, it records the macOS-resolved versions; CI
+      # (ubuntu) resolves a newer patch and rejects the lock. --force bypasses
+      # that cross-platform validation; the build still uses exact locked versions
+      # for all non-optional deps. Remove when npm ships the fix for nodejs/npm#7758.
+      - run: npm ci --force
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Theme surfaces regression guard
+        run: npm run test:theme
+      # Only publish the artifact when we intend to deploy (push to main); PR
+      # builds verify the build compiles but produce nothing to deploy.
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./dist
+
+  init-check:
+    name: Init wizard self-check
+    needs: genericity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      # --force: same lockfile cross-platform validation issue as the build job.
+      - run: npm ci --force
+      # --build is destructive by design (runs init in this checkout, then a
+      # full build on the initialized instance); the CI checkout is disposable.
+      - name: Init self-check (double-init byte-diff, seeded files, local denylist gate, init → build)
+        run: bash scripts/init/check-init.sh --build
+      # The step above ran the wizard in place, so this workspace IS a stripped
+      # adopter tree: no .agent-toolkit/ at all. Run the same rules-contract action
+      # the test job runs and prove it skips cleanly there, rather than assuming it
+      # from the action's documentation.
+      - name: Rule registry on the stripped instance
+        id: rules-stripped
+        uses: wilsonkichoi/agent-toolkit/.github/actions/check-rules@dev-v0.0.72
+      - name: Rule registry stripped-instance verdict
+        env:
+          OUTCOME: ${{ steps.rules-stripped.outcome }}
+          RESULT: ${{ steps.rules-stripped.outputs.result }}
+          STATUS: ${{ steps.rules-stripped.outputs.status }}
+          REPORT: ${{ steps.rules-stripped.outputs.report }}
+        run: |
+          set -euo pipefail
+          fail() { echo "stripped-instance rules check FAILED: $*" >&2; exit 1; }
+          # Non-vacuous only because the wizard really removed the tree.
+          [ ! -e .agent-toolkit ] || fail ".agent-toolkit/ survived the wizard; this is not a stripped tree"
+          [ "$OUTCOME" = success ] || fail "expected success, got '$OUTCOME'"
+          [ "$RESULT" = skipped ] || fail "expected result 'skipped', got '$RESULT'"
+          [ "$STATUS" = 0 ] || fail "expected status '0', got '$STATUS'"
+          case "$REPORT" in
+            *"no .agent-toolkit/dev.md"*) ;;
+            *) fail "report does not carry the skip message: $REPORT" ;;
+          esac
+          echo "stripped-instance rules check OK: skipped with exit 0 on a tree the wizard stripped."
+
+  deploy:
+    name: Deploy to Pages
+    needs: [build, init-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Write scopes live here only (see top-level note): actions/deploy-pages needs
+    # id-token: write for OIDC and pages: write to publish.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

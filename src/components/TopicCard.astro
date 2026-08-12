@@ -1,0 +1,134 @@
+---
+/**
+ * TopicCard — category card with animated SVG float icon and accent coloring.
+ *
+ * Extracted from the v1 fork. Per-category accent colors, animations, and
+ * float icons preserved. Category identity flows from props.
+ */
+
+export interface Props {
+  slug: string;
+  href: string;
+  name: string;
+  description: string;
+  count: number;
+  articleLabel: string;
+  ctaLabel: string;
+  height: 'tall' | 'medium' | 'short';
+}
+
+const { slug, href, name, description, count, articleLabel, ctaLabel, height } =
+  Astro.props;
+
+const minHeightMap = {
+  tall: '26rem',
+  medium: '20rem',
+  short: '16rem',
+};
+const minHeight = minHeightMap[height];
+
+const accentMap: Record<string, string> = {
+  history: '#8B5E3C',
+  food: '#D4843A',
+  'art-galleries': '#7A5EA8',
+  'nature-marine-life': '#2D7D5A',
+  beaches: '#2A7FA5',
+  trails: '#3A8A4A',
+  'events-festivals': '#7A5EA8',
+  neighborhoods: '#8B5E3C',
+};
+const accent = accentMap[slug] ?? '#006D77';
+
+const animMap: Record<string, string> = {
+  history: 'floatScroll',
+  food: 'floatPulse',
+  'art-galleries': 'floatBrush',
+  'nature-marine-life': 'floatDrift',
+  beaches: 'floatWave',
+  trails: 'floatDrift',
+  'events-festivals': 'floatSwing',
+  neighborhoods: 'floatPulse',
+};
+const anim = animMap[slug] ?? 'floatDrift';
+
+const cardId = `tc-${slug}`;
+---
+
+<a
+  id={cardId}
+  href={href}
+  class="group relative block min-h-[var(--min-h)] cursor-pointer overflow-hidden rounded-[1.25rem] no-underline shadow-[0_2px_8px_color-mix(in_srgb,var(--accent)_12%,transparent),0_1px_2px_rgba(0,0,0,0.06)] transition-[transform,box-shadow] duration-[350ms] [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-1.5 hover:shadow-[0_16px_40px_color-mix(in_srgb,var(--accent)_22%,transparent),0_4px_12px_rgba(0,0,0,0.1)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-[#0369a1] motion-reduce:transform-none motion-reduce:transition-none motion-reduce:hover:transform-none motion-reduce:hover:shadow-[0_2px_8px_color-mix(in_srgb,var(--accent)_20%,transparent)]"
+  aria-label={name}
+  style={`--accent: ${accent}; --min-h: ${minHeight}; --anim: ${anim};`}
+>
+  <div
+    class="absolute inset-0 z-0 rounded-[inherit] border border-[color-mix(in_srgb,var(--accent)_18%,transparent)] bg-[color-mix(in_srgb,var(--accent)_6%,#f8f1e9)]"
+    aria-hidden="true"
+  >
+  </div>
+
+  <div
+    class="absolute inset-0 z-0 rounded-[inherit] opacity-[0.045] [background-image:repeating-linear-gradient(45deg,var(--accent)_0px,var(--accent)_1px,transparent_1px,transparent_12px),repeating-linear-gradient(-45deg,var(--accent)_0px,var(--accent)_1px,transparent_1px,transparent_12px)]"
+    aria-hidden="true"
+  >
+  </div>
+
+  <div
+    class="pointer-events-none absolute -bottom-4 -right-2 z-0 w-28 text-[var(--accent)] opacity-[0.05] transition-opacity duration-[350ms] ease group-hover:opacity-[0.09]"
+    aria-hidden="true"
+  >
+    <svg
+      class="h-auto w-full"
+      viewBox="0 0 120 220"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M62 4 C76 5 92 12 100 26 C110 44 114 64 112 84 C110 104 102 120 98 138 C93 158 88 172 80 184 C72 198 60 212 50 216 C40 220 28 214 22 202 C14 186 16 166 20 148 C24 130 30 114 30 96 C30 78 24 62 26 46 C28 30 36 16 46 8 C52 4 56 3 62 4 Z"
+        fill="currentColor"></path>
+    </svg>
+  </div>
+
+  <div
+    class="pointer-events-none absolute right-5 top-5 z-[2] h-12 w-12 translate-y-[6px] scale-[0.85] text-[var(--accent)] opacity-0 transition-[opacity,transform] duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-[0.85] group-hover:[animation:var(--anim)_2.5s_ease-in-out_infinite] [&_svg]:h-full [&_svg]:w-full motion-reduce:transform-none motion-reduce:group-hover:animate-none motion-reduce:group-hover:transform-none"
+    aria-hidden="true"
+  >
+  </div>
+
+  <div
+    class="relative z-[1] flex h-full min-h-[var(--min-h)] flex-col px-6 pb-6 pt-7"
+  >
+    <div class="mb-[0.85rem] flex items-baseline">
+      <span
+        class="font-serif text-[2rem] font-bold leading-none -tracking-[0.02em] text-[#c17d5e]"
+      >
+        {count}
+      </span>
+      <span
+        class="font-sans text-[0.8rem] font-medium tracking-[0.03em] text-[#a8634a]"
+      >
+        &nbsp;{articleLabel}
+      </span>
+    </div>
+    <h3
+      class="mb-[0.65rem] mt-0 font-serif text-[clamp(1.25rem,2vw,1.625rem)] font-bold leading-[1.3] text-[#0e3a5c] transition-colors duration-[250ms] ease group-hover:text-[#0369a1]"
+    >
+      {name}
+    </h3>
+    <p
+      class="mx-0 mb-5 mt-0 flex-1 font-sans text-[0.9rem] leading-[1.75] text-[#475569]"
+    >
+      {description}
+    </p>
+    <div
+      class="mt-auto flex items-center gap-1 font-sans text-[0.875rem] font-semibold tracking-[0.01em] text-[#0369a1]"
+    >
+      <span>{ctaLabel}</span>
+      <span
+        class="inline-block transition-transform duration-[250ms] [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:group-hover:transform-none"
+        >&rarr;</span
+      >
+    </div>
+  </div>
+</a>

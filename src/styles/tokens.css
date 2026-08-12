@@ -1,0 +1,127 @@
+/**
+ * tokens.css — Design System (Single Source of Truth)
+ *
+ * All design tokens live here. Everything else (global.css @layer base,
+ * component scoped styles, template scoped styles) reads from these
+ * custom properties.
+ *
+ * ⚠️ DO NOT add new colors, spacing, or fonts inline elsewhere.
+ * ⚠️ DO NOT override these vars in nested scopes unless absolutely needed.
+ *
+ * Origin: extracted verbatim from Layout.astro :root block as part of
+ * Tailwind refactor Phase 1 (2026-04-10).
+ *
+ * Phase 7 cleanup (2026-04-10): pruned ~20 unused tokens that were
+ * only referenced by the now-deleted @theme bridge and tw-* class
+ * library. Every token below has at least one live `var(--...)` use
+ * somewhere in src/ (templates, pages, components, or global.css
+ * @layer base) as of that cleanup.
+ */
+
+:root {
+  /* === Container widths (page-level main container, 3 tiers) ===
+   * Change here = site-wide effect; page templates all use max-w-[var(--container-*)],
+   * no more hardcoded px (except bespoke widths for special pages).
+   * prose:   narrative reading pages (home / about / semiont)
+   * article: article page two-column (body + sidebar)
+   * wide:    hub / grid / timeline pages (explore / latest / changelog / data...),
+   *          same width as Header / Footer / CategoryGrid
+   */
+  --container-prose: 800px;
+  --container-article: 1280px;
+  --container-wide: 1380px;
+
+  /* === Spacing scale === */
+  --space-page-x: clamp(1rem, 2vw, 2rem);
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 2.5rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* === Radius === */
+  --radius-chip: 16px;
+
+  /* === Shadow === */
+  --shadow-soft: 0 8px 30px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 16px 40px rgba(15, 23, 42, 0.08);
+
+  /* === Typography System === */
+  /* Latin-only stack (upstream CJK fallback families removed) */
+  --font-title: 'Georgia', serif;
+  --font-reading: 'Inter', sans-serif;
+  --font-interface: 'Inter', sans-serif;
+  --font-quote: 'Georgia', serif;
+  /* Legacy compatibility alias — still used in 4 files */
+  --font-editorial: var(--font-title);
+
+  /* === Title sizes === */
+  --title-subsection-size: clamp(1.3rem, 2.4vw, 1.7rem);
+  --title-minor-size: 1.1rem;
+  --title-line-height: 1.2;
+  --title-letter-spacing: 0;
+
+  /* === Reader colors (light theme defaults, 2026-05-01 γ-late) ===
+   * Pragmatic v1: not yet a full re-tokenization of every hex in src/.
+   * The five vars below cover the largest reading surfaces (body bg,
+   * body ink, soft ink, surface card, accent link). global.css @layer
+   * base reads them; the dark override below flips them in one place.
+   */
+  --color-bg: #ffffff;
+  --color-bg-soft: #f8fafc;
+  --color-bg-alt: #f9fafb;
+  --color-ink: #1a1a2e;
+  --color-ink-soft: #475569;
+  --color-ink-heading: #0e3a5c;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-border-visible: #e2e8f0;
+  --color-accent: #3b82f6;
+
+  /* === Reader font-size scale (2026-05-01 γ-late) ===
+   * data-text-size on <html>: '' (default) | 'large' | 'xlarge'.
+   * Multiplied into body font-size in global.css.
+   */
+  --reader-size-scale: 1;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #050505;
+  --color-bg-soft: #0d0d0f;
+  --color-bg-alt: #0a0a0c;
+  --color-ink: #f1f5f9;
+  /* slate-300 not slate-400 — at 4-5% body bg the slate-400 (#94a3b8)
+   * read as too dim for sidebar metadata / TOC chrome / "share" labels
+   * etc. slate-300 stays clearly secondary against --color-ink while
+   * remaining legible on near-black. */
+  --color-ink-soft: #cbd5e1;
+  --color-ink-heading: #e2e8f0;
+  --color-surface: #141418;
+  --color-surface-raised: #1a1a1f;
+  --color-border: rgba(241, 245, 249, 0.16);
+  --color-border-visible: rgba(241, 245, 249, 0.12);
+  --color-accent: #60a5fa;
+  color-scheme: dark;
+}
+
+/* Scale on :root so every `rem`-based value (Tailwind utilities, .prose
+ * font-size, hero clamp() values) resizes together. Scaling only `body`
+ * left every `text-[…rem]` Tailwind class untouched, so the toggle had
+ * no visible effect on the actual reading surface.
+ *
+ * Baseline: global.css sets `html { font-size: 118% }` as the comfortable-
+ * reading default. We multiply on top of that rather than replace it, so
+ * "Standard" (no attribute) stays at 118%, "Large" = 118% × 1.125, and
+ * "X-Large" = 118% × 1.25. Otherwise Standard would actually render
+ * larger than Large (118% > 1.125rem when rem resolves to 16px). */
+:root[data-text-size='large'] {
+  --reader-size-scale: 1.125;
+  font-size: 132.75%; /* 118 × 1.125 */
+}
+:root[data-text-size='xlarge'] {
+  --reader-size-scale: 1.25;
+  font-size: 147.5%; /* 118 × 1.25 */
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "rag-v1",
+  "model": "@cf/baai/bge-m3",
+  "dim": 3,
+  "quant": "i8-unit",
+  "builtAt": "2026-01-01T00:00:00.000Z",
+  "count": 6,
+  "chunks": [
+    {
+      "id": "guides/alpha#0",
+      "slug": "guides/alpha",
+      "title": "Alpha Guide",
+      "url": "/guides/alpha",
+      "category": "guides",
+      "heading": "Alpha",
+      "chunkIndex": 0,
+      "text": "Alpha is the closest match for an east-pointing query."
+    },
+    {
+      "id": "guides/bravo#0",
+      "slug": "guides/bravo",
+      "title": "Bravo Guide",
+      "url": "/guides/bravo",
+      "category": "guides",
+      "heading": "Bravo",
+      "chunkIndex": 0,
+      "text": "Bravo is the second closest match."
+    },
+    {
+      "id": "guides/charlie#0",
+      "slug": "guides/charlie",
+      "title": "Charlie Guide",
+      "url": "/guides/charlie",
+      "category": "guides",
+      "heading": "Charlie",
+      "chunkIndex": 0,
+      "text": "Charlie is the middle match."
+    },
+    {
+      "id": "guides/delta#0",
+      "slug": "guides/delta",
+      "title": "Delta Guide",
+      "url": "/guides/delta",
+      "category": "guides",
+      "heading": "Delta",
+      "chunkIndex": 0,
+      "text": "Delta is the fourth closest match."
+    },
+    {
+      "id": "guides/echo#0",
+      "slug": "guides/echo",
+      "title": "Echo Guide",
+      "url": "/guides/echo",
+      "category": "guides",
+      "heading": "Echo",
+      "chunkIndex": 0,
+      "text": "Echo is the fifth closest match."
+    },
+    {
+      "id": "guides/foxtrot#0",
+      "slug": "guides/foxtrot",
+      "title": "Foxtrot Guide",
+      "url": "/guides/foxtrot",
+      "category": "guides",
+      "heading": "Foxtrot",
+      "chunkIndex": 0,
+      "text": "Foxtrot points away from the query and must be excluded."
+    }
+  ],
+  "vectors": "fwAAcjkAWloAQG4AGX0AgQAA"
+}

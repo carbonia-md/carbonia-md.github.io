@@ -1,0 +1,604 @@
+---
+/**
+ * /about — extracted from the fork's about.template.astro, genericized.
+ * Contributors block stubbed (port-on-trigger per §F: trigger is second human
+ * contributor landing a merged PR). All prose from place.config.ts + i18n keys.
+ */
+import Layout from '../layouts/Layout.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import placeConfig from '../../place.config';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const repoUrl = placeConfig.links.repo;
+
+// Section 2.6 "One Layer Deeper" — meta-articles about how the site works.
+// Links use # anchors until task 3.1 wires the About content route.
+const siteGuideCards = [
+  {
+    icon: '📝',
+    href: '#site-guide',
+    title: t('about.guide.born.title'),
+    desc: t('about.guide.born.desc'),
+  },
+  {
+    icon: '📊',
+    href: '#site-guide',
+    title: t('about.guide.viz.title'),
+    desc: t('about.guide.viz.desc'),
+  },
+  {
+    icon: '🧬',
+    href: '/system',
+    title: t('about.guide.meta.title'),
+    desc: t('about.guide.meta.desc'),
+  },
+];
+---
+
+<Layout
+  lang={lang}
+  title={t('about.meta.title')}
+  description={t('about.meta.description')}
+>
+  <div class="about-page">
+    <!-- Section 1: Why the name? -->
+    <section class="px-4 py-16" id="story">
+      <div class="section-inner">
+        <h1 class="section-title">{t('about.naming.title')}</h1>
+        <p class="section-subtitle">{t('about.naming.subtitle')}</p>
+
+        <div class="naming-grid">
+          <div class="naming-card">
+            <div class="naming-icon">📝</div>
+            <h4>{t('about.naming.tech.title')}</h4>
+            <div>
+              <code>.md</code>
+              <p style="display:inline" set:html={t('about.naming.tech.desc.html')} />
+            </div>
+          </div>
+          <div class="naming-card">
+            <div class="naming-icon">🌍</div>
+            <h4>{t('about.naming.symbol.title')}</h4>
+            <div>
+              <code>.md</code>
+              <p style="display:inline" set:html={t('about.naming.symbol.desc.html')} />
+            </div>
+          </div>
+          <div class="naming-card">
+            <div class="naming-icon">✨</div>
+            <h4>{t('about.naming.lucky.title')}</h4>
+            <p>{t('about.naming.lucky.desc')}</p>
+          </div>
+        </div>
+
+        <!-- Vision -->
+        <div class="vision-block">
+          <p>{t('about.vision.p1')}</p>
+          <p>{t('about.vision.p2')}</p>
+          <p class="vision-emphasis" set:html={t('about.vision.p3.html')} />
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Origin -->
+    <section class="bg-[color:var(--color-bg-alt)] px-4 py-16">
+      <div class="section-inner">
+        <h2 class="section-title">{t('about.origin.title')}</h2>
+        <p class="section-subtitle">{t('about.origin.subtitle')}</p>
+
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-date">{t('about.timeline.start.date')}</div>
+            <div class="timeline-content">
+              <h3>{t('about.timeline.start.title')}</h3>
+              <p>{t('about.timeline.start.desc')}</p>
+            </div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-date">{t('about.timeline.what.date')}</div>
+            <div class="timeline-content">
+              <h3>{t('about.timeline.what.title')}</h3>
+              <p>{t('about.timeline.what.desc')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2.6: One Layer Deeper -->
+    <section class="site-guide-section px-4 py-16" id="site-guide">
+      <div class="section-inner">
+        <h2 class="section-title">{t('about.guide.title')}</h2>
+        <p class="section-subtitle">{t('about.guide.subtitle')}</p>
+        <div class="guide-grid">
+          {
+            siteGuideCards.map((card) => (
+              <a href={card.href} class="guide-card">
+                <span class="guide-icon">{card.icon}</span>
+                <h3 class="guide-card-title">{card.title}</h3>
+                <p class="guide-card-desc">{card.desc}</p>
+                <span class="guide-card-cta">{t('about.guide.cta')} &rarr;</span>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: FAQ -->
+    <section class="mx-auto max-w-[var(--container-prose)] px-8 py-16" id="faq">
+      <div class="section-inner">
+        <h2 class="section-title">{t('about.faq.title')}</h2>
+        <p class="section-subtitle">{t('about.faq.subtitle')}</p>
+
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary class="faq-question">{t('about.faq.q1')}</summary>
+            <div class="faq-answer">
+              <p set:html={t('about.faq.a1.html')} />
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-question">{t('about.faq.q2')}</summary>
+            <div class="faq-answer">
+              <p set:html={t('about.faq.a2.html')} />
+            </div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-question">{t('about.faq.q3')}</summary>
+            <div class="faq-answer">
+              <p set:html={t('about.faq.a3.html')} />
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Contact -->
+    <section class="bg-[color:var(--color-bg-alt)] px-4 pt-16 pb-12">
+      <div class="section-inner">
+        <h2 class="section-title">{t('about.contact.title')}</h2>
+        <p class="section-subtitle">{t('about.contact.subtitle')}</p>
+
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="contact-icon">💬</div>
+            <h4>Collaboration</h4>
+            <a href={`mailto:${placeConfig.links.email}`}>
+              {placeConfig.links.email}
+            </a>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon">🐙</div>
+            <h4>Open Source</h4>
+            <a
+              href={repoUrl}
+              target="_blank"
+              class="no-external-icon"
+            >
+              GitHub
+            </a>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon">📄</div>
+            <h4>License</h4>
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              target="_blank"
+              class="no-external-icon"
+            >
+              CC BY-SA 4.0
+            </a>
+          </div>
+        </div>
+
+        <div class="contact-cta">
+          <p>{t('about.contact.cta.text')}</p>
+          <div class="cta-buttons">
+            <a href="/contribute" class="btn btn-primary">Contribution Guide</a>
+            <a
+              href={repoUrl}
+              target="_blank"
+              class="btn btn-outline no-external-icon"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .about-page {
+    padding-bottom: 0;
+  }
+
+  .section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .section-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--color-ink-heading);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .section-subtitle {
+    text-align: center;
+    color: var(--color-ink-soft);
+    font-size: 1.15rem;
+    margin-bottom: 3rem;
+    line-height: 1.6;
+  }
+
+  /* Naming Story */
+  .naming-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 3rem 0;
+  }
+
+  .naming-card {
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border-visible);
+    border-radius: 12px;
+    padding: 1.75rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .naming-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .naming-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .naming-card h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .naming-card p {
+    color: var(--color-ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .naming-card code {
+    background: #e0e7ff;
+    color: #1e40af;
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  /* Vision */
+  .vision-block {
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-top: 3rem;
+    text-align: center;
+  }
+
+  .vision-block p {
+    color: var(--color-ink-soft);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .vision-block p:last-child {
+    margin-bottom: 0;
+  }
+
+  .vision-emphasis {
+    font-weight: 500;
+    color: var(--color-ink) !important;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    margin: 3rem 0 4rem;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, #1e40af, #3b82f6, #93c5fd);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .timeline-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1e40af;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #1e40af;
+    z-index: 1;
+  }
+
+  .timeline-date {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e40af;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-content h3 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 0.75rem;
+  }
+
+  .timeline-content p {
+    color: var(--color-ink-soft);
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+
+  /* One Layer Deeper (site-guide) */
+  .site-guide-section {
+    background: var(--color-bg-alt);
+  }
+
+  .guide-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .guide-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-visible);
+    border-radius: 16px;
+    padding: 1.75rem;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .guide-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(30, 64, 175, 0.1);
+    border-color: var(--color-accent);
+  }
+
+  .guide-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .guide-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+
+  .guide-card-desc {
+    font-size: 0.95rem;
+    color: var(--color-ink-soft);
+    line-height: 1.7;
+    margin: 0 0 1.25rem;
+    flex: 1;
+  }
+
+  .guide-card-cta {
+    font-weight: 600;
+    color: var(--color-accent);
+    font-size: 0.95rem;
+  }
+
+  /* FAQ */
+  .faq-list {
+    margin-top: 2rem;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--color-border-visible);
+  }
+
+  .faq-item[open] {
+    padding-bottom: 1.5rem;
+  }
+
+  .faq-question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    cursor: pointer;
+    list-style: none;
+    line-height: 1.5;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question::after {
+    content: '+';
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: #9ca3af;
+    flex-shrink: 0;
+    margin-left: 1rem;
+  }
+
+  .faq-item[open] .faq-question::after {
+    content: '\2212';
+    color: #1e3a5f;
+  }
+
+  .faq-answer {
+    padding: 0 0 0.5rem;
+  }
+
+  .faq-answer p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--color-ink-soft);
+  }
+
+  /* Contact */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .contact-card {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border-visible);
+    border-radius: 12px;
+  }
+
+  .contact-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .contact-card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .contact-card a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    word-break: break-all;
+  }
+
+  .contact-cta {
+    text-align: center;
+    padding: 2rem;
+    background: var(--color-surface-raised);
+    border-radius: 16px;
+    border: 1px solid var(--color-border-visible);
+  }
+
+  .contact-cta p {
+    color: var(--color-ink-soft);
+    font-size: 1.05rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 0.75rem 1.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #1e40af;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+
+  .btn-outline {
+    background: var(--color-surface-raised);
+    color: var(--color-accent);
+    border: 2px solid var(--color-accent);
+  }
+
+  .btn-outline:hover {
+    background: var(--color-accent);
+    color: #ffffff;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .section-title {
+      font-size: 2rem;
+    }
+
+    .naming-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .guide-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .contact-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .cta-buttons {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+</style>

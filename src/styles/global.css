@@ -1,0 +1,546 @@
+/**
+ * global.css — site-wide stylesheet entry point
+ *
+ * Phase 3 (2026-04-10): the "Tailwind Flip" phase.
+ * Phase 7 (2026-04-10): dead-code cleanup — @theme bridge block and
+ *   @layer components tw-* class library removed, both unused.
+ *
+ * Architecture (post-Phase-7):
+ *
+ *   1. tokens.css = design SSOT (CSS variables only)
+ *   2. Tailwind v4 imported via explicit layer imports so we control
+ *      which layers the reset / theme / utilities land in
+ *   3. @layer base = preflight + our site-wide base styles (html/body/
+ *      h1-h6/main/a/img/blockquote/nav/floating-md/media queries).
+ *      Layout.astro has NO <style> block at all.
+ *   4. @layer utilities = Tailwind atomic utilities (flex, p-4, dark:)
+ *   5. Top-level @keyframes (float*) — used by TopicCard's dynamic
+ *      `animation: var(--anim)` arbitrary utility
+ *
+ * Cascade order:
+ *   @layer theme       ← Tailwind theme tokens
+ *     ↓
+ *   @layer base        ← Tailwind preflight + our site base styles
+ *     ↓
+ *   @layer utilities   ← Tailwind atomic utilities
+ *     ↓
+ *   UNLAYERED          ← component scoped <style> blocks (always win)
+ *
+ * Consequences of this architecture:
+ * - Tailwind preflight removes h1-h6 font-sizes, ul/ol bullets, a
+ *   colors, etc. We explicitly restore what we need in @layer base.
+ * - Component scoped <style> blocks remain the highest priority and
+ *   can override anything here.
+ * - Phase 4+ leaf migrations use inline Tailwind arbitrary values
+ *   (`bg-[#0284c7]`, `[&_h2]:mt-6`) instead of the Phase 2 tw-*
+ *   prebuilt classes (which were never adopted and are now deleted).
+ *
+ * ⚠️ New design tokens → tokens.css
+ * ⚠️ New base / typography → @layer base here
+ * ⚠️ One-off atomic utility in HTML → use Tailwind class directly
+ */
+
+@import './tokens.css';
+
+/* Layer order declaration — anything added to these layers lands in
+ * the declared order regardless of source position in the file.
+ * The `components` layer was removed in Phase 7 along with the
+ * tw-* prebuilt class library that never got adopted. */
+@layer theme, base, utilities;
+
+/* Tailwind v4 layered imports. `theme.css` provides Tailwind's default
+ * palette + base tokens; `preflight.css` is the CSS reset; `utilities`
+ * is the atomic utility generator. Explicit layer assignments mean we
+ * can override any of them in our own @layer base. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Content scanning — tell Tailwind which files to look in for class
+ * names it should generate utilities for. The path is relative to
+ * THIS file (src/styles/global.css). */
+@source "../**/*.{astro,ts,tsx,js,jsx,mdx}";
+
+/* Phase 7 (2026-04-10): the `@theme` bridge block that mapped tokens →
+ * Tailwind utilities (font-title, max-w-reading, rounded-card, etc.)
+ * was removed because nothing in the markup actually used those
+ * generated classes. Phase 4+ leaf migrations went straight to
+ * inline Tailwind arbitrary values instead. The raw tokens
+ * themselves still live in tokens.css and are referenced from
+ * `@layer base` below via `var(--font-title)` etc. */
+
+/* ==========================================================================
+ * @layer base — site-wide base styles.
+ *
+ * After Tailwind preflight runs, these rules apply. Note that preflight:
+ *   - sets h1-h6 font-size to inherit (we restore em sizing below)
+ *   - removes ul/ol list-style and indent (we restore)
+ *   - sets * { margin: 0; padding: 0; border: 0 solid; box-sizing: border-box }
+ *   - sets a { color: inherit; text-decoration: inherit }
+ *   - sets img { max-width: 100%; height: auto; display: block }
+ *
+ * The rules here are either:
+ *   (a) restoring browser defaults that preflight killed (headings, lists)
+ *   (b) applying site identity (fonts, background, colors, layout)
+ * ========================================================================== */
+
+@layer base {
+  /* ------------------------------------------------------------------------
+   * Box model + overflow — preflight already does * { box-sizing: border-box }
+   * but the max-width: 100vw and overflow-x: hidden are site-specific.
+   * ------------------------------------------------------------------------ */
+
+  html {
+    font-size: 118%;
+    /* Use `overflow-x: clip` instead of `hidden`. When overflow-x is set to
+       hidden/auto/scroll (any non-visible value), the CSS spec auto-computes the
+       other axis (overflow-y) to auto, making the element a scroll container. This
+       binds all descendant `position: sticky` to that container instead of window,
+       and sticky often breaks inside elements that don't actually scroll but are
+       computed as scroll containers. `overflow-x: clip` clips horizontal overflow
+       without promoting y-axis. Support: Chrome 90+ / Firefox 81+ / Safari 16+. */
+    overflow-x: clip;
+  }
+
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  /* Focus styles for keyboard accessibility */
+  *:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Body — reading font, line height, background gradient.
+   * ------------------------------------------------------------------------ */
+
+  body {
+    font-family: var(--font-reading);
+    font-weight: 400;
+    line-height: 1.75;
+    color: var(--color-ink);
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--color-ink) 8%, transparent),
+        transparent 30%
+      ),
+      linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-soft) 100%);
+    /* Reader size now scales :root font-size (tokens.css), which cascades
+     * into all `rem`-based values. Multiplying body on top of that would
+     * double-scale, so we just inherit. */
+    font-size: 1rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings:
+      'kern' 1,
+      'liga' 1;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Headings — font family + weight + preflight-compensating font-size.
+   *
+   * Tailwind preflight sets h1-h6 { font-size: inherit } which makes them
+   * all render at body size. We restore browser-default em sizing so
+   * rendered Markdown and any <h1>-<h6> without a scoped override keeps
+   * a visible hierarchy. Component scoped styles still win via "unlayered
+   * > layered" cascade.
+   * ------------------------------------------------------------------------ */
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-title);
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+  h1 {
+    font-size: 2em;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+  }
+  h2 {
+    font-size: 1.5em;
+    font-weight: 800;
+  }
+  h3 {
+    font-size: 1.17em;
+    font-weight: 700;
+  }
+  h4 {
+    font-size: 1em;
+    font-weight: 700;
+  }
+  h5 {
+    font-size: 0.83em;
+    font-weight: 600;
+  }
+  h6 {
+    font-size: 0.67em;
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Lists — preflight removes list-style and padding-inline-start which
+   * breaks article body bullets, footnotes, and reference lists. Restore
+   * inside main so nav / footer / sidebar lists stay unstyled by default.
+   * ------------------------------------------------------------------------ */
+
+  main ul,
+  main ol {
+    padding-inline-start: 2rem;
+  }
+  main ul {
+    list-style: disc;
+  }
+  main ol {
+    list-style: decimal;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Blockquote (article body).
+   * ------------------------------------------------------------------------ */
+
+  main blockquote {
+    font-family: var(--font-quote);
+    font-weight: 400;
+    font-style: normal;
+    letter-spacing: 0.01em;
+    line-height: 1.8;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Interface-font UI elements (nav, buttons, meta).
+   * ------------------------------------------------------------------------ */
+
+  nav,
+  button,
+  .btn-primary,
+  .btn-secondary,
+  .btn-cta,
+  [class*='btn'],
+  .meta-item,
+  .tag,
+  .category-badge,
+  .search-input {
+    font-family: var(--font-interface);
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Main element + category-specific padding adjustments.
+   * ------------------------------------------------------------------------ */
+
+  main {
+    min-height: calc(100vh - 60px);
+    width: 100%;
+    max-width: 100vw;
+    /* Use clip not hidden to avoid overflow-x: hidden auto-promoting overflow-y to auto,
+       which would make main a scroll container and break TOC / sidebar position: sticky. See html {} comment. */
+    overflow-x: clip;
+  }
+
+  /* ------------------------------------------------------------------------
+   * TOC / anchor link scroll behavior
+   *
+   * Problem: fixed top navbar ~72px. Anchor click default puts heading at
+   * viewport top = completely hidden behind navbar.
+   * Solution (pure CSS, no JS handler):
+   *   1. scroll-padding-top: 92px on <html> — tells browser to reserve top space
+   *      on anchor scroll, heading lands at viewport top + 92px
+   *   2. scroll-behavior: smooth on <html> — glide instead of jump
+   *   3. respect prefers-reduced-motion — instant on reduced-motion preference
+   *
+   * No scroll-margin-top on heading: scroll-padding-top + scroll-margin-top are
+   * additive; two 92px values stack to 184px double offset.
+   *
+   * Debug lesson: smooth scroll doesn't work in hidden Chrome tabs (rAF throttled
+   * to ~1Hz). Don't test scroll behavior in hidden tabs.
+   * ------------------------------------------------------------------------ */
+  html {
+    /* navbar 72px + 20px buffer = 92px */
+    scroll-padding-top: 92px;
+    scroll-behavior: smooth;
+  }
+
+  /* respect system "reduce motion" preference */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body.page-default main {
+    padding-top: 56px;
+  }
+  body.page-default main.article-page,
+  body.page-default main.graph-page,
+  body.page-default main.dashboard,
+  body.page-default main.term-page,
+  body.page-default main.fork-graph-page,
+  body.page-default main.category-page {
+    padding-top: 0;
+  }
+
+  main img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 12px;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Global link styles (the long :not() chain excludes component-owned
+   * variants). Kept verbatim from Layout.astro.
+   * ------------------------------------------------------------------------ */
+
+  main
+    a:not(.nav-link):not([class*='btn']):not(.card-link):not(.logo):not(
+      .category-card
+    ):not(.floating-md):not(.search-item):not(.reading-step):not(.update-item) {
+    color: var(--color-ink-soft);
+    text-decoration: none;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--color-ink-soft) 35%, transparent);
+    padding-bottom: 1px;
+    transition: all 0.2s ease;
+  }
+  main
+    a:not(.nav-link):not([class*='btn']):not(.card-link):not(.logo):not(
+      .category-card
+    ):not(.floating-md):not(.search-item):not(.reading-step):not(
+      .update-item
+    ):hover {
+    color: var(--color-ink);
+    border-bottom-color: var(--color-ink);
+  }
+
+  /* External links get an upward arrow */
+  main
+    a[target='_blank']:not(.nav-link):not([class*='btn']):not(.card-link):not(
+      .logo
+    ):not(.category-card):not(.floating-md):not(.contributor-card):not(
+      .no-external-icon
+    )::after {
+    content: '↗';
+    font-size: 0.8em;
+    margin-left: 0.2em;
+    opacity: 0.7;
+  }
+
+  /* ------------------------------------------------------------------------
+   * Floating .md button (bottom-right corner of the site).
+   * ------------------------------------------------------------------------ */
+
+  .floating-md {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    background: var(--color-ink);
+    color: var(--color-accent);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s;
+    z-index: 40;
+  }
+  .floating-md:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px
+      color-mix(in srgb, var(--color-accent) 30%, transparent);
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  /* ------------------------------------------------------------------------
+   * Mobile overrides.
+   * ------------------------------------------------------------------------ */
+
+  @media (max-width: 768px) {
+    html {
+      font-size: 100%;
+    }
+    body.page-default main {
+      padding-top: 52px;
+    }
+    body.page-default main.article-page,
+    body.page-default main.graph-page,
+    body.page-default main.dashboard,
+    body.page-default main.term-page,
+    body.page-default main.fork-graph-page,
+    body.page-default main.category-page {
+      padding-top: 0;
+    }
+    .floating-md {
+      bottom: 1rem;
+      right: 1rem;
+      width: 42px;
+      height: 42px;
+      font-size: 0.78rem;
+    }
+  }
+}
+
+/* ==========================================================================
+ * Global @keyframes — animation names that need to be referenced from
+ * inline `animation: var(--anim) ...` rules (which can't resolve inside
+ * Tailwind arbitrary utilities unless the keyframes live at a global
+ * scope). Currently used by TopicCard.astro's per-category float icon.
+ * ========================================================================== */
+
+@keyframes floatDrift {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+  66% {
+    transform: translateY(-3px) rotate(-2deg);
+  }
+}
+
+@keyframes floatSwing {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(8deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(-6deg) scale(0.97);
+  }
+}
+
+@keyframes floatPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes floatGlow {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.06);
+    filter: brightness(1.3);
+  }
+}
+
+@keyframes floatWave {
+  0%,
+  100% {
+    transform: translateX(0) scaleX(1);
+  }
+  40% {
+    transform: translateX(-4px) scaleX(0.95);
+  }
+  70% {
+    transform: translateX(4px) scaleX(1.05);
+  }
+}
+
+@keyframes floatScroll {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotateX(8deg);
+  }
+}
+
+@keyframes floatBrush {
+  0%,
+  100% {
+    transform: rotate(-5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(5deg) translateY(-6px);
+  }
+}
+
+@keyframes floatRise {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.04);
+  }
+}
+
+/* Marquee animations for CommunityFeedback scrolling rows (Phase 7.6).
+   Promoted to global scope so inline Tailwind
+   `[animation:marquee-left_100s_linear_infinite]` can resolve them. */
+@keyframes marquee-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Dice-roll for RandomDiscovery's 🎲 icon (Phase 7.6). */
+@keyframes dice-roll {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(5deg) scale(1.05);
+  }
+  50% {
+    transform: rotate(-5deg) scale(1.1);
+  }
+  75% {
+    transform: rotate(3deg) scale(1.05);
+  }
+}

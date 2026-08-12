@@ -1,0 +1,42 @@
+# Instance-owned files: framework tag-merges never overwrite these.
+# Git uses the "ours" merge strategy for any merge (including `git merge <tag>`),
+# keeping the instance's version and discarding the incoming framework change.
+#
+# REQUIRED once per clone (not version-controlled, so it cannot ship here):
+#   git config merge.ours.driver true
+# The `ours` driver is not built into git; without that config line every
+# `merge=ours` below silently no-ops. `/sekai-upgrade` and docs/runbook/UPGRADE.md set
+# it. Adopters: add your own instance-specific files below.
+
+CLAUDE.md merge=ours
+AGENTS.md merge=ours
+README.md merge=ours
+CHANGELOG.md merge=ours
+VERSION merge=ours
+FRAMEWORK-VERSION merge=ours
+place.config.ts merge=ours
+knowledge/** merge=ours
+public/media/** merge=ours
+CNAME merge=ours
+scripts/ci/genericity-denylist.local.txt merge=ours
+
+# Dev-plugin state (agent-toolkit): the config + promoted rules are committed and
+# repo-shared, but instance-owned — sekai-kb and every adopted instance carry their
+# OWN .agent-toolkit/, so a framework tag-merge must never overwrite it with the
+# framework's own dev config. (Adopters that keep no dev workflow have this tree
+# stripped at adoption by the init wizard.)
+.agent-toolkit/** merge=ours
+
+# Maintainer-doc tree (ADR 008, relocated to dev_docs/ by ADR 009). The init wizard
+# strips the framework's own copy, so most instances have nothing here and this line is
+# inert. An instance that keeps its OWN product, architecture, delivery, or decision
+# records here is a legitimate state, and its documents are never the framework's to
+# overwrite — shipping the attribute means such an instance is protected by default
+# instead of having to remember to add it before its next merge. Absence is a different
+# problem that no attribute can solve; scripts/upgrade/maintainer-docs-state.mjs owns it.
+#
+# One directory, not an enumeration. The pre-ADR-009 form listed four paths inside
+# docs/, so an instance's fifth maintainer document was unprotected until someone
+# remembered to add a line. Captured baselines (formerly docs/baselines/**) are covered
+# by this line for the same reason.
+dev_docs/** merge=ours

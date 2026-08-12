@@ -1,0 +1,25 @@
+# wrangler.toml — the chat Worker's deploy template. Instance identity is generated
+# from place.config.ts into the gitignored wrangler.generated.toml.
+
+name = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+main = "src/index.mjs"
+compatibility_date = "2026-08-07"
+
+[vars]
+ALLOWED_ORIGIN = ""
+SITE_NAME = ""
+RATE_LIMIT_MAX = "20"
+RATE_LIMIT_WINDOW_SECONDS = "3600"
+# Cosine score a chunk must reach to be retrieved. Nothing clears it -> no excerpts,
+# no citations, and the model is told to say the knowledge base does not cover the
+# question. Tuned per corpus; docs/runbook/DEPLOY.md has the measurement procedure.
+RELEVANCE_FLOOR = "0.46"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+database_id = "REPLACE_VIA_NPM_RUN_WORKER_CONFIG"
+migrations_dir = "migrations"

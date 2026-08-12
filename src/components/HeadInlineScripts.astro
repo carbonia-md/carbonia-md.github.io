@@ -1,0 +1,117 @@
+---
+/**
+ * HeadInlineScripts — pre-paint <head> inline scripts (shot-mode + reader-settings).
+ *
+ * Both apply attributes before first paint (FOUC-safe). Extracted from Layout to
+ * keep its structure clean.
+ *
+ * Genericized (task 1.1a): the upstream shot branch for a retired page type was
+ * removed; localStorage keys renamed from the upstream prefix to generic
+ * `reader-*` / `__READER_*`. Keys must stay in sync with ReaderSettings.astro.
+ *
+ * Contents:
+ *   1. shot-mode init (?shot=1 → data-shot attr; used by the visual-regression
+ *      capture scripts and the on-demand OG worker's ?shot render path)
+ *   2. reader settings FOUC-safe early init (reads localStorage, applies data-theme)
+ */
+
+interface Props {
+  /**
+   * Whether this surface opts into the ReaderSettings panel + FOUC-safe theme
+   * init. Mirrors the same-named prop on Layout. Default surfaces stay light.
+   */
+  readerSettings: boolean;
+}
+const { readerSettings } = Astro.props;
+---
+
+<!-- shot-mode init: ?shot=1 activates screenshot/OG render mode
+     (visual-regression capture + on-demand OG worker) -->
+<script is:inline>
+  (function () {
+    try {
+      var qs = new URLSearchParams(location.search);
+      if (qs.get('shot') !== '1') return;
+      document.documentElement.setAttribute('data-shot', '1');
+      if (qs.get('og') === '1') {
+        document.documentElement.setAttribute('data-og', '1');
+      }
+      var apply = function () {
+        var m = document.querySelector('main.article-page');
+        if (m) m.setAttribute('data-shot', '1');
+        var titleOverride = qs.get('title');
+        if (titleOverride) {
+          var h1 = document.querySelector('.hero-title');
+          if (h1) h1.textContent = titleOverride;
+        }
+        var descOverride = qs.get('desc');
+        if (descOverride) {
+          var p = document.querySelector(
+            'main.article-page > section > div:nth-child(2) > p',
+          );
+          if (p) {
+            p.textContent = descOverride;
+          } else {
+            var inner = document.querySelector(
+              'main.article-page > section > div:nth-child(2)',
+            );
+            var hero = inner && inner.querySelector('.hero-title');
+            if (inner && hero) {
+              var np = document.createElement('p');
+              np.textContent = descOverride;
+              hero.insertAdjacentElement('afterend', np);
+            }
+          }
+        }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', apply);
+      } else {
+        apply();
+      }
+    } catch (_) {}
+  })();
+</script>
+
+<!-- Reader settings FOUC-safe early init.
+     Reads localStorage settings and applies data-theme / data-text-size before
+     first paint, avoiding a toggling flash. ?shot=1 short-circuits (screenshots
+     are always light). The __READER_SETTINGS gate only applies dark theme on
+     opt-in surfaces; non-opt-in surfaces (home / hubs) stay light because their
+     layouts assume a light bg. Default = light everywhere unless dark is toggled. -->
+<script is:inline define:vars={{ readerSettings }}>
+  window.__READER_SETTINGS = !!readerSettings;
+</script>
+<script is:inline>
+  (function () {
+    try {
+      if (!window.__READER_SETTINGS) return;
+      var qs = new URLSearchParams(location.search);
+      if (qs.get('shot') === '1') return;
+      var html = document.documentElement;
+      var saved = null;
+      try {
+        saved = localStorage.getItem('reader-theme');
+      } catch (_) {}
+      var prefersDark =
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var effective =
+        saved === 'dark'
+          ? 'dark'
+          : saved === 'auto'
+            ? prefersDark
+              ? 'dark'
+              : 'light'
+            : 'light';
+      if (effective === 'dark') html.setAttribute('data-theme', 'dark');
+      var size = null;
+      try {
+        size = localStorage.getItem('reader-text-size');
+      } catch (_) {}
+      if (size === 'large' || size === 'xlarge') {
+        html.setAttribute('data-text-size', size);
+      }
+    } catch (_) {}
+  })();
+</script>
