@@ -1,0 +1,27 @@
+{
+  "place": {
+    "name": "Carbonia",
+    "tagline": "Open-source, AI-friendly knowledge base for Carbonia.",
+    "domain": "alusci.github.io",
+    "locale": "en"
+  },
+  "categories": "small-town",
+  "map": {
+    "center": [39.166, 8.522],
+    "zoom": 13
+  },
+  "features": {
+    "graph": true,
+    "map": true,
+    "dashboard": true,
+    "soundscape": false,
+    "feedback": false,
+    "chat": false,
+    "social": false,
+    "analytics": false
+  },
+  "links": {
+    "repo": "https://github.com/alusci/carbonia-md",
+    "email": "alelusci1@gmail.com"
+  }
+}

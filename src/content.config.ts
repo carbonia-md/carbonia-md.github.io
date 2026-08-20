@@ -12,6 +12,13 @@ const articleSchema = z.object({
   featured: z.boolean().optional().default(false),
   lastVerified: z.coerce.date().optional(),
   lastHumanReview: z.boolean().optional().default(false),
+  // Hero image set (ARTICLE-PLAYBOOK.md §4.0 optional fields): article.template.astro
+  // renders these directly from frontmatter, so they must survive the schema parse.
+  image: z.string().optional(),
+  imageAlt: z.string().optional(),
+  imageCredit: z.string().optional(),
+  imageLicense: z.string().optional(),
+  imageSource: z.string().optional(),
   // geo: raw string "Name,lat,lng,Area" — parsed downstream by 2.1, stored as-is here
   geo: z.string().optional(),
   source: z.array(z.string()).optional().default([]),

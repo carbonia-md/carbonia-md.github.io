@@ -64,3 +64,6 @@ reports/visual/diff-summary.json
 
 # os / editor
 .DS_Store
+
+# Claude Code /export transcripts — local working notes, not site content.
+*-command-message*.txt*

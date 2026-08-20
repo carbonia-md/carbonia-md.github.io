@@ -1,9 +1,9 @@
 {
-  "name": "sekai-kb",
-  "version": "1.1.4",
+  "name": "carbonia",
+  "version": "0.0.0",
   "type": "module",
   "private": true,
-  "description": "AI-native place knowledge base — the sekai-kb framework template.",
+  "description": "AI-native open knowledge base for Carbonia.",
   "engines": {
     "node": ">=22.13.0"
   },

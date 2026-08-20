@@ -1,0 +1,6 @@
+# genericity-denylist.local.txt — INSTANCE-OWNED additions to the genericity
+# gate. Written by `npm run init` with this instance's place name; add more
+# terms freely (one per line, case-insensitive substring match). Read
+# additively by scripts/ci/check-genericity.sh alongside the framework
+# denylist, which stays framework-owned so upgrades never conflict.
+carbonia
