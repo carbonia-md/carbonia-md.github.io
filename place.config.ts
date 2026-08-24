@@ -195,7 +195,7 @@ const config: PlaceConfig = {
   place: {
     name: 'Carbonia',
     tagline: 'Open-source, AI-friendly knowledge base for Carbonia.',
-    domain: 'alusci.github.io',
+    domain: 'carbonia-md.github.io',
     locale: 'en',
     languages: ['en'],
   },
@@ -251,7 +251,7 @@ const config: PlaceConfig = {
     og: false,
   },
   links: {
-    repo: 'https://github.com/alusci/carbonia-md',
+    repo: 'https://github.com/carbonia-md/carbonia-md.github.io',
     email: 'alelusci1@gmail.com',
     social: {},
   },
