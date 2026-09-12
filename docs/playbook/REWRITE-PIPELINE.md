@@ -1,9 +1,13 @@
 # REWRITE-PIPELINE — Article Write/Rewrite
 
-> All articles (new or rewrite) follow one linear pipeline. Mode is determined
-> in Stage 0; Stages 1-5 are mode-agnostic. The editorial standard the pipeline
-> enforces lives in [ARTICLE-PLAYBOOK.md](ARTICLE-PLAYBOOK.md); this document is
-> the process contract the framework's writing skills execute.
+> All articles (new, rewrite, or translation) follow one linear pipeline. Mode
+> is determined in Stage 0; Stages 1-5 are mode-agnostic **except where a
+> stage below explicitly branches by mode** — translation replaces Stage 1
+> and reshapes Stage 3, since its source material is an already-researched,
+> already-fact-checked article rather than the world. The editorial standard
+> the pipeline enforces lives in [ARTICLE-PLAYBOOK.md](ARTICLE-PLAYBOOK.md);
+> this document is the process contract the framework's writing skills
+> execute.
 
 ---
 
@@ -11,20 +15,34 @@
 
 Determine scope before research begins.
 
-1. **Mode**: new article or rewrite of existing?
-2. **Angle**: what makes this topic relevant to this place specifically? What's
-   the local memory, cultural context, or geographic connection?
+1. **Mode**: new article, rewrite of existing, or **translation** of an
+   existing article into another language enabled in `place.config.ts`'s
+   `place.languages`?
+2. **Angle** (new/rewrite only): what makes this topic relevant to this place
+   specifically? What's the local memory, cultural context, or geographic
+   connection? (Translation inherits the source article's angle — it isn't
+   re-decided.)
 3. **Existing material** (rewrite only): read the current `knowledge/` file,
    extract what to keep vs. what to rework.
-4. **Editorial load**: read [ARTICLE-PLAYBOOK.md](ARTICLE-PLAYBOOK.md) in full.
+4. **Translation source** (translation only): read the source article in
+   full — `knowledge/{Category}/{slug}.md` for the default language, or
+   `knowledge/{sourceLang}/{Category}/{slug}.md` otherwise. It is already
+   researched and fact-checked; translating carries that work forward
+   instead of repeating it (Stage 1 and Stage 3 change shape below).
+5. **Editorial load**: read [ARTICLE-PLAYBOOK.md](ARTICLE-PLAYBOOK.md) in full.
    It defines voice, structure, and the quality bar — especially §2 (five things
-   to find before you write).
+   to find before you write). Translation still follows the same voice and
+   structure rules; §2's "five things" is a new/rewrite research step, not a
+   translation one.
 
 Output: mental model of what you're writing and why. No file written yet.
 
 ---
 
 ## Stage 1: Research
+
+**Translation mode skips this stage.** The source article's Stage 1 already
+happened; translating is not re-researching. Go straight to Stage 2.
 
 Gather facts. Every claim must be sourceable.
 
@@ -50,6 +68,17 @@ Write the article per [ARTICLE-PLAYBOOK.md](ARTICLE-PLAYBOOK.md) standards.
 - Target: `knowledge/{Category}/{slug}.md`. Category folders come from
   `place.config.ts`; the filename is the article's slug (lowercase).
 
+**Translation mode:** translate the source article's prose faithfully — same
+structure (opening → At a Glance → body → citations), same claims, same
+footnote/source list. Translate footnote text and quote attributions; never
+invent or drop a source in the process. A quoted primary source is
+translated for meaning, not smoothed into more natural-sounding target-
+language prose at the cost of accuracy (Stage 3 below checks this). Target:
+`knowledge/{lang}/{Category}/{slug}.md` — the **same** `{Category}` and
+`{slug}` as the source article; only the language-root segment changes. Add
+`translatedFrom: '{sourceLang}'` to the frontmatter (e.g. `translatedFrom:
+'en'`) so the pairing is recorded, not just implied by matching paths.
+
 ---
 
 ## Stage 3: Fact-check
@@ -69,9 +98,36 @@ Machine assist for the prose side of this stage:
 npm run article-health -- knowledge/{Category}/{slug}.md --profile=rewrite-stage-3
 ```
 
+**Translation mode** replaces claim-verification-against-sources with a
+**translation-fidelity check** — the source's facts were already verified;
+what could go wrong now is drift introduced by translating, not a bad fact.
+Run [FACTCHECK-PIPELINE.md](FACTCHECK-PIPELINE.md)'s Translation Fidelity
+mode (Phase T), or as a minimum self-audit:
+
+1. Every number, date, proper noun, and named quantity in the source appears
+   in the translation too — verbatim or correctly localized (`3 May 2020` →
+   `3 maggio 2020` is fine; a changed number is not).
+2. No claim is added that isn't in the source; no claim from the source is
+   silently dropped.
+3. Every blockquoted primary-source quote: re-read side by side with the
+   source and confirm the translation preserves its meaning — a translated
+   quote can't be checked as verbatim text the way a same-language quote
+   can, which is why Phase 4's Verbatim Check doesn't apply to translations.
+
+Machine assist still applies to prose mechanics (not fidelity — article-health
+has no Italian-language checks yet, see this instance's PROGRESS.md M6):
+
+```bash
+npm run article-health -- knowledge/{lang}/{Category}/{slug}.md --profile=rewrite-stage-3
+```
+
 ---
 
 ## Stage 4: Quality-checklist gate
+
+Mode-agnostic from here on — the `knowledge/{Category}/{slug}.md` path
+shown below is `knowledge/{lang}/{Category}/{slug}.md` for a translation
+(Stage 2's target path); everything else in Stages 4-5 applies as written.
 
 Run the article through the quality gate in
 [ARTICLE-PLAYBOOK.md §7](ARTICLE-PLAYBOOK.md) — the five-finger test, the

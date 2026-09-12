@@ -200,7 +200,10 @@ Rules the linter checks:
 Optional fields go **after** `lastHumanReview`, in this order when present:
 `researchReport`, then the image set (`image`, `imageAlt`, `imageCredit`,
 `imageLicense`, `imageSource`), then instance conventions (`source`, `geo`,
-`rationale` — the `rationale` block is required for contested categories, §4.9).
+`rationale` — the `rationale` block is required for contested categories,
+§4.9 — and `translatedFrom`, set only on a translation: the source article's
+language code, e.g. `translatedFrom: 'en'`. See
+[REWRITE-PIPELINE.md](REWRITE-PIPELINE.md)'s translation mode.).
 
 ### 4.1 The Opening Paragraph + At a Glance
 

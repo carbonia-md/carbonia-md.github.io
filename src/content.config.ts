@@ -23,6 +23,10 @@ const articleSchema = z.object({
   // geo: raw string "Name,lat,lng,Area" — parsed downstream by 2.1, stored as-is here
   geo: z.string().optional(),
   source: z.array(z.string()).optional().default([]),
+  // Set only on a translation (REWRITE-PIPELINE.md's translation mode): the
+  // language code of the source article this one was translated from, e.g.
+  // 'en'. Absent on an original (non-translated) article in any language.
+  translatedFrom: z.string().optional(),
 });
 
 // One collection per enabled language (src/config/languages.ts), each pointed

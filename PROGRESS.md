@@ -18,7 +18,7 @@
 | M4 — home-page copy + place.config.ts schema | ☐ not started | |
 | M5 — derived-data script fixes | ☐ not started | |
 | M6 — article-health locale-awareness | ☐ not started | |
-| M7 — skills updates | ☐ not started | |
+| M7 — skills updates | 🔶 mostly done, out of order | done ahead of M2-M6 at user's request — see notes |
 | M8 — remaining articles + full-site verification | ☐ not started | |
 
 ## Design Decisions Log
@@ -203,14 +203,51 @@ Verification: each script surfaces the `it` pilot article like an `en` one.
 Verification: pytest suite passes; `--all --profile=dashboard` reports it
 article correctly.
 
-### M7 — Skills updates
-- [ ] `sekai-write` — translate-mode workflow
-- [ ] `sekai-factcheck` + `FACTCHECK-PIPELINE.md` — Phase T
-- [ ] `translatedFrom` frontmatter field landed
-- [ ] `sekai-validate` — confirmation pass
-- [ ] `sekai-seed-articles` gap noted (deferred)
+### M7 — Skills updates 🔶
+**Landed out of sequence, at user's request, before M2-M6.** The skill
+workflows exist and the site still builds clean, but they're mostly
+*untested against real content* — no `it` article exists yet (that's
+M2/M8), so "dry-run against the M2 pilot pair" couldn't happen yet. Treat
+this as designed-and-wired, not yet exercised.
 
-Verification: dry-run both skills in translate/fidelity mode.
+- [x] `docs/playbook/REWRITE-PIPELINE.md` — added translation as a third
+      Stage 0 mode; Stage 1 skipped for it; Stage 2's target path and
+      `translatedFrom` field; Stage 3 replaced with a translation-fidelity
+      self-audit (or escalate to `/sekai-factcheck`'s new mode); Stage 4-5
+      noted as mode-agnostic with the `{lang}/` path insert.
+- [x] `docs/playbook/FACTCHECK-PIPELINE.md` — added a "Translation Fidelity"
+      row to the Modes table and a full **Phase T** section (replaces Phase
+      3/4 for this mode; Phases 1, 2, 5, 6 still run against the article
+      pair). Added a `TRANSLATION-DRIFT` triage bucket to Phase 6 and folded
+      it into the hard ship gate.
+- [x] `.agents/skills/sekai-write/SKILL.md` — reads `place.languages` now;
+      translation trigger phrases added; writes to
+      `knowledge/{lang}/{Category}/{slug}.md` for translations (folder name
+      itself never localizes — flagged explicitly, since that's the exact
+      D2 hard rule a translation workflow could easily violate by accident).
+- [x] `.agents/skills/sekai-factcheck/SKILL.md` — Translation Fidelity mode
+      added alongside Quick/Full; reports the new `TRANSLATION-DRIFT` bucket.
+- [x] `src/content.config.ts` — `translatedFrom: z.string().optional()`
+      added to `articleSchema`.
+- [x] `docs/playbook/ARTICLE-PLAYBOOK.md` §4.0 — `translatedFrom` documented
+      in the optional-fields list.
+- [ ] `sekai-validate` — **not yet confirmed working end-to-end.** It should
+      Just Work once M6 fixes `article_health/loader.py`'s category-
+      derivation bug, but that bug is still live — running
+      `article-health` against a real `knowledge/{lang}/...` file today
+      would mis-derive its category (see M6). Nothing to change in the
+      skill itself; this is a real dependency on M6, not a checklist item
+      to skip.
+- [ ] `sekai-seed-articles` gap noted (deferred, per original plan — lower
+      priority, used for initial seeding not translation).
+
+Verification so far: `npm run build`, `npm run postbuild`, `npm run test`,
+`npm run genericity`, and the article-health pytest suite (322/322) all
+still pass after the schema/doc changes above — confirms nothing broke, not
+that the new workflows produce a correct translation yet. Real
+verification (dry-running `/sekai-write` in translate mode, then
+`/sekai-factcheck` in Translation Fidelity mode, against a real article) is
+M2's job, next.
 
 ### M8 — Remaining articles + full-site verification
 - [ ] 6 remaining articles translated + human-reviewed
