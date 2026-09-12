@@ -21,6 +21,7 @@ from pathlib import Path
 
 _RE_NAME = re.compile(r"\bname:\s*'([^']+)'")
 _RE_DOMAIN = re.compile(r"\bdomain:\s*'([^']+)'")
+_RE_LANGUAGES = re.compile(r"\blanguages:\s*\[([^\]]*)\]")
 
 
 def _find_place_config(start: Path | None = None) -> Path | None:
@@ -58,6 +59,33 @@ def brand_author() -> str:
     """
     name = place_name()
     return f"{name}.md" if name else ""
+
+
+@lru_cache(maxsize=1)
+def _load_languages() -> tuple[str, ...]:
+    path = _find_place_config()
+    if path is None:
+        return ("en",)
+    text = path.read_text(encoding="utf-8")
+    m = _RE_LANGUAGES.search(text)
+    if not m:
+        return ("en",)
+    codes = tuple(re.findall(r"'([^']+)'", m.group(1)))
+    return codes if codes else ("en",)
+
+
+def place_languages() -> tuple[str, ...]:
+    """Enabled language codes from place.config.ts's `place.languages`, in
+    order — the first is the default (unprefixed) language, matching
+    `src/config/languages.ts`'s registry. `('en',)` if unresolved."""
+    return _load_languages()
+
+
+def non_default_language_codes() -> tuple[str, ...]:
+    """Every enabled language except the default (first) one -- the codes
+    that nest one level deeper under `knowledge/{lang}/{Category}/`, per
+    `scripts/core/sync.sh`'s convention."""
+    return _load_languages()[1:]
 
 
 def brand_prefix_pattern() -> str | None:

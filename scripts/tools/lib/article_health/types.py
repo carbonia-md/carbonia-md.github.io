@@ -53,6 +53,7 @@ class FileTarget:
     body_pad_lines: int = 0  # how many blank lines were prepended to align line numbers
     category: str = ""  # About / History / Geography / ...
     slug: str = ""  # filename without .md
+    lang: str = "en"  # language code derived from the knowledge/ path (D4, PROGRESS.md M6)
 
     # Protected text segments — list of (start, end, kind) tuples in body coords.
     # kind = "fenced-code" / "inline-code" / "link-url" / "html-tag"

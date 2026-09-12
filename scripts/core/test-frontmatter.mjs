@@ -17,7 +17,15 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
 import matter from 'gray-matter';
 
-const KNOWLEDGE = resolve(process.cwd(), 'knowledge');
+const ROOT = process.cwd();
+const KNOWLEDGE = resolve(ROOT, 'knowledge');
+
+const placeConfig = (await import(resolve(ROOT, 'place.config.ts'))).default;
+const LANGS = placeConfig.place.languages?.length
+  ? placeConfig.place.languages
+  : ['en'];
+const DEFAULT_LANG = LANGS[0];
+const NON_DEFAULT_LANGS = new Set(LANGS.filter((l) => l !== DEFAULT_LANG));
 
 const STRICT = process.argv.includes('--strict');
 const CI_MODE = process.argv.includes('--ci');
@@ -52,13 +60,36 @@ if (CI_MODE || STAGED_MODE) {
   }
 }
 
-// Discover categories from filesystem (no config coupling)
-let categories;
+// Discover (lang, category, dir) scan roots from the filesystem. The default
+// language's categories sit at knowledge/{Category}/ directly; every other
+// enabled language nests one level deeper under its own knowledge/{lang}/
+// root (scripts/core/sync.sh's projection convention) -- a top-level dir
+// whose name is a configured non-default language code is a language root,
+// not a category, and needs one more readdir to reach its category dirs.
+let scanRoots = [];
 try {
-  const entries = await readdir(KNOWLEDGE, { withFileTypes: true });
-  categories = entries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name);
+  const topEntries = await readdir(KNOWLEDGE, { withFileTypes: true });
+  for (const entry of topEntries) {
+    if (!entry.isDirectory()) continue;
+    if (NON_DEFAULT_LANGS.has(entry.name)) {
+      const langDir = join(KNOWLEDGE, entry.name);
+      const catEntries = await readdir(langDir, { withFileTypes: true });
+      for (const catEntry of catEntries) {
+        if (!catEntry.isDirectory()) continue;
+        scanRoots.push({
+          lang: entry.name,
+          category: catEntry.name,
+          dir: join(langDir, catEntry.name),
+        });
+      }
+    } else {
+      scanRoots.push({
+        lang: DEFAULT_LANG,
+        category: entry.name,
+        dir: join(KNOWLEDGE, entry.name),
+      });
+    }
+  }
 } catch {
   console.error('ERROR: knowledge/ directory not found');
   process.exit(1);
@@ -78,8 +109,7 @@ function isArrayOfStrings(val) {
 
 // ── Scan ──
 
-for (const cat of categories) {
-  const dir = join(KNOWLEDGE, cat);
+for (const { lang, category: cat, dir } of scanRoots) {
   let files;
   try {
     files = (await readdir(dir)).filter(
@@ -90,11 +120,12 @@ for (const cat of categories) {
   }
 
   const slugs = new Map();
+  const langPrefix = lang === DEFAULT_LANG ? '' : `${lang}/`;
 
   for (const file of files) {
     const filePath = join(dir, file);
-    const relPath = `knowledge/${cat}/${file}`;
-    const label = `${cat}/${file}`;
+    const relPath = `knowledge/${langPrefix}${cat}/${file}`;
+    const label = `${langPrefix}${cat}/${file}`;
     const slug = basename(file, '.md');
 
     if (changedFiles && !changedFiles.has(relPath)) continue;
