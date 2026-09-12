@@ -38,7 +38,7 @@ const t = useTranslations(lang);
  * build-time warning instead of shipping a 404 — which is also what keeps the
  * post-build internal-link check green.
  */
-const knownRoutes = builtRoutes(placeConfig, await getCollection('en'));
+const knownRoutes = builtRoutes(placeConfig, await getCollection(lang));
 
 // Build-time read. Warnings (a missing asset, a malformed entry, an `article`
 // that resolves to nothing) are emitted to the build log by the reader itself,

@@ -14,12 +14,14 @@ import CategoryGrid from '../components/CategoryGrid.astro';
 import { getCollection } from 'astro:content';
 import { getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
+import { getLangFromUrl } from '../i18n/utils';
 
 const { features } = placeConfig;
 const cats = getCategoryConfigs();
 const validSlugs = new Set(placeConfig.categories.map((c) => c.slug));
 
-const entries = await getCollection('en');
+const lang = getLangFromUrl(Astro.url);
+const entries = await getCollection(lang);
 const articles = entries
   .map((entry) => {
     const parts = entry.id.split('/');

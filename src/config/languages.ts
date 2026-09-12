@@ -1,10 +1,14 @@
 /**
  * LANGUAGES_REGISTRY -- single source of truth for enabled UI languages.
  *
- * Trimmed to English-only for the rebuild (task 1.1a). The registry shape is
- * kept (framework capability) so adding a language is a config edit, not a code
- * change: append an entry here + a `place.config.languages` code + wrapper pages.
- * The fork's babel/cascade i18n toolchain is NOT ported (STRATEGIC-DIRECTION §F).
+ * Trimmed to English-only for the rebuild (task 1.1a), then re-enabled for a
+ * second language (Italian) as a controlled, instance-local experiment before
+ * discussing upstreaming with the framework owner — see /PROGRESS.md. The
+ * registry shape was kept (framework capability) so adding a language is a
+ * config edit, not a code change: append an entry here + a
+ * `place.config.languages` code + wrapper pages. The fork's babel/cascade
+ * i18n toolchain is still NOT ported (STRATEGIC-DIRECTION §F) — this reuses
+ * the hand-rolled `src/i18n/*` helpers, not a new toolchain.
  */
 
 export interface LanguageEntry {
@@ -22,6 +26,12 @@ export const LANGUAGES = [
     displayName: 'English',
     hreflang: 'en',
     isDefault: true,
+    enabled: true,
+  },
+  {
+    code: 'it',
+    displayName: 'Italiano',
+    hreflang: 'it',
     enabled: true,
   },
 ] as const satisfies readonly LanguageEntry[];

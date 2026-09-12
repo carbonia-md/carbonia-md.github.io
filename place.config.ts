@@ -197,7 +197,10 @@ const config: PlaceConfig = {
     tagline: 'Open-source, AI-friendly knowledge base for Carbonia.',
     domain: 'carbonia-md.github.io',
     locale: 'en',
-    languages: ['en'],
+    // Italian added as a controlled, instance-local experiment — see
+    // /PROGRESS.md. categories[].title/.description and home.* copy stay
+    // English-only strings until M4 lands the locale-map schema change.
+    languages: ['en', 'it'],
   },
   categories: [
     {
@@ -362,7 +365,7 @@ const config: PlaceConfig = {
         {
           icon: '🎯',
           title: 'Curated, Not Scraped',
-          description: 'Every article is written and fact-checked by hand, not generated from search results.',
+          description: 'Every article is humanly vetted, even when drafted with AI.',
         },
         {
           icon: '🤖',

@@ -7,9 +7,10 @@
  * stay the engineering SSOT. Linked from /about's "One Layer Deeper" meta card.
  * All place identity flows from place.config via the component.
  */
-import Layout from '../layouts/Layout.astro';
-import SystemDiagram from '../components/SystemDiagram.astro';
-import placeConfig from '../../place.config';
+export { langStaticPaths as getStaticPaths } from '../../lib/lang-static-paths';
+import Layout from '../../layouts/Layout.astro';
+import SystemDiagram from '../../components/SystemDiagram.astro';
+import placeConfig from '../../../place.config';
 
 const { name } = placeConfig.place;
 ---

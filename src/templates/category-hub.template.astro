@@ -7,10 +7,9 @@
  */
 import { marked } from 'marked';
 import Layout from '../layouts/Layout.astro';
-import { useTranslations } from '../i18n/utils';
+import { useTranslations, getLangFromUrl } from '../i18n/utils';
 import { categoryList, getCategoryConfig, getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
-import type { Lang } from '../config/languages';
 
 interface ArticleSummary {
   slug: string;
@@ -34,7 +33,7 @@ interface Props {
 
 const { category, hubContent, articles, topPicks } = Astro.props;
 
-const lang: Lang = 'en';
+const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 const allConfigs = getCategoryConfigs();

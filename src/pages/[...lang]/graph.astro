@@ -7,20 +7,24 @@
  * Ported from the fork's src/pages/graph.astro. All place/category identity is
  * genericized: the hub list, node colors, labels, and knowledge/ folder mapping
  * derive from place.config.ts + src/utils/categoryConfig.ts — none of the fork's
- * hardcoded slug/title/hex tables survive. Articles read via the established
- * getCollection('en') convention; Hub files (underscore-prefixed, never synced)
- * are read from knowledge/, keyed by the config title↔slug map. D3 is CDN-loaded
- * and page-scoped; the graph data is emitted as an application/json island the
- * client parses (and scripts/core/check-graph.mjs asserts against post-build).
+ * hardcoded slug/title/hex tables survive. Articles read via the per-language
+ * content collection (src/content.config.ts); Hub files (underscore-prefixed,
+ * never synced) are read from knowledge/, keyed by the config title↔slug map.
+ * D3 is CDN-loaded and page-scoped; the graph data is emitted as an
+ * application/json island the client parses (and scripts/core/check-graph.mjs
+ * asserts against post-build — en only for now, see /PROGRESS.md M5).
  */
-import Layout from '../layouts/Layout.astro';
+export { langStaticPaths as getStaticPaths } from '../../lib/lang-static-paths';
+import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 import { readdir, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import placeConfig from '../../place.config';
-import { getCategoryConfig } from '../utils/categoryConfig';
+import placeConfig from '../../../place.config';
+import { getCategoryConfig } from '../../utils/categoryConfig';
+import { getLangFromUrl } from '../../i18n/utils';
 
 const { name } = placeConfig.place;
+const lang = getLangFromUrl(Astro.url);
 
 // Category identity flows from config — no hardcoded categories[]/categoryColors/
 // categoryNames/categoryMapping tables (genericity gate; clean-rebuild rule).
@@ -47,7 +51,7 @@ const tagMap: Record<string, string[]> = {}; // tag → article node ids
 
 // Articles from the content collection. Entry id is "{categorySlug}/{slug}".
 const validSlugs = new Set(categories);
-const allArticles = (await getCollection('en'))
+const allArticles = (await getCollection(lang))
   .map((entry) => {
     const parts = entry.id.split('/');
     const category = parts[0];
@@ -164,10 +168,12 @@ for (const [, articleIds] of Object.entries(tagMap)) {
 
 // Parse Hub wikilinks → Hub→article edges. Hub files (underscore-prefixed) live
 // only in knowledge/, never synced to src/content; folder resolves via the
-// place.config title↔slug map.
+// place.config title↔slug map. Non-default languages nest one level deeper
+// (knowledge/{lang}/{title}/), matching scripts/core/sync.sh's convention.
+const knowledgeLangRoot = lang === 'en' ? 'knowledge' : `knowledge/${lang}`;
 for (const [cat, folder] of categoryFolders) {
   try {
-    const hubDir = resolve(process.cwd(), 'knowledge', folder);
+    const hubDir = resolve(process.cwd(), knowledgeLangRoot, folder);
     const files = await readdir(hubDir);
     const hubFile = files.find((f) => f.startsWith('_') && f.includes('Hub'));
     if (!hubFile) continue;

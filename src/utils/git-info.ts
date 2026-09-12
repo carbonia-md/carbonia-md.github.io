@@ -22,12 +22,15 @@ const categoryFolderMap: Record<string, string> = Object.fromEntries(
   placeConfig.categories.map((c) => [c.slug, c.title]),
 );
 
-export function getGitInfo(category: string, slug: string): GitInfo {
+export function getGitInfo(category: string, slug: string, lang = 'en'): GitInfo {
   const folder = categoryFolderMap[category];
   if (!folder) return { contributors: [], commitHash: '' };
 
-  // Keys are repo-relative NFC paths, matching build-git-info.mjs.
-  const key = `knowledge/${folder}/${slug}.md`.normalize('NFC');
+  // Keys are repo-relative NFC paths, matching build-git-info.mjs. Non-default
+  // languages nest one level deeper (knowledge/{lang}/{folder}/), matching
+  // scripts/core/sync.sh's convention.
+  const langPrefix = lang === 'en' ? '' : `${lang}/`;
+  const key = `knowledge/${langPrefix}${folder}/${slug}.md`.normalize('NFC');
   const entry = files[key];
   if (!entry) return { contributors: [], commitHash: '' };
 
