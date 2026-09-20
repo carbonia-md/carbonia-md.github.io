@@ -22,6 +22,7 @@ source:
   - 'https://www.museodelcarbone.it/en/history/the-mine/'
   - 'https://www.invitalia.it/cosa-facciamo/rilanciamo-le-aree-di-crisi-industriale/portovesme'
   - 'https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf'
+  - 'https://it.wikipedia.org/wiki/Provincia_del_Sulcis_Iglesiente'
 rationale:
   why_this_hook: 'The founding-to-present arc is the one throughline that explains both why Carbonia exists and why its economy still has not stabilized; treating only the founding, or only the present crisis, would hide half of that causality.'
   whats_excluded: 'Individual miners'' biographies and detailed union politics are left out for length; the 1940-43 strikes and the 1948 strike are noted but not given full treatment.'
@@ -51,7 +52,7 @@ After the war, Sardinian coal became less and less competitive. When Italy joine
 
 Exactly when large-scale coal mining ended here is one of the few facts in this history that does not line up cleanly across sources. The Museo del Carbone, built on the former Serbariu mine site, dates that mine's operational life to 1937-1964; a separate account describes the nearby Seruci mine's closure in 1964 as well, following the sector's broader crisis, while other sources put final closure (or at least the last recorded activity) closer to 1971. What is not in dispute is the outcome: former miners were expected to find new work at the Enel power plant and the new Portovesme Industrial Hub, an aluminum-and-metals complex built on the same coastline. It could not absorb them all: a high capital-to-labor ratio meant the whole complex offered only 4,000 to 6,000 jobs against a much larger workforce shed by the mines. From the 1970s on, Carbonia's economy shifted toward services, and the region's "Piano di Rinascita" (Renaissance Plan) failed to solve the youth unemployment that followed.
 
-## A Crisis Without an End
+## A Crisis Without an End, Amid Light and Shadow
 
 Portovesme's own industrial base then hit the same wall a generation later. In the late 1990s, ENI's exit from Carbosulcis and Alcoa's abandonment of its aluminum plant were pivotal blows, driven by energy costs that could not compete on the European market and by inadequate logistics infrastructure. The 2008 global financial crisis compounded it: Eurallumina, the alumina plant at Portovesme, has been reported as idle since as early as 2009 by some accounts and only partially closed by 2012 in others. It is the same kind of date ambiguity that runs through this whole history, this time for the plant that was supposed to be part of the mines' replacement.
 
@@ -61,11 +62,16 @@ As of 2026, the industrial crisis remains unresolved, and the town's future is u
 
 The mine is still visible today from [[pineta-di-monte-rosmarino|Monte Rosmarino]], the pine park that now serves as the town's everyday green space for its residents. Carbonia's mines closed decades ago. Its economic aftermath has not.
 
+## The Will to Keep Fighting
+
+Despite a difficult history, Carbonia is still here, and even accounting for its demographic and employment decline, it remains one of the most important urban centers in the Sulcis (it is co-capital, along with Iglesias, of the Province of Sulcis Iglesiente[^4]). Today Carbonia is an important service hub for the area and a reference point for the many tourists who choose the Sulcis's scenic coastline for their holidays.
+
 ## References
 
 [^1]: [MDPI — Coal and Mines in the Era of Fascist Ventennio in Italy](https://www.mdpi.com/2409-9252/4/4/26); [Wandering Sardinia — Striking Coal Miners in Sardinia](https://wanderingsardinia.com/articles/28/striking-miners-in-sardinia) — cover the 1947-1957 workforce collapse and the 1948 strike.
 [^2]: [Democrazia Oggi — Carbonia, 1940-42](https://www.democraziaoggi.it/?p=6438); [Democrazia Oggi — Lo sfruttamento in miniera](https://www.democraziaoggi.it/?p=6360) — document wartime health conditions and the bread-ration figure.
 [^3]: [Parco Geominerario della Sardegna — *Saper vivere. Antropologia mineraria della Sardegna nell'antropocene*](https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf) — p. 137 documents the 1944 renaming of Piazza Impero to Piazza (Giacomo) Matteotti, citing Comune di Carbonia council records.
+[^4]: [Wikipedia — Provincia del Sulcis Iglesiente](https://it.wikipedia.org/wiki/Provincia_del_Sulcis_Iglesiente) — the province, operational since 1 June 2025 following the abolition of the Province of Sud Sardegna, has two capitals, Iglesias and Carbonia.
 
 ## Image Sources
 

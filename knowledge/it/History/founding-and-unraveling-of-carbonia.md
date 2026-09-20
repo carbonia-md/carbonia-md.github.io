@@ -22,6 +22,7 @@ source:
   - 'https://www.museodelcarbone.it/en/history/the-mine/'
   - 'https://www.invitalia.it/cosa-facciamo/rilanciamo-le-aree-di-crisi-industriale/portovesme'
   - 'https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf'
+  - 'https://it.wikipedia.org/wiki/Provincia_del_Sulcis_Iglesiente'
 rationale:
   why_this_hook: 'L''arco che va dalla fondazione a oggi è l''unico filo conduttore che spiega sia perché Carbonia esiste sia perché la sua economia non si è ancora stabilizzata; trattare solo la fondazione, o solo la crisi attuale, nasconderebbe metà di questa causalità.'
   whats_excluded: 'Le biografie individuali dei minatori e la politica sindacale dettagliata sono omesse per motivi di lunghezza; gli scioperi del 1940-43 e lo sciopero del 1948 sono menzionati ma non trattati per intero.'
@@ -42,7 +43,7 @@ L'impianto urbano della città ne dichiarava lo scopo. Gli edifici pubblici eran
 
 ## La Vita Sottoterra
 
-Le condizioni di guerra trasformarono un lavoro minerario già duro in qualcosa più simile al lavoro forzato. I minatori lavoravano tre turni continui che coprivano l'intera giornata, sottoterra, in condizioni umide e fisicamente punitive. La malaria era endemica in tutto il Sulcis, aggravata da tracoma, tubercolosi e anemia tra la popolazione mineraria[^2]. Durante la guerra, la razione di pane prevista per i minatori (200 grammi al giorno) era, secondo i resoconti dell'epoca, del tutto inadeguata alle richieste fisiche del lavoro, e i minatori malnutriti, ulteriormente debilitati da attacchi ciclici di malaria, si batterono per razioni più alte[^2]. I sindacati del regime fascista, nel frattempo, deducevano dai salari, già bassi e incrementavano le quote di iscrizione obbligatoria. La disciplina di guerra trattava ogni protesta come sabotaggio. Eppure, tra il 1940 e il 1943, i minatori di Carbonia scioperarono comunque, in una delle prime azioni sindacali registrate in Italia sotto il fascismo. Questo carattere forte e determinato sarà una caratteristica che rimarrà nei carboniesi anche nelle battaglie sindacali future. 
+Le condizioni di guerra trasformarono un lavoro minerario già duro in qualcosa più simile al lavoro forzato. I minatori lavoravano tre turni continui che coprivano l'intera giornata, sottoterra, in condizioni umide e fisicamente punitive. La malaria era endemica in tutto il Sulcis, aggravata da tracoma, tubercolosi e anemia tra la popolazione mineraria[^2]. Durante la guerra, la razione di pane prevista per i minatori (200 grammi al giorno) era, secondo i resoconti dell'epoca, del tutto inadeguata alle richieste fisiche del lavoro, e i minatori malnutriti, ulteriormente debilitati da attacchi ciclici di malaria, si batterono per razioni più alte[^2]. I sindacati del regime fascista, nel frattempo, deducevano dai salari, già bassi e incrementavano le quote di iscrizione obbligatoria. La disciplina di guerra trattava ogni protesta come sabotaggio. Eppure, tra il 1940 e il 1943, i minatori di Carbonia scioperarono comunque, in una delle prime azioni sindacali registrate in Italia sotto il fascismo. Questo carattere forte e determinato sarà una caratteristica che accompagnerà i carboniesi anche nelle battaglie sindacali future. 
 
 ![Galleria di servizio all'interno della Grande Miniera di Serbariu](https://upload.wikimedia.org/wikipedia/commons/c/cd/Galleria_di_servizio_-_Grande_Miniera_di_Serbariu.jpg)
 
@@ -52,7 +53,7 @@ Dopo la guerra, il carbone sardo divenne sempre meno competitivo. Quando l'Itali
 
 Il momento esatto in cui l'estrazione di carbone su larga scala termina è uno dei pochi fatti di questa storia che non si allinea con chiarezza tra le fonti. Il Museo del Carbone, costruito sul sito dell'ex miniera di Serbariu, data la vita operativa di quella miniera al 1937-1964; un resoconto separato descrive anche la chiusura della vicina miniera di Seruci nel 1964, in seguito alla crisi più ampia del settore, mentre altre fonti collocano la chiusura definitiva (o almeno l'ultima attività registrata) più vicino al 1971. Quello che non è in discussione è l'esito: gli ex minatori dovevano trovare nuovo lavoro presso la centrale Enel e il nuovo Polo Industriale di Portovesme, un complesso siderurgico e dell'alluminio costruito sulla stessa costa. Non poté assorbirli tutti: un elevato rapporto capitale-lavoro significava che l'intero complesso offriva solo 4.000-6.000 posti di lavoro contro una forza lavoro molto più ampia licenziata dalle miniere. Dagli anni '70 in poi, l'economia di Carbonia si spostò verso i servizi, e il "Piano di Rinascita" della regione non riuscì a risolvere la disoccupazione giovanile che ne seguì.
 
-## Una Crisi Senza Fine
+## Una Crisi Senza Fine tra Luci e Ombre
 
 La base industriale di Portovesme si scontrò poi con lo stesso muro una generazione più tardi. Alla fine degli anni '90, l'uscita dell'ENI da Carbosulcis e l'abbandono dell'impianto di alluminio da parte di Alcoa furono colpi decisivi, causati da costi energetici non competitivi sul mercato europeo e da un'infrastruttura logistica inadeguata. La crisi finanziaria globale del 2008 aggravò la situazione: l'Eurallumina, l'impianto di allumina di Portovesme, viene descritta come inattiva già dal 2009 secondo alcuni resoconti e solo parzialmente chiusa entro il 2012 secondo altri. È lo stesso tipo di ambiguità sulle date che percorre tutta questa storia, questa volta per l'impianto che avrebbe dovuto far parte della sostituzione delle miniere.
 
@@ -62,11 +63,16 @@ A partire dal 2026, la crisi industriale resta ancora irrisolta e il futuro dell
 
 La miniera è ancora visibile oggi da [[pineta-di-monte-rosmarino|Monte Rosmarino]], la pineta che oggi funge da spazio verde quotidiano per gli abitanti della città. Le miniere di Carbonia hanno chiuso decenni fa. Le loro conseguenze economiche no.
 
+## La Voglia di Continuare a Lottare
+
+Nonostante una storia non facile, Carbonia è ancora qui e, al netto del calo demografico e occupazionale, rimane uno dei centri urbani più importanti del Sulcis (è capoluogo, insieme a Iglesias, della Provincia del Sulcis Iglesiente[^4]). Carbonia ad oggi è un importante centro di servizi per il territorio e rappresenta un punto di riferimento per i molti turisti che scelgono le suggestive coste del Sulcis per le proprie vacanze.
+
 ## Riferimenti
 
 [^1]: [MDPI — Coal and Mines in the Era of Fascist Ventennio in Italy](https://www.mdpi.com/2409-9252/4/4/26); [Wandering Sardinia — Striking Coal Miners in Sardinia](https://wanderingsardinia.com/articles/28/striking-miners-in-sardinia) — trattano il crollo della forza lavoro nel periodo 1947-1957 e lo sciopero del 1948.
 [^2]: [Democrazia Oggi — Carbonia, 1940-42](https://www.democraziaoggi.it/?p=6438); [Democrazia Oggi — Lo sfruttamento in miniera](https://www.democraziaoggi.it/?p=6360) — documentano le condizioni sanitarie del periodo bellico e il dato sulla razione di pane.
 [^3]: [Parco Geominerario della Sardegna — *Saper vivere. Antropologia mineraria della Sardegna nell'antropocene*](https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf) — a p. 137 documenta la ridenominazione del 1944 di Piazza Impero in Piazza (Giacomo) Matteotti, citando le delibere comunali conservate nell'Archivio del Comune di Carbonia.
+[^4]: [Wikipedia — Provincia del Sulcis Iglesiente](https://it.wikipedia.org/wiki/Provincia_del_Sulcis_Iglesiente) — la provincia, operativa dal 1° giugno 2025 dopo la soppressione della Provincia del Sud Sardegna, ha due capoluoghi, Iglesias e Carbonia.
 
 ## Fonti delle Immagini
 
