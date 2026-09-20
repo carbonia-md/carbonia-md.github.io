@@ -7,7 +7,7 @@ tags: ['fondazione', 'miniere-di-carbone', 'fascismo', 'sulcis', 'declino-indust
 subcategory: 'Fondazione e Storia Industriale'
 author: 'Carbonia'
 featured: true
-lastVerified: 2026-08-18
+lastVerified: 2026-09-20
 lastHumanReview: false
 image: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Torri_degli_ascensori_-_panorama.JPG'
 imageAlt: 'Vista panoramica delle torri degli ascensori alla Grande Miniera di Serbariu, che servivano i pozzi 1 e 2.'
@@ -21,6 +21,7 @@ source:
   - 'https://informati-sardegna.it/luoghi-della-sardegna/siti-minerari/carbonia-carbone-sulcis-storia/'
   - 'https://www.museodelcarbone.it/en/history/the-mine/'
   - 'https://www.invitalia.it/cosa-facciamo/rilanciamo-le-aree-di-crisi-industriale/portovesme'
+  - 'https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf'
 rationale:
   why_this_hook: 'L''arco che va dalla fondazione a oggi è l''unico filo conduttore che spiega sia perché Carbonia esiste sia perché la sua economia non si è ancora stabilizzata; trattare solo la fondazione, o solo la crisi attuale, nasconderebbe metà di questa causalità.'
   whats_excluded: 'Le biografie individuali dei minatori e la politica sindacale dettagliata sono omesse per motivi di lunghezza; gli scioperi del 1940-43 e lo sciopero del 1948 sono menzionati ma non trattati per intero.'
@@ -37,11 +38,11 @@ Carbonia fu fondata il 18 dicembre 1938, per decreto del governo fascista di Ben
 
 La fondazione ebbe una causa precisa e datata: dopo l'invasione italiana dell'Etiopia nel 1935-36, la Società delle Nazioni impose sanzioni che limitarono l'accesso dell'Italia a delle importanti materie prime. Il governo Mussolini rispose con una spinta nazionale verso l'autarchia (l'autosufficienza), e la lignite sarda, di qualità non molto pregiata ma nazionale, divenne quasi da un giorno all'altro strategicamente importante. Carbonia è nata per estrarla.
 
-L'impianto urbano della città ne dichiarava lo scopo. Gli edifici pubblici erano monumentali e centralizzati attorno a Piazza Roma e Piazza Impero (rinominata poi Piazza Matteotti dopo la caduta del regime): il palazzo municipale, la Casa del Fascio, una chiesa e una torre civica, disposti secondo un piano pensato per esprimere ordine, disciplina e la centralità del potere politico — il vocabolario standard delle altre città di fondazione dell'epoca fascista in Italia.
+L'impianto urbano della città ne dichiarava lo scopo. Gli edifici pubblici erano monumentali e centralizzati attorno a Piazza Roma e Piazza Impero (rinominata Piazza Matteotti nel 1944)[^3]: il palazzo municipale, la Casa del Fascio, una chiesa e una torre civica, disposti secondo un piano pensato per esprimere ordine, disciplina e la centralità del potere politico — il vocabolario standard delle altre città di fondazione dell'epoca fascista in Italia.
 
 ## La Vita Sottoterra
 
-Le condizioni di guerra trasformarono un lavoro minerario già duro in qualcosa più simile a uno stato di semi-schiavitù. I minatori lavoravano tre turni continui che coprivano l'intera giornata, sottoterra, in condizioni umide e fisicamente punitive. La malaria era endemica in tutto il Sulcis, aggravata da tracoma, tubercolosi e anemia tra la popolazione mineraria[^2]. Durante la guerra, la razione di pane prevista per i minatori (200 grammi al giorno) era, secondo i resoconti dell'epoca, del tutto inadeguata alle richieste fisiche del lavoro, e i minatori malnutriti, ulteriormente debilitati da attacchi ciclici di malaria, si batterono per razioni più alte[^2]. I sindacati del regime fascista, nel frattempo, deducevano dai salari, già bassi e incrementavano le quote di iscrizione obbligatoria. La disciplina di guerra trattava ogni protesta come sabotaggio. Eppure, tra il 1940 e il 1943, i minatori di Carbonia scioperarono comunque, in una delle prime azioni sindacali registrate in Italia sotto il fascismo. Questo carattere forte e determinato sarà una caratteristica che rimarrà nei carboniesi anche nelle battaglie sindacali future. 
+Le condizioni di guerra trasformarono un lavoro minerario già duro in qualcosa più simile al lavoro forzato. I minatori lavoravano tre turni continui che coprivano l'intera giornata, sottoterra, in condizioni umide e fisicamente punitive. La malaria era endemica in tutto il Sulcis, aggravata da tracoma, tubercolosi e anemia tra la popolazione mineraria[^2]. Durante la guerra, la razione di pane prevista per i minatori (200 grammi al giorno) era, secondo i resoconti dell'epoca, del tutto inadeguata alle richieste fisiche del lavoro, e i minatori malnutriti, ulteriormente debilitati da attacchi ciclici di malaria, si batterono per razioni più alte[^2]. I sindacati del regime fascista, nel frattempo, deducevano dai salari, già bassi e incrementavano le quote di iscrizione obbligatoria. La disciplina di guerra trattava ogni protesta come sabotaggio. Eppure, tra il 1940 e il 1943, i minatori di Carbonia scioperarono comunque, in una delle prime azioni sindacali registrate in Italia sotto il fascismo. Questo carattere forte e determinato sarà una caratteristica che rimarrà nei carboniesi anche nelle battaglie sindacali future. 
 
 ![Galleria di servizio all'interno della Grande Miniera di Serbariu](https://upload.wikimedia.org/wikipedia/commons/c/cd/Galleria_di_servizio_-_Grande_Miniera_di_Serbariu.jpg)
 
@@ -65,6 +66,7 @@ La miniera è ancora visibile oggi da [[pineta-di-monte-rosmarino|Monte Rosmarin
 
 [^1]: [MDPI — Coal and Mines in the Era of Fascist Ventennio in Italy](https://www.mdpi.com/2409-9252/4/4/26); [Wandering Sardinia — Striking Coal Miners in Sardinia](https://wanderingsardinia.com/articles/28/striking-miners-in-sardinia) — trattano il crollo della forza lavoro nel periodo 1947-1957 e lo sciopero del 1948.
 [^2]: [Democrazia Oggi — Carbonia, 1940-42](https://www.democraziaoggi.it/?p=6438); [Democrazia Oggi — Lo sfruttamento in miniera](https://www.democraziaoggi.it/?p=6360) — documentano le condizioni sanitarie del periodo bellico e il dato sulla razione di pane.
+[^3]: [Parco Geominerario della Sardegna — *Saper vivere. Antropologia mineraria della Sardegna nell'antropocene*](https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf) — a p. 137 documenta la ridenominazione del 1944 di Piazza Impero in Piazza (Giacomo) Matteotti, citando le delibere comunali conservate nell'Archivio del Comune di Carbonia.
 
 ## Fonti delle Immagini
 

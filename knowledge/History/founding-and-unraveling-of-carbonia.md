@@ -7,7 +7,7 @@ tags: ['founding', 'coal-mining', 'fascism', 'sulcis', 'industrial-decline']
 subcategory: 'Founding and Industrial History'
 author: 'Carbonia'
 featured: true
-lastVerified: 2026-08-18
+lastVerified: 2026-09-20
 lastHumanReview: false
 image: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Torri_degli_ascensori_-_panorama.JPG'
 imageAlt: 'Panoramic view of the elevator towers at the Grande Miniera di Serbariu, which served shafts 1 and 2.'
@@ -21,6 +21,7 @@ source:
   - 'https://informati-sardegna.it/luoghi-della-sardegna/siti-minerari/carbonia-carbone-sulcis-storia/'
   - 'https://www.museodelcarbone.it/en/history/the-mine/'
   - 'https://www.invitalia.it/cosa-facciamo/rilanciamo-le-aree-di-crisi-industriale/portovesme'
+  - 'https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf'
 rationale:
   why_this_hook: 'The founding-to-present arc is the one throughline that explains both why Carbonia exists and why its economy still has not stabilized; treating only the founding, or only the present crisis, would hide half of that causality.'
   whats_excluded: 'Individual miners'' biographies and detailed union politics are left out for length; the 1940-43 strikes and the 1948 strike are noted but not given full treatment.'
@@ -36,11 +37,11 @@ Carbonia was founded on 18 December 1938, by decree of Benito Mussolini's Fascis
 
 The founding had a specific, dated cause: after Italy's invasion of Ethiopia in 1935-36, the League of Nations imposed sanctions that squeezed Italy's access to imported raw materials. Mussolini's government answered with a national push toward autarky (self-sufficiency), and Sardinian lignite, not especially high-grade but domestic, became strategically important almost overnight. Carbonia was born to mine it.
 
-The town's layout announced its purpose. Public buildings were monumental and centralized around Piazza Roma and Piazza Impero (later renamed Piazza Matteotti after the regime's fall): the municipal building, the Casa del Fascio, a church, and a civic tower, arranged in a plan meant to express order, discipline, and the centrality of political power, the standard vocabulary of Italy's other Fascist-era foundation towns.
+The town's layout announced its purpose. Public buildings were monumental and centralized around Piazza Roma and Piazza Impero (renamed Piazza Matteotti in 1944)[^3]: the municipal building, the Casa del Fascio, a church, and a civic tower, arranged in a plan meant to express order, discipline, and the centrality of political power, the standard vocabulary of Italy's other Fascist-era foundation towns.
 
 ## Life Underground
 
-Wartime conditions turned already-hard mining work into something closer to a state of semi-slavery. Miners worked three continuous shifts covering the full day, underground in damp, physically punishing conditions. Malaria was endemic across the Sulcis area, compounded by trachoma, tuberculosis, and anemia among the mining population[^2]. During the war, the prescribed bread ration for miners (200 grams a day) was, by contemporary accounts, grossly inadequate for the physical demands of the work, and malnourished miners, weakened further by cyclical malaria attacks, pushed for higher rations[^2]. Fascist-regime trade unions, meanwhile, deducted compulsory membership dues from wages that were already low. Wartime discipline treated any protest as sabotage. Yet between 1940 and 1943, Carbonia's miners struck anyway, in one of the first labor actions recorded anywhere in Italy under Fascism. That combativeness would remain a trait of Carbonia's people through later labor battles too.
+Wartime conditions turned already-hard mining work into something closer to forced labor. Miners worked three continuous shifts covering the full day, underground in damp, physically punishing conditions. Malaria was endemic across the Sulcis area, compounded by trachoma, tuberculosis, and anemia among the mining population[^2]. During the war, the prescribed bread ration for miners (200 grams a day) was, by contemporary accounts, grossly inadequate for the physical demands of the work, and malnourished miners, weakened further by cyclical malaria attacks, pushed for higher rations[^2]. Fascist-regime trade unions, meanwhile, deducted compulsory membership dues from wages that were already low. Wartime discipline treated any protest as sabotage. Yet between 1940 and 1943, Carbonia's miners struck anyway, in one of the first labor actions recorded anywhere in Italy under Fascism. That combativeness would remain a trait of Carbonia's people through later labor battles too.
 
 ![Service gallery inside the Grande Miniera di Serbariu](https://upload.wikimedia.org/wikipedia/commons/c/cd/Galleria_di_servizio_-_Grande_Miniera_di_Serbariu.jpg)
 
@@ -64,6 +65,7 @@ The mine is still visible today from [[pineta-di-monte-rosmarino|Monte Rosmarino
 
 [^1]: [MDPI — Coal and Mines in the Era of Fascist Ventennio in Italy](https://www.mdpi.com/2409-9252/4/4/26); [Wandering Sardinia — Striking Coal Miners in Sardinia](https://wanderingsardinia.com/articles/28/striking-miners-in-sardinia) — cover the 1947-1957 workforce collapse and the 1948 strike.
 [^2]: [Democrazia Oggi — Carbonia, 1940-42](https://www.democraziaoggi.it/?p=6438); [Democrazia Oggi — Lo sfruttamento in miniera](https://www.democraziaoggi.it/?p=6360) — document wartime health conditions and the bread-ration figure.
+[^3]: [Parco Geominerario della Sardegna — *Saper vivere. Antropologia mineraria della Sardegna nell'antropocene*](https://parcogeominerario.sardegna.it/uploads/pubblicazioni/Libro-P_Atzeni_A41749232763.pdf) — p. 137 documents the 1944 renaming of Piazza Impero to Piazza (Giacomo) Matteotti, citing Comune di Carbonia council records.
 
 ## Image Sources
 
