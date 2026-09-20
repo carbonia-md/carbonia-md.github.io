@@ -52,4 +52,4 @@ The park is roughly 2 kilometers northwest of central Carbonia. Opening hours an
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|The Founding and Unraveling of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|The Founding and Industrial Decline of Carbonia]]

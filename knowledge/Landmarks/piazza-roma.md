@@ -56,4 +56,4 @@ Piazza Roma sits at the center of Carbonia, alongside the Torre Littoria and the
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|The Founding and Unraveling of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|The Founding and Industrial Decline of Carbonia]]

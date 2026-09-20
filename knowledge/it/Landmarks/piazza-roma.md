@@ -57,4 +57,4 @@ Piazza Roma si trova al centro di Carbonia, accanto alla Torre Littoria e alla C
 
 ## Per Saperne di Più
 
-- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino di Carbonia]]
+- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino Industriale di Carbonia]]

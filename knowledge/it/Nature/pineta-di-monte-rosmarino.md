@@ -49,4 +49,4 @@ L'identità di Carbonia è legata all'industria pesante e all'attività minerari
 
 ## Per Saperne di Più
 
-- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino di Carbonia]]
+- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino Industriale di Carbonia]]
