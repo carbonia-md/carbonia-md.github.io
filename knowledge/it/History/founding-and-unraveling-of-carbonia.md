@@ -1,5 +1,5 @@
 ---
-title: 'La Fondazione e il Declino Industriale di Carbonia'
+title: 'Fondazione, Declino e Rinascita di Carbonia'
 description: 'Fondata per decreto fascista nel 1938 per estrarre il carbone del Sulcis, Carbonia reinventa la propria economia dalla chiusura delle miniere.'
 date: 2026-08-18
 category: 'History'

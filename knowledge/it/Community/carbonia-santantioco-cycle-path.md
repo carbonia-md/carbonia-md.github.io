@@ -50,4 +50,4 @@ Il percorso corre a raso sul vecchio sedime ferroviario tra Carbonia e Sant'Anti
 
 ## Per Saperne di Più
 
-- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino Industriale di Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Fondazione, Declino e Rinascita di Carbonia]]

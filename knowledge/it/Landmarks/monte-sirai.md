@@ -54,4 +54,4 @@ Il parco si trova a circa 2 chilometri a nord-ovest dal centro di Carbonia. Orar
 
 ## Per Saperne di Più
 
-- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino Industriale di Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Fondazione, Declino e Rinascita di Carbonia]]

@@ -23,7 +23,7 @@ source:
 translatedFrom: 'en'
 ---
 
-Piazza Roma è la piazza centrale di Carbonia, una città fondata nel 1938 come vetrina dell'architettura razionalista per il governo fascista di Mussolini. Nel 2007, uno studio condotto da cinque università europee la classificò tra le 60 piazze più vivibili d'Europa[^1].
+Piazza Roma è la piazza centrale di Carbonia, città fondata nel 1938 come vetrina dell'architettura razionalista per il governo fascista di Mussolini. Nel 2007, uno studio condotto da cinque università europee la classificò tra le 60 piazze più vivibili d'Europa[^1].
 
 > **In breve:** La torre civica della piazza, la Torre Littoria, fu costruita esplicitamente come simbolo di potere politico — e la piazza che essa domina ospita oggi anche l'ultima opera mai realizzata dallo scultore Gio Pomodoro, svelata dopo la sua morte.
 
@@ -57,4 +57,4 @@ Piazza Roma si trova al centro di Carbonia, accanto alla Torre Littoria e alla C
 
 ## Per Saperne di Più
 
-- [[founding-and-unraveling-of-carbonia|La Fondazione e il Declino Industriale di Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Fondazione, Declino e Rinascita di Carbonia]]

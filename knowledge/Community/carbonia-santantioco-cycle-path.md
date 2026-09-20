@@ -49,4 +49,4 @@ The route runs at grade on the former rail bed between Carbonia and Sant'Antioco
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|The Founding and Industrial Decline of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Founding, Decline, and Rebirth of Carbonia]]

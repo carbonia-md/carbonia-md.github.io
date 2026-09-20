@@ -1,5 +1,5 @@
 ---
-title: 'The Founding and Industrial Decline of Carbonia'
+title: 'Founding, Decline, and Rebirth of Carbonia'
 description: 'Founded by fascist decree in 1938 to mine Sulcis coal, Carbonia has spent the decades since its mines closed reinventing its economy.'
 date: 2026-08-18
 category: 'History'
