@@ -360,12 +360,40 @@ intensified characterization ("state of siege" → "state of semi-slavery")
 were incorporated as clearly intentional but are **not yet fact-checked**
 — `lastVerified` was deliberately left unchanged on both files rather than
 bumped, since bumping it would have falsely implied those specific claims
-were re-verified. Worth a `/sekai-factcheck` pass (or a source added to
-`source:`) before this ships as fully reviewed. The editor the user used
-(Obsidian, per the new `.obsidian/` dir) also reformatted the Italian
-file's YAML to unquoted/block style on save — restyled back to the
-project's single-quoted/flow-array convention (style only, verified via
+were re-verified. The editor the user used (Obsidian, per the new
+`.obsidian/` dir) also reformatted the Italian file's YAML to
+unquoted/block style on save — restyled back to the project's
+single-quoted/flow-array convention (style only, verified via
 `frontmatter-format` warning count dropping back to baseline).
+
+**Both flagged claims resolved the same session** (2026-09-20).
+"Piazza Impero → Piazza Matteotti": WebSearch/WebFetch across Italian
+Wikipedia's Carbonia article, `carboniaturismo.it` (already a cited
+source), and a dedicated "squares of Carbonia" feature found no
+corroboration — Phase 3 (Source Authority Audit) treated this as an
+unsupported claim pending the user. The user then supplied a real source:
+Parco Geominerario della Sardegna, *Saper vivere. Antropologia mineraria
+della Sardegna nell'antropocene*, p. 137, citing Comune di Carbonia
+council records — `"Nel 1944 Piazza Impero divenne piazza Giacomo
+Matteotti."` Read the PDF page directly (via `Read`'s PDF-page support,
+after `WebFetch` couldn't reliably search a 5.1MB PDF's full text) to
+confirm the exact quote before trusting it. Corrected the vague "after the
+regime's fall" to the sourced "in 1944," added a new `[^3]` footnote and a
+`source:` entry in both languages. Found and fixed a real bug along the
+way: `footnote_format.py`'s canonical-format regex hard-fails on a
+footnote shaped `[Title](URL), p. 137 — description` — the `, p. 137`
+between the URL and the em dash breaks the pattern (it expects the em dash
+immediately after the closing paren). Worked around it by moving the page
+number after the dash (`[Title](URL) — p. 137 documents...`); the regex
+itself is unchanged and this shape is now avoided rather than fixed at the
+source, worth flagging upstream if a citation ever needs a page number in
+that position again. "State of semi-slavery": re-checked against the two
+already-cited Democrazia Oggi sources for footnote [^2] — they back severe
+coercion (imposed 14-hour double shifts, 48-hour weeks, pay withheld for
+sick days, "il cottimo uccide") but never use slavery language. Presented
+4 sourced-language-grounded alternatives; user picked **"forced labor"**
+("lavoro forzato"). `lastVerified` bumped to 2026-09-20 on both files now
+that both claims are resolved.
 
 **All 6 remaining articles drafted** (2026-09-20), AI-translated directly
 (not via a fresh `/sekai-write` dry-run each time — same translation
