@@ -24,7 +24,7 @@ translatedFrom: 'en'
 
 La pista ciclabile che collega Carbonia a Sant'Antioco, passando per San Giovanni Suergiu, corre sul sedime di una ferrovia a scartamento ridotto che le Ferrovie Meridionali Sarde costruirono tra il 1923 e il 1926 per collegare Sant'Antioco e il basso Sulcis a Cagliari. La linea ferroviaria del Sulcis fu chiusa nel 1974.
 
-> **In breve:** La linea era ancora in funzione fino agli anni '70, un periodo ben presente nella memoria di chi è cresciuto qui in quel decennio — non si trattava di una remota reliquia ottocentesca, ma di un mezzo di trasporto locale ordinario, vissuto nell'arco di vita di molti residenti più anziani di oggi.
+> **In breve:** La linea era ancora in funzione fino agli anni '70, un periodo ben presente nella memoria di chi è cresciuto qui in quel decennio — non si tratta di una remota reliquia ottocentesca, ma di un mezzo di trasporto locale ordinario, vissuto nell'arco di vita di molti residenti più anziani di oggi.
 
 ## Dalla Ferrovia alla Pista Ciclabile
 
