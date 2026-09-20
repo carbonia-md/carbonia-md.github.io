@@ -19,7 +19,7 @@
 | M5 — derived-data script fixes | 🔶 1/7 scripts fixed | `test-frontmatter.mjs` done (via M2); rest open |
 | M6 — article-health locale-awareness | 🔶 loader bug fixed | `_derive_meta_from_path`/`FileTarget.lang` done (via M2); it-vocab checks still open |
 | M7 — skills updates | 🔶 mostly done, out of order | done ahead of M2-M6 at user's request — see notes |
-| M8 — remaining articles + full-site verification | ☐ not started | |
+| M8 — remaining articles + full-site verification | 🔶 6/6 remaining articles drafted, none human-reviewed | see notes below |
 
 ## Design Decisions Log
 
@@ -333,14 +333,57 @@ Verification: see M2's notes above for the full real dry-run (translate →
 self-audit → sync → article-health → build), including the two bugs it
 surfaced and fixed along the way.
 
-### M8 — Remaining articles + full-site verification
-- [ ] 6 remaining articles translated + human-reviewed
-- [ ] `capture-baseline.mjs` loops all enabled langs
-- [ ] full `npm run build` + post-build checks green
+### M8 — Remaining articles + full-site verification 🔶
+**All 6 remaining articles drafted** (2026-09-20), AI-translated directly
+(not via a fresh `/sekai-write` dry-run each time — same translation
+conventions as M2's pilot applied by hand, since the pipeline steps are now
+well-understood): `Community/carbonia-santantioco-cycle-path.md`,
+`Community/le-tre-finestre.md`, `Food/la-lanterna.md`,
+`Landmarks/monte-sirai.md`, `Landmarks/piazza-roma.md`,
+`Nature/pineta-di-monte-rosmarino.md` → all now exist under
+`knowledge/it/{Category}/`. Every article: `category` kept English (folder
+rule), `translatedFrom: 'en'` set, `lastHumanReview: false` (genuinely not
+yet reviewed — user has not read these 6 yet), `lastVerified` unchanged from
+source (facts not re-verified), footnote source titles left in their
+original language (`piazza-roma.md`'s two footnotes), wikilink display text
+translated but targets/slugs unchanged (still subject to the M2-documented
+`remark-wikilinks.mjs` cross-language gap).
 
-Verification: `npm run test`, `npm run article-health -- --all
---profile=ci-deploy`, `npm run build`, `npm run genericity` all green; 14
-articles in dashboard; hreflang present; RSS still en-only.
+- [x] 6 remaining articles translated (drafted)
+- [ ] human review of the 6 new translations (still open — same
+      `lastHumanReview: false` state as M2's pilot)
+- [ ] `capture-baseline.mjs` loops all enabled langs (untouched this pass)
+- [x] full `npm run build` + post-build checks green (see verification below)
+
+Verification (all run, all green): `npm run sync` (14 files projected: 7 en
++ 7 it), `node scripts/core/test-frontmatter.mjs` (14/14 OK),
+`article-health.py --profile=ci-deploy` run individually on all 6 new files
+(`hard=0` on every one; warn counts 5-7 each, all the same already-documented
+categories: not-human-reviewed prose-health, missing `rationale:` block,
+below-3-images media-richness on the shorter articles, and — confirmed via
+one `--profile=dashboard` run on `monte-sirai.md` — the M6 `format-structure`
+Italian-heading-vocab gap reproducing exactly as predicted, still WARN-only),
+`npm run test` (14/14), `npm run genericity` (pass — `knowledge/` is outside
+both gates' scan roots, confirmed a no-op as expected), `npm run build` (49
+pages, all 7 `/it/...` article routes + 5 `/it/...` category-hub routes
+present), `npm run postbuild` (internal-links: 808 links checked, 0 broken;
+map-markers: 4 valid points / 3 categories — **unchanged from before this
+batch**, confirming `build-map-markers.mjs` is still hardcoded to
+`src/content/en` per M5's still-open item, not a regression — none of the 6
+new articles' `geo:` fields are reflected on `/map` yet; graph: 21 nodes/20
+edges; dashboard check passed), `uv run pytest tests/article_health`
+(322/322, unchanged — no article_health code touched this pass).
+
+**Not done in this pass, still open:** human review of all 7 Italian
+articles (pilot + 6 new — `lastHumanReview: false` everywhere); the rest of
+M5's script list (`build-kb-index.mjs`, `build-related-tagoverlap.mjs` full
+fix, `check-graph.mjs`, `generate-changelog-data.mjs`,
+`build-dashboard-lite.mjs`, plus now-confirmed-still-open
+`build-map-markers.mjs`); M6's remaining items (`_get_all_source()`,
+it-vocab tables, `word_count`/`paragraph_rhythm` threshold audit,
+`test_loader.py` coverage); M3/M4 (UI chrome, home-page copy) — so `/it/`
+routes for all 7 articles render with correct Italian article content but
+still-English chrome, nav, and home page.
 
 ## Deferred / Non-goals
 
