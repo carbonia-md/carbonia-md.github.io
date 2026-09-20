@@ -334,6 +334,39 @@ self-audit → sync → article-health → build), including the two bugs it
 surfaced and fixed along the way.
 
 ### M8 — Remaining articles + full-site verification 🔶
+
+**New workflow variant found this milestone: reverse reconciliation
+(it → en).** So far every translation had gone en → it (AI drafts from the
+fact-checked English source). The user instead hand-edited the Italian
+pilot article directly (`knowledge/it/History/founding-and-unraveling-of-
+carbonia.md`) — content changes, not just prose polish — and asked for
+those edits to be read back into the English source, since they're more
+comfortable editing in Italian. Handled by diffing the Italian file against
+its last-committed version, translating each substantive change back to
+English by hand, and applying it to `knowledge/History/founding-and-
+unraveling-of-carbonia.md`. Included a retitle (`'The Founding and
+Unraveling of Carbonia'` → `'The Founding and Industrial Decline of
+Carbonia'`), which required updating all 8 wikilink display-text references
+to the article across both language trees, not just the two article files
+themselves — easy to miss since `wikilink-target` only validates the slug
+resolves, not that display text matches the target's current title.
+
+Two edits were ambiguous enough (plausibly an accidental word-swap
+`importate`→`importanti`, and a grammatically ambiguous union-dues
+sentence) that they were left out of the English version and flagged back
+to the user in chat rather than guessed at. One added claim (a former name
+for Piazza Roma, "Piazza Impero," renamed after the regime fell) and one
+intensified characterization ("state of siege" → "state of semi-slavery")
+were incorporated as clearly intentional but are **not yet fact-checked**
+— `lastVerified` was deliberately left unchanged on both files rather than
+bumped, since bumping it would have falsely implied those specific claims
+were re-verified. Worth a `/sekai-factcheck` pass (or a source added to
+`source:`) before this ships as fully reviewed. The editor the user used
+(Obsidian, per the new `.obsidian/` dir) also reformatted the Italian
+file's YAML to unquoted/block style on save — restyled back to the
+project's single-quoted/flow-array convention (style only, verified via
+`frontmatter-format` warning count dropping back to baseline).
+
 **All 6 remaining articles drafted** (2026-09-20), AI-translated directly
 (not via a fresh `/sekai-write` dry-run each time — same translation
 conventions as M2's pilot applied by hand, since the pipeline steps are now
