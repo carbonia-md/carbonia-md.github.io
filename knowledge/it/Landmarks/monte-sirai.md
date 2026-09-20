@@ -1,13 +1,13 @@
 ---
 title: 'Parco Archeologico di Monte Sirai'
-description: 'Un insediamento fenicio poi punico su un altopiano di 191 metri vicino Carbonia, con necropoli e tofet, inaugurato come parco nel 2001.'
+description: 'Un insediamento fenicio poi punico su un altopiano di 191 metri vicino Carbonia, scavato dal 1963 e inaugurato come parco archeologico nel 2001.'
 date: 2026-08-19
 category: 'Landmarks'
 tags: ['monte-sirai', 'fenici', 'punici', 'necropoli', 'archeologia']
 subcategory: 'Siti Archeologici'
 author: 'Carbonia'
 featured: true
-lastVerified: 2026-08-19
+lastVerified: 2026-09-20
 lastHumanReview: false
 image: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Monte_Sirai_2.jpg'
 imageAlt: 'L''altopiano di Monte Sirai vicino Carbonia.'
@@ -20,11 +20,12 @@ source:
   - 'https://cultura.gov.it/luogo/parco-archeologico-monte-sirai'
   - 'https://www.marecalmo.org/en/2018/08/22/alla-scoperta-parco-archeologico-di-monte-sirai-antiche-civilta-fenicio-punico/'
   - 'https://www.donnanuragica.com/siti-archeologici-sardi/fenicio-punico-romano/carbonia-area-archeologica-di-monte-sirai/'
+  - 'https://www.unicaradio.it/en/blog/2026/04/09/monte-sirai-storia-e-segreti-del-sito-archeologico-2/'
 geo: 'Parco Archeologico di Monte Sirai,39.1800842,8.4882586,Carbonia'
 translatedFrom: 'en'
 ---
 
-Monte Sirai è un insediamento fenicio poi punico su un altopiano a 191 metri sul livello del mare, circa 2 chilometri a nord-ovest di Carbonia. Il parco archeologico che lo comprende fu inaugurato nel 2001, e il sito è insolito per la Sardegna in un modo specifico: non presenta costruzioni o rimaneggiamenti di epoche successive sovrapposti, quindi ciò che si trova è fenicio e punico, senza una sovrapposizione romana o medievale a complicare il quadro.
+Monte Sirai è un insediamento fenicio punico su un altopiano a 191 metri sul livello del mare, circa 2 chilometri a nord-ovest di Carbonia. Gli scavi iniziarono nel 1963, dopo che l'anno precedente un residente locale scoprì una stele scolpita nel tofet; il sito ha attirato visitatori sin da allora, anche se non fu inaugurato formalmente come parco archeologico — con l'attuale centro visitatori, biglietteria e parcheggio — fino al 2001. Il sito è insolito per la Sardegna in un modo specifico: non presenta costruzioni o rimaneggiamenti di epoche successive sovrapposti, quindi ciò che si trova è fenicio e punico, senza una sovrapposizione romana o medievale a complicare il quadro.
 
 > **In breve:** Il tofet del sito conteneva urne cinerarie per bambini e animali, deposte alla base di un edificio di culto elevato raggiungibile tramite una scalinata — un dettaglio specifico e documentato, non una generica etichetta di "antico sito religioso".
 
