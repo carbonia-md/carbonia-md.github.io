@@ -48,4 +48,4 @@ Carbonia's identity is bound up with heavy industry and mining, which makes the 
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|Founding, Decline, and Rebirth of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Founding, Decline, and Resilience of Carbonia]]
