@@ -8,7 +8,7 @@ subcategory: 'Centro Città'
 author: 'Carbonia'
 featured: true
 lastVerified: 2026-08-18
-lastHumanReview: false
+lastHumanReview: true
 image: '/article-images/landmarks/piazza-roma-frammento-di-vuoto.jpg'
 imageAlt: 'La scultura in marmo Frammento di Vuoto I di Gio Pomodoro in Piazza Roma, con la Torre Littoria sullo sfondo.'
 imageCredit: 'Andrea Serra, LUDiCa/Monumenta project, Universita di Cagliari'

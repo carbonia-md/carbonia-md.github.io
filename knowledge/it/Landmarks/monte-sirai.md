@@ -8,7 +8,7 @@ subcategory: 'Siti Archeologici'
 author: 'Carbonia'
 featured: true
 lastVerified: 2026-09-20
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Monte_Sirai_2.jpg'
 imageAlt: 'L''altopiano di Monte Sirai vicino Carbonia.'
 imageCredit: 'Alex10, via Wikimedia Commons'

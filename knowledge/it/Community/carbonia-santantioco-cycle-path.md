@@ -8,7 +8,7 @@ subcategory: 'Infrastrutture e Vita Locale'
 author: 'Carbonia'
 featured: false
 lastVerified: 2026-08-18
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Stazione_Carbonia_2023.jpg'
 imageAlt: 'L''ex stazione ferroviaria FMS di Carbonia, chiusa nel 1974, oggi punto di partenza della pista ciclabile.'
 imageCredit: 'Alex10, via Wikimedia Commons'

@@ -67,3 +67,6 @@ reports/visual/diff-summary.json
 
 # Claude Code /export transcripts — local working notes, not site content.
 *-command-message*.txt*
+
+# Obsidian vault settings (local editor state)
+.obsidian/

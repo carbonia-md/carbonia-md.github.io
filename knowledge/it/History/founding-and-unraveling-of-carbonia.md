@@ -8,7 +8,7 @@ subcategory: 'Fondazione e Storia Industriale'
 author: 'Carbonia'
 featured: true
 lastVerified: 2026-09-20
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Torri_degli_ascensori_-_panorama.JPG'
 imageAlt: 'Vista panoramica delle torri degli ascensori alla Grande Miniera di Serbariu, che servivano i pozzi 1 e 2.'
 imageCredit: 'Scrigno54, via Wikimedia Commons'

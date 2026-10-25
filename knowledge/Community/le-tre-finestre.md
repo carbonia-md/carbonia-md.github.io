@@ -1,29 +1,31 @@
 ---
 title: 'Le Tre Finestre Shopping Center'
-description: 'A Via della Stazione retail strip anchored by an E.Leclerc supermarket, a Conad Superstore, and Carbonia''s McDonald''s.'
+description: 'A Via della Stazione retail strip anchored by a Conad Superstore and Carbonia''s McDonald''s.'
 date: 2026-08-19
 category: 'Community'
 tags: ['le-tre-finestre', 'shopping', 'retail', 'via-della-stazione']
 subcategory: 'Infrastructure and Local Life'
 author: 'Carbonia'
 featured: false
-lastVerified: 2026-08-19
+lastVerified: 2026-09-21
 lastHumanReview: false
 source:
   - 'https://www.nuovaopinione.it/carbonia/supermercati/centro-commerciale-le-tre-finestre-carbonia-161749'
   - 'https://chisiamo.conad.it/news-e-approfondimenti/notizie/2022/5/a-carbonia-nel-centro-commerciale-le-tre-finestre-apre-il-petsto'
   - 'https://www.paginegialle.it/carbonia-su/centri-commerciali/conad-superstore'
   - 'https://www.tripadvisor.com/Restaurant_Review-g2208277-d16769370-Reviews-McDonald_s-Carbonia_Province_of_Carbonia_Iglesias_Sardinia.html'
+  - 'https://www.paginegialle.it/carbonia-su/elettrodomestici/unieuro_9356794'
+  - 'https://www.tiendeo.it/Negozi/carbonia/unieuro-via-della-stazione-snc/999311'
 geo: 'Le Tre Finestre,39.1688702,8.510553,Carbonia'
 ---
 
-Le Tre Finestre is a shopping center on Via della Stazione in Carbonia, anchored by an E.Leclerc supermarket alongside a Conad Superstore, a Conad PetStore that opened in May 2022, and other retailers including the perfumery chain Limoni and clothing store Idexè.
+Le Tre Finestre is a shopping center on Via della Stazione in Carbonia, anchored by a Conad Superstore, alongside a Conad PetStore that opened in May 2022, and other retailers including electronics store Unieuro, the perfumery chain Limoni and clothing store Idexè.
 
 > **At a glance:** This is one of the largest concentrations of chain retail in the Sulcis area — worth knowing if you're staying in a smaller nearby town and assumed you'd find the same range of shops there.
 
 ## What's There
 
-The center combines large-format grocery retail (E.Leclerc, Conad Superstore) with a Conad-branded pet store, a perfumery, and clothing retail, all on Via della Stazione. McDonald's, including a drive-through location, operates on the same street, confirmed independently of the shopping center's own retail mix but functionally part of the same commercial strip.
+The center combines large-format grocery retail (Conad Superstore) with a Conad-branded pet store, a Unieuro electronics store, a perfumery, and clothing retail, all on Via della Stazione. McDonald's, including a drive-through location, operates independently on the same Via della Stazione, next to a gas station known locally for competitive prices.
 
 ## Why It Matters Beyond Carbonia
 
