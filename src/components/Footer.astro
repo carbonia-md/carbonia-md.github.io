@@ -8,12 +8,14 @@
  * `features.social` is true; Graph/Dashboard links gate on their feature flags.
  * No place literals.
  */
-import { useTranslations, getLangFromUrl } from '../i18n/utils';
+import { useTranslations, getLangFromUrl, useTranslatedPath } from '../i18n/utils';
 import { resolveChat } from '../lib/chat';
 import placeConfig from '../../place.config';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+// Internal links stay in the reader's language (RSS stays unprefixed: D6).
+const localPath = useTranslatedPath(lang);
 // Both halves, like the Header: see src/lib/chat.ts.
 const chat = resolveChat(placeConfig);
 
@@ -66,7 +68,7 @@ const colLinkClass =
         <p class="mt-2 text-[#22c55e]">{t('footer.builtWith')}</p>
         <p class="mt-3">
           <a
-            href="https://creativecommons.org/licenses/by-sa/4.0/deed.en"
+            href={`https://creativecommons.org/licenses/by-sa/4.0/deed.${lang}`}
             target="_blank"
             rel="noopener"
             class="inline-flex items-center text-[0.8rem] text-[#7ab8d4] no-underline transition-all duration-200 ease hover:text-[#c7d2c7]"
@@ -101,10 +103,10 @@ const colLinkClass =
         <h4 class="mb-1 text-[0.85rem] uppercase tracking-[0.05em] text-white">
           {t('footer.explore')}
         </h4>
-        <a href="/latest">🆕 {t('nav.latest')}</a>
+        <a href={localPath('/latest')}>🆕 {t('nav.latest')}</a>
         {
           categories.map((category) => (
-            <a href={`/${category.slug}`}>
+            <a href={localPath(`/${category.slug}`)}>
               {category.icon} {category.title}
             </a>
           ))
@@ -116,15 +118,15 @@ const colLinkClass =
           {t('footer.project')}
         </h4>
         <a href={links.repo} target="_blank" rel="noopener">GitHub</a>
-        <a href="/about">{t('footer.about')}</a>
-        {features.graph && <a href="/graph">{t('footer.graph')}</a>}
-        {features.soundscape && <a href="/soundscape">{t('footer.soundscape')}</a>}
-        {features.dashboard && <a href="/dashboard">{t('footer.dashboard')}</a>}
-        {chat.enabled && <a href="/chat">{t('footer.chat')}</a>}
+        <a href={localPath('/about')}>{t('footer.about')}</a>
+        {features.graph && <a href={localPath('/graph')}>{t('footer.graph')}</a>}
+        {features.soundscape && <a href={localPath('/soundscape')}>{t('footer.soundscape')}</a>}
+        {features.dashboard && <a href={localPath('/dashboard')}>{t('footer.dashboard')}</a>}
+        {chat.enabled && <a href={localPath('/chat')}>{t('footer.chat')}</a>}
         <a href={`${links.repo}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noopener"
           >{t('footer.contribute')}</a
         >
-        <a href="/changelog">{t('footer.changelog')}</a>
+        <a href={localPath('/changelog')}>{t('footer.changelog')}</a>
         <a href="/rss.xml">{t('footer.rss')}</a>
       </div>
 

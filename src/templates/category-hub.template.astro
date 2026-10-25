@@ -7,7 +7,7 @@
  */
 import { marked } from 'marked';
 import Layout from '../layouts/Layout.astro';
-import { useTranslations, getLangFromUrl } from '../i18n/utils';
+import { useTranslations, getLangFromUrl, useTranslatedPath } from '../i18n/utils';
 import { categoryList, getCategoryConfig, getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
 
@@ -34,6 +34,8 @@ interface Props {
 const { category, hubContent, articles, topPicks } = Astro.props;
 
 const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 
 const allConfigs = getCategoryConfigs();
@@ -62,8 +64,8 @@ function resolveWikilinks(md: string, currentCategory: string) {
         .replace(/ Hub$/, '')
         .toLowerCase();
       return bold
-        ? `<a class="topic-pill" href="/${catName}"><strong>${label}</strong></a>`
-        : `<a class="topic-pill" href="/${catName}">${label}</a>`;
+        ? `<a class="topic-pill" href="${localPath(`/${catName}`)}"><strong>${label}</strong></a>`
+        : `<a class="topic-pill" href="${localPath(`/${catName}`)}">${label}</a>`;
     }
     const matchArticle = articles.find(
       (a) =>
@@ -72,7 +74,7 @@ function resolveWikilinks(md: string, currentCategory: string) {
         a.slug === encodeURIComponent(target),
     );
     if (matchArticle) {
-      const url = `/${currentCategory}/${matchArticle.slug}`;
+      const url = localPath(`/${currentCategory}/${matchArticle.slug}`);
       return bold
         ? `<a class="topic-pill" href="${url}"><strong>${label}</strong></a>`
         : `<a class="topic-pill" href="${url}">${label}</a>`;
@@ -211,7 +213,7 @@ const otherCategories = categoryList
           class="mb-1 flex items-center gap-2 text-[0.9rem] [&>a:hover]:underline [&>a]:font-medium [&>a]:no-underline"
         >
           <a
-            href="/"
+            href={localPath('/')}
             style={`color: ${categoryInfo.color};`}>{t('article.home')}</a
           >
           <span class="text-[#9ca3af]">&rsaquo;</span>
@@ -287,7 +289,7 @@ const otherCategories = categoryList
                 </span>
                 {otherCategories.map((cat) => (
                   <a
-                    href={`/${cat.key}`}
+                    href={localPath(`/${cat.key}`)}
                     class="flex items-center justify-between rounded px-2 py-[0.35rem] text-[0.78rem] text-[#475569] no-underline opacity-75 transition-all duration-150 hover:bg-[rgba(45,80,22,0.06)] hover:text-[var(--categoryColor,#1e3a5f)] hover:opacity-100"
                   >
                     <span>
@@ -306,7 +308,7 @@ const otherCategories = categoryList
                   </span>
                   {topPicks.slice(0, 3).map((article) => (
                     <a
-                      href={`/${category}/${encodeURIComponent(article.slug)}`}
+                      href={localPath(`/${category}/${encodeURIComponent(article.slug)}`)}
                       class="whitespace-nowrap rounded-2xl border border-transparent bg-[var(--categoryColorLight)] px-[0.6rem] py-[0.2rem] text-[0.82rem] font-semibold text-[var(--categoryColor)] no-underline transition-all duration-150 hover:border-[var(--categoryColor)] hover:bg-white"
                     >
                       &starf; {article.title}
@@ -339,7 +341,7 @@ const otherCategories = categoryList
                     <div class="flex flex-col">
                       {group.articles.map((article) => (
                         <a
-                          href={`/${category}/${encodeURIComponent(article.slug)}`}
+                          href={localPath(`/${category}/${encodeURIComponent(article.slug)}`)}
                           class={`article-row ${article.featured ? 'is-featured' : ''}`}
                           data-title={article.title}
                           data-date={article.date || ''}
@@ -421,7 +423,7 @@ const otherCategories = categoryList
               </p>
               <div class="flex flex-wrap justify-center gap-4 max-[768px]:flex-col max-[768px]:items-center">
                 <a
-                  href="/"
+                  href={localPath('/')}
                   class="inline-flex items-center gap-2 rounded-xl bg-[var(--categoryColor)] px-8 py-4 font-semibold text-white no-underline transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_16px_rgba(0,0,0,0.2)]"
                 >
                   {t('article.backToHome')}

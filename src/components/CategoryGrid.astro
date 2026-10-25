@@ -3,6 +3,10 @@ import placeConfig from '../../place.config';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
 const { categories } = placeConfig;
 
 const GRADIENTS: Record<string, string> = {
@@ -42,7 +46,7 @@ const items = categories.map((c) => ({
     items.map((category) => (
       <article class="mb-6 flex break-inside-avoid">
         <a
-          href={`/${category.slug}`}
+          href={localPath(`/${category.slug}`)}
           class="group relative flex w-full flex-col overflow-hidden rounded-3xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] text-inherit no-underline shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition-all duration-[280ms] ease hover:-translate-y-1.5 hover:border-[color:var(--color-ink-soft)] hover:shadow-[0_24px_50px_rgba(15,23,42,0.18),0_8px_16px_rgba(0,0,0,0.06)] max-[768px]:min-h-[272px]"
         >
           <div

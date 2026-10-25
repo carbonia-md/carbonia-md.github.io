@@ -5,10 +5,12 @@
  * contributor landing a merged PR). All prose from place.config.ts + i18n keys.
  */
 import Layout from '../layouts/Layout.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '../i18n/utils';
 import placeConfig from '../../place.config';
 
 const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 const repoUrl = placeConfig.links.repo;
 
@@ -199,7 +201,7 @@ const siteGuideCards = [
         <div class="contact-cta">
           <p>{t('about.contact.cta.text')}</p>
           <div class="cta-buttons">
-            <a href="/contribute" class="btn btn-primary">Contribution Guide</a>
+            <a href={localPath('/contribute')} class="btn btn-primary">Contribution Guide</a>
             <a
               href={repoUrl}
               target="_blank"

@@ -1,6 +1,10 @@
 ---
 import placeConfig from '../../place.config';
 
+import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
 interface Props {
   title: string;
   tags?: string[];
@@ -248,7 +252,7 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
         <div class="flex flex-col gap-2">
           {relatedArticles.map((article) => (
             <a
-              href={`/${article.category}/${article.slug}`}
+              href={localPath(`/${article.category}/${article.slug}`)}
               class="rounded-md px-2 py-[0.4rem] font-['Inter',system-ui,sans-serif] text-[0.82rem] text-[#4a5e52] no-underline transition-colors duration-150 hover:bg-[rgba(26,60,52,0.05)] hover:text-[#0e3a5c]"
             >
               {article.title}

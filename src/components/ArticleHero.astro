@@ -1,4 +1,8 @@
 ---
+import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
 interface Props {
   title: string;
   description?: string;
@@ -40,7 +44,7 @@ const {
       aria-label="Breadcrumb"
     >
       <a
-        href="/"
+        href={localPath('/')}
         class="whitespace-nowrap font-['Inter',system-ui,sans-serif] text-[0.78rem] text-[rgba(248,241,233,0.65)] no-underline transition-colors duration-200 hover:text-[#f8f1e9]"
         >Home</a
       >
@@ -57,7 +61,7 @@ const {
         <polyline points="9 18 15 12 9 6"></polyline>
       </svg>
       <a
-        href={`/${category}`}
+        href={localPath(`/${category}`)}
         class="whitespace-nowrap font-['Inter',system-ui,sans-serif] text-[0.78rem] font-semibold no-underline transition-colors duration-200 hover:opacity-70"
         style={`color:${categoryColor};`}>{categoryName}</a
       >

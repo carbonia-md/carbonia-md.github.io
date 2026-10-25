@@ -33,13 +33,15 @@
  */
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '../i18n/utils';
 import { builtRoutes } from '../lib/built-routes';
 import { resolveChat } from '../lib/chat';
 import { readChatContexts } from '../lib/chat-contexts';
 import placeConfig from '../../place.config';
 
 const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 
 const { enabled, endpoint } = resolveChat(placeConfig);
@@ -496,7 +498,7 @@ const CHAT_SCRIPT = `
         <section class="disabled" data-chat-disabled>
           <h2>{t('chat.disabled.title')}</h2>
           <p>{t('chat.disabled.description')}</p>
-          <a class="disabled-cta" href="/explore">
+          <a class="disabled-cta" href={localPath('/explore')}>
             {t('chat.disabled.cta')}
           </a>
         </section>
@@ -508,7 +510,7 @@ const CHAT_SCRIPT = `
             </style>
             <p class="noscript">
               {t('chat.noscript')}{' '}
-              <a href="/explore">{t('chat.disabled.cta')}</a>
+              <a href={localPath('/explore')}>{t('chat.disabled.cta')}</a>
             </p>
           </noscript>
 

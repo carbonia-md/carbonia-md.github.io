@@ -14,13 +14,15 @@ import CategoryGrid from '../components/CategoryGrid.astro';
 import { getCollection } from 'astro:content';
 import { getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
-import { getLangFromUrl } from '../i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
 
 const { features } = placeConfig;
 const cats = getCategoryConfigs();
 const validSlugs = new Set(placeConfig.categories.map((c) => c.slug));
 
 const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 const entries = await getCollection(lang);
 const articles = entries
   .map((entry) => {
@@ -123,7 +125,7 @@ const dayShort = (d: Date) =>
             Latest
           </h2>
           <a
-            href="/latest"
+            href={localPath('/latest')}
             class="flex-shrink-0 whitespace-nowrap text-[0.88rem] font-semibold text-[#10b981] no-underline hover:underline"
           >
             See all
@@ -134,7 +136,7 @@ const dayShort = (d: Date) =>
             const cfg = cats[a.category] || ({} as (typeof cats)[string]);
             return (
               <a
-                href={`/${a.category}/${encodeURIComponent(a.slug)}`}
+                href={localPath(`/${a.category}/${encodeURIComponent(a.slug)}`)}
                 class="group flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 no-underline transition-all hover:border-[color:var(--color-border-visible)] hover:bg-[color:var(--color-bg-soft)]"
               >
                 <span
@@ -169,7 +171,7 @@ const dayShort = (d: Date) =>
         <div class="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1 max-[900px]:gap-4">
           {features.graph && (
             <a
-              href="/graph"
+              href={localPath('/graph')}
               class="group flex items-start gap-4 rounded-2xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] p-6 no-underline transition-all hover:-translate-y-1 hover:border-[#7c3aed]"
             >
               <span class="flex-shrink-0 text-[2rem]">🕸️</span>
@@ -185,7 +187,7 @@ const dayShort = (d: Date) =>
           )}
           {features.map && (
             <a
-              href="/map"
+              href={localPath('/map')}
               class="group flex items-start gap-4 rounded-2xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] p-6 no-underline transition-all hover:-translate-y-1 hover:border-[#10b981]"
             >
               <span class="flex-shrink-0 text-[2rem]">🗺️</span>

@@ -1,15 +1,23 @@
 ---
 import BrandMark from './BrandMark.astro';
-import { useTranslations, getLangFromUrl } from '../i18n/utils';
+import { useTranslations, getLangFromUrl, useTranslatedPath, stripLangPrefix } from '../i18n/utils';
+import { LANGUAGE_DISPLAY_NAMES } from '../config/languages';
+import type { Lang } from '../config/languages';
 import { resolveChat } from '../lib/chat';
 import placeConfig from '../../place.config';
+
+interface Props {
+  /** Language versions of this page (Layout's `getAlternates()`), for the switcher. */
+  alternates?: { lang: Lang; path: string }[];
+}
+const { alternates = [] } = Astro.props;
 
 const currentPath = Astro.url.pathname;
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
-// English-only: no per-language route resolution, hrefs are used as-is.
-const navHref = (p: string) => p;
+// Internal links stay in the reader's language: `/explore` -> `/it/explore` on Italian pages.
+const navHref = useTranslatedPath(lang);
 
 const { features, links } = placeConfig;
 // Chat needs both halves (flag + endpoint), unlike the flag-only gates above it, so
@@ -17,7 +25,7 @@ const { features, links } = placeConfig;
 // rendering "chat is not enabled here" is worse than no link at all.
 const chat = resolveChat(placeConfig);
 
-const normalizedPath = currentPath.replace(/\/$/, '') || '/';
+const normalizedPath = stripLangPrefix(currentPath).replace(/\/$/, '') || '/';
 const isHome = normalizedPath === '/';
 
 // Top-level nav. Generic labels come from the trimmed i18n bundle; the Explore
@@ -81,7 +89,7 @@ const categoryList = placeConfig.categories.map((c) => ({
                           {t('nav.explore')}
                         </a>
                         <a
-                          href="/latest"
+                          href={navHref('/latest')}
                           class="dropdown-item dropdown-section-header"
                         >
                           🆕 {t('nav.latest')}
@@ -90,7 +98,7 @@ const categoryList = placeConfig.categories.map((c) => ({
                           <Fragment>
                             <div class="dropdown-divider" />
                             <a
-                              href="/graph"
+                              href={navHref('/graph')}
                               class="dropdown-item dropdown-section-header"
                             >
                               {t('nav.graph')} 🕸️
@@ -121,13 +129,13 @@ const categoryList = placeConfig.categories.map((c) => ({
                       </a>
                       <div class="dropdown-menu">
                         <a
-                          href="/about"
+                          href={navHref('/about')}
                           class="dropdown-item dropdown-section-header"
                         >
                           {t('nav.about')}
                         </a>
                         <div class="dropdown-divider" />
-                        <a href="/changelog" class="dropdown-item">
+                        <a href={navHref('/changelog')} class="dropdown-item">
                           📝 {t('nav.changelog')}
                         </a>
                       </div>
@@ -148,6 +156,26 @@ const categoryList = placeConfig.categories.map((c) => ({
             })
           }
         </nav>
+
+        <!-- Language switcher: only when this page exists in more than one language -->
+        {
+          alternates.length > 1 && (
+            <nav class="lang-toggle" aria-label="Language">
+              {alternates.map((a) => (
+                <a
+                  href={a.path}
+                  hreflang={a.lang}
+                  lang={a.lang}
+                  class:list={['lang-btn', { active: a.lang === lang }]}
+                  aria-current={a.lang === lang ? 'true' : undefined}
+                  title={LANGUAGE_DISPLAY_NAMES[a.lang]}
+                >
+                  {a.lang.toUpperCase()}
+                </a>
+              ))}
+            </nav>
+          )
+        }
 
         <!-- Search -->
         <button
@@ -231,7 +259,7 @@ const categoryList = placeConfig.categories.map((c) => ({
                 {item.path === '/explore' && (
                   <div class="mobile-sub-links open">
                     <a
-                      href="/latest"
+                      href={navHref('/latest')}
                       class="nav-link nav-sub-link"
                       onclick="document.querySelector('.nav-mobile').classList.remove('open')"
                     >
@@ -239,7 +267,7 @@ const categoryList = placeConfig.categories.map((c) => ({
                     </a>
                     {features.graph && (
                       <a
-                        href="/graph"
+                        href={navHref('/graph')}
                         class="nav-link nav-sub-link"
                         onclick="document.querySelector('.nav-mobile').classList.remove('open')"
                       >

@@ -21,11 +21,13 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import placeConfig from '../../../place.config';
 import { getCategoryConfig } from '../../utils/categoryConfig';
-import { getLangFromUrl } from '../../i18n/utils';
+import { getLangFromUrl, useTranslatedPath } from '../../i18n/utils';
 
 const { name } = placeConfig.place;
 const lang = getLangFromUrl(Astro.url);
 
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 // Category identity flows from config — no hardcoded categories[]/categoryColors/
 // categoryNames/categoryMapping tables (genericity gate; clean-rebuild rule).
 const categories = placeConfig.categories.map((c) => c.slug);
@@ -78,7 +80,7 @@ nodes.push({
   group: 'special',
   color: '#6366f1',
   size: 14,
-  url: '/about',
+  url: localPath('/about'),
 });
 nodes.push({
   id: 'contribute',
@@ -86,7 +88,7 @@ nodes.push({
   group: 'special',
   color: '#22c55e',
   size: 14,
-  url: '/contribute',
+  url: localPath('/contribute'),
 });
 edges.push({ source: CENTER_ID, target: 'about' });
 edges.push({ source: CENTER_ID, target: 'contribute' });
@@ -102,7 +104,7 @@ for (const cat of categories) {
     group: cat,
     color,
     size: 20,
-    url: `/${cat}`,
+    url: localPath(`/${cat}`),
   });
   edges.push({ source: CENTER_ID, target: cat });
 
@@ -119,7 +121,7 @@ for (const cat of categories) {
       group: cat,
       color,
       size: 8,
-      url: `/${cat}/${encodeURIComponent(slug)}`,
+      url: localPath(`/${cat}/${encodeURIComponent(slug)}`),
     });
 
     if (subcat) {

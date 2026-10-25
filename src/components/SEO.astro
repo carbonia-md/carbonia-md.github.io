@@ -9,7 +9,7 @@
  * spec forbids build-time OG generation; a static default OG ships until the
  * Phase 7 worker. No place literals.
  */
-import { ENABLED_LANGUAGE_CODES, DEFAULT_LANGUAGE } from '../config/languages';
+import { ENABLED_LANGUAGE_CODES, DEFAULT_LANGUAGE, getLanguage } from '../config/languages';
 import type { Lang } from '../config/languages';
 import placeConfig from '../../place.config';
 import { resolveOgImage } from '../utils/og-image';
@@ -20,6 +20,8 @@ interface Props {
   image?: string;
   url?: string;
   lang?: Lang;
+  /** Every language version of this page, from `getAlternates()` (Layout). */
+  alternates?: { lang: Lang; path: string }[];
   type?: 'website' | 'article';
   datePublished?: string;
   dateModified?: string;
@@ -39,6 +41,7 @@ const siteUrl = `https://${domain}`;
 
 const {
   lang = 'en',
+  alternates = [],
   title,
   description = tagline,
   url = Astro.url.href,
@@ -274,6 +277,13 @@ const generateBreadcrumbLD = () => {
 
 const breadcrumbLD = generateBreadcrumbLD();
 const canonical = url;
+
+const hreflangLinks = alternates.map((a) => ({
+  hreflang: getLanguage(a.lang)?.hreflang ?? a.lang,
+  href: new URL(a.path, siteUrl).href,
+}));
+const defaultAlternate = alternates.find((a) => a.lang === DEFAULT_LANGUAGE.code);
+const xDefaultHref = defaultAlternate ? new URL(defaultAlternate.path, siteUrl).href : canonical;
 const twitterHandle = seo.twitterHandle;
 ---
 
@@ -306,9 +316,10 @@ const twitterHandle = seo.twitterHandle;
 <!-- DNS prefetch -->
 <link rel="dns-prefetch" href="//github.com" />
 
-<!-- Language alternates (single enabled language) -->
-<link rel="alternate" hreflang={DEFAULT_LANGUAGE.hreflang} href={canonical} />
-<link rel="alternate" hreflang="x-default" href={canonical} />
+<!-- Language alternates: one per language this page exists in; x-default is the
+     default-language version, falling back to this page when it has none. -->
+{hreflangLinks.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
+<link rel="alternate" hreflang="x-default" href={xDefaultHref} />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content={type} />

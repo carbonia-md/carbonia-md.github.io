@@ -1,5 +1,5 @@
 import { ui, defaultLang, showDefaultLang } from './ui';
-import { ALL_LANGUAGE_CODES } from '../config/languages';
+import { ALL_LANGUAGE_CODES, ENABLED_LANGUAGE_CODES } from '../config/languages';
 import type { Lang } from '../config/languages';
 
 /**
@@ -32,6 +32,35 @@ export function useTranslations(lang: Lang) {
 
 export function useTranslatedPath(lang: Lang) {
   return function translatePath(path: string, l: string = lang) {
-    return !showDefaultLang && l === defaultLang ? path : `/${l}${path}`;
+    if (!showDefaultLang && l === defaultLang) return path;
+    // The language root is `/it`, not `/it/`.
+    return path === '/' ? `/${l}` : `/${l}${path}`;
   };
+}
+
+/**
+ * The language-neutral form of a pathname: `/it/Food/x/` -> `/Food/x/`,
+ * `/it` -> `/`. Paths without a language prefix come back unchanged.
+ */
+export function stripLangPrefix(pathname: string): string {
+  const [, maybeLang, ...rest] = pathname.split('/');
+  if (!(ALL_LANGUAGE_CODES as readonly string[]).includes(maybeLang)) return pathname;
+  return `/${rest.join('/')}`;
+}
+
+/**
+ * One entry per language the current page exists in, each with its URL path.
+ * `available` narrows the set for pages that may lack a translation (articles);
+ * every other route is generated for all enabled languages by
+ * `lang-static-paths.ts`, so the default is all of them.
+ */
+export function getAlternates(
+  url: URL,
+  available: readonly Lang[] = ENABLED_LANGUAGE_CODES,
+): { lang: Lang; path: string }[] {
+  const base = stripLangPrefix(url.pathname);
+  return ENABLED_LANGUAGE_CODES.filter((l) => available.includes(l)).map((l) => ({
+    lang: l,
+    path: useTranslatedPath(l)(base),
+  }));
 }

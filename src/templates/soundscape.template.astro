@@ -24,12 +24,14 @@
  */
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '../i18n/utils';
 import { builtRoutes } from '../lib/built-routes';
 import { readSoundscape } from '../lib/sounds';
 import placeConfig from '../../place.config';
 
 const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 
 /**
@@ -202,7 +204,7 @@ const isLinkable = (url: string) =>
         <li>{t('soundscape.contribute.step.two')}</li>
         <li>{t('soundscape.contribute.step.three')}</li>
       </ol>
-      <a class="contribute-cta" href="/contribute">{t('soundscape.contribute.cta')}</a>
+      <a class="contribute-cta" href={localPath('/contribute')}>{t('soundscape.contribute.cta')}</a>
     </section>
   </main>
 </Layout>

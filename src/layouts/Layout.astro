@@ -12,11 +12,18 @@ import HeadInlineScripts from '../components/HeadInlineScripts.astro';
 import placeConfig from '../../place.config';
 
 import type { Lang } from '../config/languages';
+import { getLangFromUrl, getAlternates, stripLangPrefix } from '../i18n/utils';
 
 interface Props {
   title: string;
   description?: string;
   lang?: Lang;
+  /**
+   * Languages this page exists in, for hreflang + the header language switcher.
+   * Omit for routes generated in every enabled language; articles pass the
+   * languages that actually have a translation.
+   */
+  availableLangs?: readonly Lang[];
   image?: string;
   type?: 'website' | 'article';
   datePublished?: string;
@@ -58,10 +65,13 @@ const {
   categorySlug: propCategorySlug,
   noindex,
   readerSettings = true,
-  lang = 'en',
+  lang = getLangFromUrl(Astro.url),
+  availableLangs,
 } = Astro.props;
 
-const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const alternates = getAlternates(Astro.url, availableLangs);
+
+const currentPath = stripLangPrefix(Astro.url.pathname).replace(/\/$/, '') || '/';
 const isHome = currentPath === '/';
 const bodyClass = isHome ? 'page-home' : 'page-default';
 
@@ -117,6 +127,7 @@ const slugToFolder: Record<string, string> = Object.fromEntries(
       title={title}
       description={description}
       lang={lang}
+      alternates={alternates}
       image={image}
       type={type}
       datePublished={datePublished}
@@ -156,7 +167,7 @@ const slugToFolder: Record<string, string> = Object.fromEntries(
     <HeadInlineScripts readerSettings={readerSettings} />
   </head>
   <body class={bodyClass}>
-    <Header />
+    <Header alternates={alternates} />
 
     <script is:inline>
       // ── Search engine (MiniSearch with fallback) ──

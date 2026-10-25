@@ -17,6 +17,10 @@ import placeConfig from '../../place.config';
 // as raw text because Vite has no loader for the .geojson extension.
 import markersRaw from '../data/map-markers.geojson?raw';
 
+import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
 const markers: {
   type: string;
   features: Array<{
@@ -57,7 +61,7 @@ const markerRows = markers.features.map((f) => ({
   categoryLabel: cats[f.properties.category]?.name ?? f.properties.category,
   area: f.properties.area,
   description: f.properties.description,
-  href: `/${f.properties.category}/${encodeURIComponent(f.properties.slug)}`,
+  href: localPath(`/${f.properties.category}/${encodeURIComponent(f.properties.slug)}`),
   color: cats[f.properties.category]?.color ?? '#475569',
   lat: f.geometry.coordinates[1],
   lng: f.geometry.coordinates[0],
