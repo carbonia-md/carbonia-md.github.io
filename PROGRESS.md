@@ -14,12 +14,12 @@
 |---|---|---|
 | M1 — config schema, language registry, routing skeleton | ✅ done | see notes below |
 | M2 — pilot article end-to-end | ✅ done (different pilot article) | see notes below |
-| M3 — UI chrome translation | ☐ not started | |
+| M3 — UI chrome translation | ✅ done (2026-10-25) | home-page copy left to M4 (it lives in `place.config.ts`) |
 | M4 — home-page copy + place.config.ts schema | ☐ not started | |
 | M5 — derived-data script fixes | 🔶 1/7 scripts fixed | `test-frontmatter.mjs` done (via M2); rest open |
 | M6 — article-health locale-awareness | 🔶 loader bug fixed | `_derive_meta_from_path`/`FileTarget.lang` done (via M2); it-vocab checks still open |
 | M7 — skills updates | 🔶 mostly done, out of order | done ahead of M2-M6 at user's request — see notes |
-| M8 — remaining articles + full-site verification | 🔶 6/6 remaining articles drafted, none human-reviewed | see notes below |
+| M8 — remaining articles + full-site verification | ✅ all 7 translated + human-reviewed (2026-10-25) | see notes below |
 
 ## Design Decisions Log
 
@@ -231,12 +231,48 @@ test` (8/8), `npm run genericity`, `uv run pytest tests/article_health`
 ### M3 — UI chrome translation
 **Goal:** all `src/i18n/ui.ts` keys have an `it` counterpart.
 
-- [ ] `src/i18n/ui.ts` — `ui.it = {...}`
-- [ ] audit `useTranslations(lang)` call sites
-- [ ] `src/components/SEO.astro` — hreflang alternates (D7)
-- [ ] `scripts/ci/check-i18n-parity.mjs` (new)
+- [x] `src/i18n/ui.ts` — `ui.it = {...}` (280 keys after the audit below)
+- [x] audit `useTranslations(lang)` call sites
+- [x] `src/components/SEO.astro` — hreflang alternates (D7)
+- [x] `scripts/ci/check-i18n-parity.mjs` (new)
 
 Verification: parity script passes; Italian chrome renders on `/it/...`.
+
+**Done 2026-10-25** (commits `df19d49`, `d64c590`, `a3d9392`). The audit found
+more than missing strings — the pages weren't language-aware at all:
+
+- **`<html lang>` was "en" on every `/it/` article** (and most templates):
+  only a handful of templates passed `lang` to `Layout`. `Layout` now
+  defaults `lang` to `getLangFromUrl(Astro.url)`, so nothing has to opt in.
+- **Every internal link dropped the reader back into English** (header,
+  footer, article page, hubs, home, explore, map, graph, chat). They now go
+  through `useTranslatedPath(lang)`; the GitHub edit link on a translated
+  article points at `knowledge/{lang}/`. RSS stays unprefixed (D6).
+- **No way to reach `/it/` except typing it.** Header now has an EN | IT
+  switcher, reusing the dormant `.lang-toggle` CSS left over from the fork;
+  hidden when a page has only one language version.
+- **hreflang (D7):** `getAlternates()` in `i18n/utils.ts` lists the language
+  versions of the current page; `SEO.astro` emits one `<link>` per version
+  plus `x-default` on the default language. Articles pass the languages
+  they actually exist in (computed in `[slug].astro`'s `getStaticPaths`), so
+  a future untranslated article gets no dangling hreflang/switcher link.
+  `404.astro` is English-only and declares it (the internal-links check
+  caught the switcher linking a non-existent `/it/404/`).
+- **~80 strings were hardcoded in templates/components**, not in `ui.ts`
+  (article page, sidebar, TOC, cards, latest, explore, map incl. marker
+  popup, graph, changelog, about contact block, header aria). All moved to
+  `t()` with Italian. Dates go through new `dateLocale(lang)` (`en` keeps
+  `en-US` output byte-for-byte; `it` -> "18 agosto 2026").
+- Parity check: `npm run i18n:parity`, wired into `npm run test` and
+  `test:ci` (so CI and the pre-push habit both run it). Fails on missing,
+  extra, or empty keys and on `{placeholder}` mismatches.
+
+**Deliberately still English:** changelog commit messages (data, not
+chrome); the editorial `/dashboard` and `/system` pages (maintainer tools);
+`404.astro`. **Still English because the data is en-only (M5):** map
+markers' titles/descriptions, the explore page's "Surprise me" random pick
+and latest strip, `/latest` (reads `latest.json`). **Home page copy** lives
+in `place.config.ts` -> M4.
 
 ### M4 — Home-page copy + place.config.ts schema
 **Goal:** home page + category copy renders translated on `/it`.
