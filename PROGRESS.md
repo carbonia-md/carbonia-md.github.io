@@ -271,7 +271,8 @@ more than missing strings — the pages weren't language-aware at all:
 chrome); the editorial `/dashboard` and `/system` pages (maintainer tools);
 `404.astro`. **Still English because the data is en-only (M5):** map
 markers' titles/descriptions, the explore page's "Surprise me" random pick
-and latest strip, `/latest` (reads `latest.json`). **Home page copy** lives
+(fetches `/kb/topics.json`), and `/latest` (reads `latest.json`). The
+explore page's latest strip is already per-language (`getCollection(lang)`). **Home page copy** lives
 in `place.config.ts` -> M4.
 
 ### M4 — Home-page copy + place.config.ts schema
