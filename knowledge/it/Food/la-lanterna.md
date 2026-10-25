@@ -7,7 +7,7 @@ tags: ['la-lanterna', 'pesce', 'cucina-sarda', 'ristoranti']
 subcategory: 'Ristoranti'
 author: 'Carbonia'
 featured: false
-lastVerified: 2026-08-18
+lastVerified: 2026-10-25
 lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Fregola_sarda_de_Chef_koketo.jpg'
 imageAlt: 'Un piatto di fregola sarda, la pasta sarda al centro del menu de La Lanterna (foto illustrativa, non scattata nel ristorante).'
@@ -32,7 +32,7 @@ La cucina de La Lanterna è costruita attorno alle ricette di pesce della tradiz
 
 ## Accoglienza
 
-Alla fine del 2025, La Lanterna aveva una media di 4,4 stelle su 569 recensioni Google, e si posizionava quinto tra i ristoranti di Carbonia su Tripadvisor, su oltre 1.200 recensioni aggregate per la città, un dato che lo colloca stabilmente nella fascia alta della ristorazione cittadina. Una recensione Google, riportata sul sito di pianificazione di viaggi [Wanderlog](https://wanderlog.com/list/geoCategory/201137), mette in risalto proprio il piatto simbolo del menu: «Un ristorante locale fantastico! La fregola e il tiramisù erano eccezionali e il servizio è straordinario!» (recensione originale in inglese, traduzione nostra).
+A ottobre 2026, La Lanterna aveva una media di 4,5 stelle su 710 recensioni Google e di 4,4 stelle su 775 recensioni Tripadvisor. Alla fine del 2025 si posizionava quinto tra i ristoranti di Carbonia su Tripadvisor, un dato che lo colloca stabilmente nella fascia alta della ristorazione cittadina. Una recensione Google, riportata sul sito di pianificazione di viaggi [Wanderlog](https://wanderlog.com/list/geoCategory/201137), mette in risalto proprio il piatto simbolo del menu: «Un ristorante locale fantastico! La fregola e il tiramisù erano eccezionali e il servizio è straordinario!» (recensione originale in inglese, traduzione nostra).
 
 ## Informazioni Pratiche
 

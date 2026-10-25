@@ -7,7 +7,7 @@ tags: ['la-lanterna', 'seafood', 'sardinian-cuisine', 'restaurants']
 subcategory: 'Restaurants'
 author: 'Carbonia'
 featured: false
-lastVerified: 2026-08-18
+lastVerified: 2026-10-25
 lastHumanReview: false
 image: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Fregola_sarda_de_Chef_koketo.jpg'
 imageAlt: 'A plate of fregola sarda, the Sardinian pasta central to La Lanterna''s menu (illustrative photo, not taken at the restaurant).'
@@ -31,7 +31,7 @@ La Lanterna's cooking is built around traditional Sardinian seafood recipes: fre
 
 ## Reception
 
-As of late 2025, La Lanterna held a 4.4-star average across 569 Google reviews, and ranked fifth among Carbonia restaurants on Tripadvisor out of over 1,200 reviews aggregated for the town, placing it consistently in the town's upper tier for sit-down dining. One Google reviewer, quoted on the travel-planning site [Wanderlog](https://wanderlog.com/list/geoCategory/201137), singled out the dish at the heart of the menu: "Amazing local restaurant! The fregola and tiramisu were exceptional and the service is amazing!"
+As of October 2026, La Lanterna held a 4.5-star average across 710 Google reviews and 4.4 stars across 775 Tripadvisor reviews. In late 2025 it ranked fifth among Carbonia restaurants on Tripadvisor, placing it consistently in the town's upper tier for sit-down dining. One Google reviewer, quoted on the travel-planning site [Wanderlog](https://wanderlog.com/list/geoCategory/201137), singled out the dish at the heart of the menu: "Amazing local restaurant! The fregola and tiramisu were exceptional and the service is amazing!"
 
 ## Practical Information
 
