@@ -27,19 +27,19 @@ The Pineta di Monte Rosmarino, also known as Parco Colle Rosmarino, is a pine-co
 
 ## What's There
 
-The park is characterized by pines and typical Mediterranean vegetation, laid out with multiple walking and running trails, a playground, an artificial lake, and a picnic area. A restaurant/bar operates on site. Trails documented on hiking-route databases include stretches accessible from Via Romagna that climb through the forested terrain — enough of a network that the park doubles as a modest hiking spot, not just a flat picnic ground.
+The park is characterized by pines and typical Mediterranean vegetation, laid out with multiple walking and running trails, a playground, an artificial lake, and a picnic area. A restaurant/bar operates on site. Trails documented on hiking-route databases include stretches accessible from Via Romagna that climb through the forested terrain, offering beautiful views of the town and the surrounding countryside.
 
 ## Why FAI Recognized It
 
-FAI's "Luoghi del Cuore" campaign is a public nomination vote for places Italians consider worth protecting; Pineta di Monte Rosmarino has placed in it in multiple years, a sign the park matters to residents beyond its official park-and-recreation designation.
+FAI's "Luoghi del Cuore" campaign is a public nomination vote for places Italians consider worth protecting. Pineta di Monte Rosmarino has placed in it in multiple years, a sign the park matters a great deal to residents beyond its official park-and-recreation designation.
 
 ![Monte Rosmarino seen from Monte Leone](https://upload.wikimedia.org/wikipedia/commons/3/3e/Monte_Rosmarino.jpg)
 
 ## Practical Information
 
-Access points are at Via La Spezia, Via Cagliari, Via Tirso, and Via Romagna, all within Carbonia's built-up area. The park is open-air and unticketed; the on-site restaurant/bar keeps its own separate hours.
+Access points are at Via La Spezia, Via Cagliari, Via Tirso, and Via Romagna, all within Carbonia's built-up area. The park is open-air and unticketed, while the on-site restaurant/bar keeps its own separate hours.
 
-Carbonia's identity is bound up with heavy industry and mining, which makes the FAI recognition notable: residents have put this specific stretch of pine forest forward for national protection more than once, rather than any of the town's more obviously monumental sites.
+Carbonia's identity is bound up with heavy industry and mining, which makes the FAI recognition notable: residents have put this specific stretch of pine forest forward for national protection more than once, rather than any of the sites more obviously tied to the town's history.
 
 ## Image Sources
 
