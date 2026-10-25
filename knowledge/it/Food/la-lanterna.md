@@ -31,7 +31,7 @@ La cucina de La Lanterna è costruita attorno alle ricette di pesce della tradiz
 
 ## Accoglienza
 
-Alla fine del 2025, La Lanterna aveva una media di 4,4 stelle su 569 recensioni Google, e si posizionava quinto tra i ristoranti di Carbonia su Tripadvisor, su oltre 1.200 recensioni aggregate per la città, un dato che lo colloca stabilmente nella fascia alta della ristorazione cittadina coerentemente con una cucina costruita per soddisfare i palati più raffinati.
+Alla fine del 2025, La Lanterna aveva una media di 4,4 stelle su 569 recensioni Google, e si posizionava quinto tra i ristoranti di Carbonia su Tripadvisor, su oltre 1.200 recensioni aggregate per la città, un dato che lo colloca stabilmente nella fascia alta della ristorazione cittadina.
 
 ## Informazioni Pratiche
 

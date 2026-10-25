@@ -30,7 +30,7 @@ La Lanterna's cooking is built around traditional Sardinian seafood recipes: fre
 
 ## Reception
 
-As of late 2025, La Lanterna held a 4.4-star average across 569 Google reviews, and ranked fifth among Carbonia restaurants on Tripadvisor out of over 1,200 reviews aggregated for the town, placing it consistently in the town's upper tier for sit-down dining, in keeping with a kitchen built to satisfy the most discerning palates.
+As of late 2025, La Lanterna held a 4.4-star average across 569 Google reviews, and ranked fifth among Carbonia restaurants on Tripadvisor out of over 1,200 reviews aggregated for the town, placing it consistently in the town's upper tier for sit-down dining.
 
 ## Practical Information
 
