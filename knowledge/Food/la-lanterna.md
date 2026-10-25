@@ -18,6 +18,7 @@ source:
   - 'https://www.lalanternacarbonia.it/'
   - 'https://gastroranking.it/r/ristorante-pizzeria-la-lanterna-5_241232/'
   - 'https://www.tripadvisor.com/Restaurant_Review-g2208277-d4766052-Reviews-Ristorante_Pizzeria_La_Lanterna-Carbonia_Province_of_Carbonia_Iglesias_Sardinia.html'
+  - 'https://wanderlog.com/list/geoCategory/201137'
 ---
 
 La Lanterna, at Via Sebastiano Satta 67, has been serving excellent seafood in Carbonia for more than 30 years. A striking specialty for a town that was founded to mine coal, not fish.
@@ -30,7 +31,7 @@ La Lanterna's cooking is built around traditional Sardinian seafood recipes: fre
 
 ## Reception
 
-As of late 2025, La Lanterna held a 4.4-star average across 569 Google reviews, and ranked fifth among Carbonia restaurants on Tripadvisor out of over 1,200 reviews aggregated for the town, placing it consistently in the town's upper tier for sit-down dining.
+As of late 2025, La Lanterna held a 4.4-star average across 569 Google reviews, and ranked fifth among Carbonia restaurants on Tripadvisor out of over 1,200 reviews aggregated for the town, placing it consistently in the town's upper tier for sit-down dining. One Google reviewer, quoted on the travel-planning site [Wanderlog](https://wanderlog.com/list/geoCategory/201137), singled out the dish at the heart of the menu: "Amazing local restaurant! The fregola and tiramisu were exceptional and the service is amazing!"
 
 ## Practical Information
 

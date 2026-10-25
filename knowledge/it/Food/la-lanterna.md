@@ -18,6 +18,7 @@ source:
   - 'https://www.lalanternacarbonia.it/'
   - 'https://gastroranking.it/r/ristorante-pizzeria-la-lanterna-5_241232/'
   - 'https://www.tripadvisor.com/Restaurant_Review-g2208277-d4766052-Reviews-Ristorante_Pizzeria_La_Lanterna-Carbonia_Province_of_Carbonia_Iglesias_Sardinia.html'
+  - 'https://wanderlog.com/list/geoCategory/201137'
 translatedFrom: 'en'
 ---
 
@@ -31,7 +32,7 @@ La cucina de La Lanterna è costruita attorno alle ricette di pesce della tradiz
 
 ## Accoglienza
 
-Alla fine del 2025, La Lanterna aveva una media di 4,4 stelle su 569 recensioni Google, e si posizionava quinto tra i ristoranti di Carbonia su Tripadvisor, su oltre 1.200 recensioni aggregate per la città, un dato che lo colloca stabilmente nella fascia alta della ristorazione cittadina.
+Alla fine del 2025, La Lanterna aveva una media di 4,4 stelle su 569 recensioni Google, e si posizionava quinto tra i ristoranti di Carbonia su Tripadvisor, su oltre 1.200 recensioni aggregate per la città, un dato che lo colloca stabilmente nella fascia alta della ristorazione cittadina. Una recensione Google, riportata sul sito di pianificazione di viaggi [Wanderlog](https://wanderlog.com/list/geoCategory/201137), mette in risalto proprio il piatto simbolo del menu: «Un ristorante locale fantastico! La fregola e il tiramisù erano eccezionali e il servizio è straordinario!» (recensione originale in inglese, traduzione nostra).
 
 ## Informazioni Pratiche
 
