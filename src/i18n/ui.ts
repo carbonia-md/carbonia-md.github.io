@@ -1,5 +1,6 @@
 /**
- * ui.ts — generic interface strings (English).
+ * ui.ts — generic interface strings (English, plus Italian for the
+ * instance-local multi-language experiment; see /PROGRESS.md).
  *
  * Trimmed en-only port of the fork's i18n bundle (task 1.1a). Holds ONLY
  * place-agnostic UI labels — nav chrome, footer section headers, search
@@ -297,5 +298,269 @@ export const ui = {
     'contribute.ideas.idea4': 'Hidden spots only locals know',
     'contribute.ideas.idea5': 'Stories from community elders',
     'contribute.ideas.idea6': 'Nature observations and seasonal patterns',
+  },
+  // Italian (instance-local multi-language experiment, see /PROGRESS.md M3).
+  // Must carry every `en` key: `npm run i18n:parity` fails the build otherwise.
+  it: {
+    // header nav
+    'nav.explore': 'Esplora',
+    'nav.latest': 'Novità',
+    'nav.map': 'Mappa',
+    'nav.graph': 'Grafo della conoscenza',
+    'nav.about': 'Chi siamo',
+    'nav.contribute': 'Contribuisci',
+    'nav.changelog': 'Registro modifiche',
+    'nav.dashboard': 'Dashboard',
+    'nav.soundscape': 'Paesaggio sonoro',
+    'nav.chat': 'Chiedi',
+    // header aria + search
+    'nav.aria-home': 'Home',
+    'nav.aria-main-navigation': 'Navigazione principale',
+    'nav.aria-mobile-navigation': 'Navigazione mobile',
+    'nav.aria-search': 'Cerca',
+    'nav.aria-toggle-menu': 'Apri o chiudi il menu',
+    'nav.search-placeholder': 'Cerca articoli',
+    'nav.search-type-to-search': 'Scrivi per cercare in tutti gli articoli',
+    // footer
+    'footer.explore': 'Esplora',
+    'footer.project': 'Progetto',
+    'footer.contact': 'Contatti',
+    'footer.about': 'Chi siamo',
+    'footer.graph': 'Grafo della conoscenza',
+    'footer.dashboard': 'Dashboard',
+    'footer.soundscape': 'Paesaggio sonoro',
+    'footer.chat': 'Chiedi',
+    'footer.contribute': 'Contribuisci',
+    'footer.changelog': 'Registro modifiche',
+    'footer.report': 'Segnala un problema',
+    'footer.discuss': 'Discussioni',
+    'footer.rss': 'RSS',
+    'footer.builtWith': 'Realizzato con Astro — open source, pensato anche per l\'IA.',
+    'footer.support': 'Sostieni',
+    'footer.support.cta': 'Metti una stella su GitHub',
+    // article page
+    'article.home': 'Home',
+    'article.backToHome': 'Torna alla home',
+    // feedback widget (features.feedback + workers.feedback)
+    'feedback.open': 'Lascia un commento',
+    'feedback.close': 'Chiudi il modulo',
+    'feedback.heading': 'Qualcosa non va in questa pagina?',
+    'feedback.intro':
+      'Correzioni, contesto mancante e domande sono tutti utili. Ogni segnalazione viene letta da una persona.',
+    'feedback.category.label': 'Tipo di segnalazione',
+    'feedback.category.correction': 'Correzione',
+    'feedback.category.addition': 'Informazione mancante',
+    'feedback.category.question': 'Domanda',
+    'feedback.category.other': 'Altro',
+    'feedback.message.label': 'Il tuo messaggio',
+    'feedback.message.requirement': 'Da 10 a 4.000 caratteri.',
+    'feedback.message.placeholder': 'Cosa andrebbe cambiato, e perché?',
+    'feedback.contact.label': 'Email (facoltativa, usata solo per risponderti)',
+    'feedback.trap.label': 'Lascia vuoto questo campo',
+    'feedback.submit': 'Invia',
+    'feedback.sending': 'Invio in corso...',
+    'feedback.success': 'Grazie. Abbiamo ricevuto la tua segnalazione.',
+    'feedback.invalid': 'Controlla il campo {field} e riprova.',
+    'feedback.rateLimited':
+      'Troppe segnalazioni da questa rete. Riprova più tardi.',
+    'feedback.error': 'Impossibile inviare la segnalazione. Riprova più tardi.',
+    'feedback.noscript': 'Questo modulo richiede JavaScript. Puoi inviare la tua segnalazione via email:',
+    // chat page (features.chat + workers.chat)
+    'chat.meta.title': 'Chiedi',
+    'chat.meta.description':
+      'Fai una domanda e ricevi una risposta tratta da questa base di conoscenza, con i link agli articoli da cui proviene.',
+    'chat.hero.title': 'Chiedi alla base di conoscenza',
+    'chat.hero.subtitle':
+      'Le risposte sono costruite a partire dagli articoli di questo sito e citano quelli da cui attingono. Se gli articoli non trattano un argomento, la risposta lo dirà.',
+    'chat.disabled.title': 'La chat non è attiva qui',
+    'chat.disabled.description':
+      'Questa istanza non ha un servizio di chat configurato, quindi non può rispondere alle domande. Tutto ciò su cui la chat si baserebbe è comunque leggibile direttamente.',
+    'chat.disabled.cta': 'Sfoglia gli articoli',
+    'chat.input.label': 'La tua domanda',
+    'chat.input.placeholder': 'Cosa vorresti sapere?',
+    'chat.send': 'Chiedi',
+    'chat.sending': 'Sto pensando...',
+    'chat.speaker.reader': 'Tu',
+    'chat.speaker.guide': 'Risposta',
+    'chat.sources.title': 'Fonti',
+    'chat.sources.none': 'Nessuna fonte trovata. Nulla nella base di conoscenza tratta questo argomento.',
+    'chat.transcript.label': 'Conversazione',
+    'chat.transcript.empty': 'Fai una domanda per iniziare. La conversazione si cancella quando chiudi la scheda.',
+    'chat.error.rateLimited': 'Troppe domande da questa rete. Riprova più tardi.',
+    'chat.error.unavailable': 'Il servizio di risposta non è disponibile al momento. Riprova più tardi.',
+    'chat.error.generic': 'Impossibile ottenere una risposta. Riprova più tardi.',
+    'chat.error.emptyAnswer':
+      'Non è arrivata nessuna risposta a questa domanda, anche se sono state trovate le fonti qui sotto. Questo scambio non è stato salvato, quindi puoi chiedere di nuovo.',
+    'chat.error.emptyAnswerNoSources':
+      'Non è arrivata nessuna risposta a questa domanda. Questo scambio non è stato salvato, quindi puoi chiedere di nuovo.',
+    'chat.noscript': 'Per fare domande serve JavaScript. Puoi invece sfogliare gli articoli:',
+    'chat.context.article': 'Leggi l\'articolo su questo luogo',
+    // soundscape page (features.soundscape + knowledge/sounds/_manifest.md)
+    'soundscape.meta.title': 'Paesaggio sonoro',
+    'soundscape.meta.description':
+      'Audio da questa base di conoscenza, riprodotto direttamente nel browser.',
+    'soundscape.hero.title': 'Paesaggio sonoro',
+    'soundscape.hero.subtitle':
+      'Il suono di questo luogo. Ogni clip si ascolta nel browser; nulla viene caricato finché non premi play.',
+    'soundscape.count': '{n} registrazioni',
+    'soundscape.count.one': '1 registrazione',
+    'soundscape.stats.wanted': '{n} cercate',
+    'soundscape.stats.wanted.one': '1 cercata',
+    'soundscape.stats.categories': '{n} categorie',
+    'soundscape.stats.categories.one': '1 categoria',
+    'soundscape.unsupported': 'Il tuo browser non può riprodurre questo file audio.',
+    'soundscape.category.empty': 'Ancora nessuna registrazione in questa categoria.',
+    'soundscape.category.article': 'Leggi l\'articolo',
+    'soundscape.wishlist.title': 'Ancora cercate',
+    'soundscape.contribute.title': 'Aggiungi una registrazione',
+    'soundscape.contribute.step.one':
+      'Registra il suono ed esportalo come MP3 che hai il diritto di pubblicare.',
+    'soundscape.contribute.step.two':
+      'Aggiungi il file in public/media/sounds/ nel repository.',
+    'soundscape.contribute.step.three':
+      'Descrivilo in knowledge/sounds/_manifest.md -- titolo, luogo, crediti e file -- e apri una pull request.',
+    'soundscape.contribute.cta': 'Come contribuire',
+    'soundscape.empty.title': 'Ancora nessuna registrazione',
+    'soundscape.empty.description':
+      'Questa base di conoscenza non ha ancora pubblicato audio. Aggiungi voci a knowledge/sounds/_manifest.md e inserisci i file in public/media/sounds/ per riempire questa pagina.',
+
+    // category hub
+    'category.articleCount': '{n} articoli',
+    'category.readGuide': 'Leggi la guida completa →',
+    'category.topic': 'Argomenti',
+    'category.otherTopics': 'Altri argomenti',
+    'category.featured': 'In evidenza',
+    'category.searchPlaceholder': 'Filtra gli articoli...',
+    'category.noResults': 'Nessun articolo corrisponde alla ricerca.',
+    'category.citations': '{n} citazioni',
+    // hub essay / empty state
+    'hub.essay.heading': 'Guida',
+    'hub.empty.title': 'In arrivo',
+    'hub.empty.description':
+      'Stiamo lavorando ai contenuti di questa categoria.',
+    'hub.empty.future': 'Argomenti previsti: ',
+
+    // about page
+    'about.meta.title': 'Chi siamo',
+    'about.meta.description':
+      'La storia di questa base di conoscenza, come funziona e come contribuire.',
+    'about.naming.title': 'Perché .md?',
+    'about.naming.subtitle':
+      'Una base di conoscenza aperta nel formato più adatto all\'IA',
+    'about.naming.tech.title': 'Livello tecnico',
+    'about.naming.tech.desc.html':
+      ', il formato di documento più universale nel mondo della programmazione. Usiamo il formato più adatto all\'IA per condividere conoscenza con il mondo.',
+    'about.naming.symbol.title': 'Livello simbolico',
+    'about.naming.symbol.desc.html':
+      ' è anche il dominio di primo livello nazionale della Moldavia. Luogo + Markdown = conoscenza della comunità connessa attraverso l\'open source.',
+    'about.naming.lucky.title': 'Open source',
+    'about.naming.lucky.desc':
+      'Costruita su un framework open source per basi di conoscenza. Guidata dalla comunità, pensata per l\'IA e liberamente riutilizzabile per qualsiasi città o tema.',
+    'about.vision.p1':
+      'Questo è più di un sito web. È una base di conoscenza curata su un luogo con una storia fuori dal comune.',
+    'about.vision.p2':
+      'Con spirito open source, l\'occhio di un curatore e formati adatti all\'IA, vogliamo offrire la risposta più completa a chiunque voglia conoscere questo luogo, persona o IA che sia.',
+    'about.vision.p3.html':
+      'Non è una guida turistica, non è una brochure immobiliare, non è una pubblicità.<br />È una base di conoscenza viva, aperta e in continua evoluzione.',
+    'about.origin.title': 'Origini',
+    'about.origin.subtitle':
+      'Come è nata questa base di conoscenza',
+    'about.timeline.start.date': '2026',
+    'about.timeline.start.title': 'Il framework',
+    'about.timeline.start.desc':
+      'Costruita su un framework open source per basi di conoscenza: sito statico Astro, indicizzazione per la ricerca, controlli di qualità, standard editoriali, visualizzazione a grafo della conoscenza e la filosofia della "storia prima dell\'informazione".',
+    'about.timeline.what.date': '2026',
+    'about.timeline.what.title': 'Cosa abbiamo costruito',
+    'about.timeline.what.desc':
+      'Ricerca full-text, controlli di qualità automatici, endpoint per l\'IA (/kb/, /llms.txt), RSS, sitemap, grafo della conoscenza e contenuti su più ambiti. Open source, dati aperti, aperta ai contributi.',
+    'about.guide.title': 'Un livello più a fondo',
+    'about.guide.subtitle': 'Meta-articoli su come funziona questa base di conoscenza',
+    'about.guide.born.title': 'Come nasce un articolo',
+    'about.guide.born.desc':
+      'Dall\'idea all\'articolo pubblicato: ricerca, scrittura, verifica dei fatti e il processo editoriale.',
+    'about.guide.viz.title': 'Catalogo delle visualizzazioni',
+    'about.guide.viz.desc':
+      'Ogni grafico, mappa ed elemento interattivo usato nel sito, catalogato.',
+    'about.guide.meta.title': 'Il progetto',
+    'about.guide.meta.desc':
+      'L\'architettura tecnica, le scelte di design e la filosofia dietro la base di conoscenza.',
+    'about.guide.cta': 'Leggi di più',
+    'about.faq.title': 'Domande frequenti',
+    'about.faq.subtitle': 'Domande comuni su questo progetto',
+    'about.faq.q1': 'È un progetto ufficiale dell\'amministrazione pubblica?',
+    'about.faq.a1.html':
+      'No. È un progetto indipendente e open source. Non è affiliato ad alcuna amministrazione pubblica, camera di commercio o ente del turismo.',
+    'about.faq.q2': 'Posso usare questi contenuti?',
+    'about.faq.a2.html':
+      'Sì. Tutti i contenuti sono distribuiti con licenza <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it">CC BY-SA 4.0</a>. Puoi condividerli e adattarli citando la fonte.',
+    'about.faq.q3': 'Come posso contribuire?',
+    'about.faq.a3.html':
+      'Leggi la <a href="/it/contribute">guida per contribuire</a>. Puoi inviare contenuti via email o aprire una pull request su GitHub.',
+    'about.contact.title': 'Contatti',
+    'about.contact.subtitle': 'Scrivici',
+    'about.contact.cta.text':
+      'Vuoi contribuire o collaborare? Ogni tipo di contributo è benvenuto.',
+
+    // changelog page
+    'changelog.meta.title': 'Registro modifiche',
+    'changelog.meta.description':
+      'Cronologia degli aggiornamenti: ogni nuovo contenuto e ogni miglioramento del sito.',
+
+    // contribute page
+    'contribute.meta.title': 'Contribuisci',
+    'contribute.meta.description':
+      'Come contribuire a questa base di conoscenza open source.',
+    'contribute.hero.title': 'Contribuisci',
+    'contribute.hero.subtitle':
+      'Questa base di conoscenza è open source. Ogni articolo, ogni fonte, ogni riga di codice è pubblica. Se sai qualcosa che ci è sfuggito, puoi correggerlo.',
+    'contribute.how.title': 'Come funziona',
+    'contribute.how.md.title': '1. Scrivi in Markdown',
+    'contribute.how.md.desc':
+      'Gli articoli sono semplici file .md. Scrivi ciò che sai, aggiungi le fonti e invia.',
+    'contribute.how.review.title': '2. Revisione',
+    'contribute.how.review.desc':
+      'Ogni contributo passa per la verifica dei fatti e la revisione editoriale prima della pubblicazione.',
+    'contribute.how.publish.title': '3. Pubblicazione',
+    'contribute.how.publish.desc':
+      'Gli articoli approvati vengono pubblicati sul sito con il tuo nome e diventano parte permanente della base di conoscenza.',
+    'contribute.paths.title': 'Modi per contribuire',
+    'contribute.paths.easy.badge': 'Facile',
+    'contribute.paths.easy.title': 'Condividi ciò che sai',
+    'contribute.paths.easy.desc':
+      'Inviaci le tue conoscenze via email. Non servono competenze tecniche.',
+    'contribute.paths.easy.feature1': 'Non serve un account GitHub',
+    'contribute.paths.easy.feature2': 'Scrivi in qualsiasi formato',
+    'contribute.paths.easy.feature3': 'Alla formattazione pensiamo noi',
+    'contribute.paths.easy.button': 'Invia il tuo contributo via email',
+    'contribute.paths.dev.badge': 'Sviluppatori',
+    'contribute.paths.dev.title': 'Apri una pull request',
+    'contribute.paths.dev.desc':
+      'Fai un fork del repository, aggiungi o modifica articoli e invia una PR.',
+    'contribute.paths.dev.feature1': 'Pieno controllo editoriale',
+    'contribute.paths.dev.feature2': 'Anteprima delle tue modifiche',
+    'contribute.paths.dev.feature3': 'Riconoscimento diretto nella cronologia git',
+    'contribute.paths.dev.button': 'Vedi su GitHub',
+    'contribute.guides.title': 'Linee guida per la scrittura',
+    'contribute.guides.desc':
+      'Alcuni principi che mantengono la base di conoscenza coerente e affidabile.',
+    'contribute.guides.writing.title': 'Standard di scrittura',
+    'contribute.guides.writing.desc':
+      'I buoni articoli raccontano storie, non si limitano a elencare fatti.',
+    'contribute.guides.writing.rule1': 'Apri con il racconto, sostienilo con le prove',
+    'contribute.guides.writing.rule2': 'Cita le fonti primarie quando possibile',
+    'contribute.guides.writing.rule3': 'Scrivi in modo denso: ogni frase deve meritarsi il suo posto',
+    'contribute.guides.images.title': 'Linee guida per le immagini',
+    'contribute.guides.images.desc':
+      'Le immagini devono avere una licenza adeguata e i crediti corretti.',
+    'contribute.guides.images.rule1': 'Wikimedia Commons (preferibile)',
+    'contribute.guides.images.rule2': 'Fonti pubbliche o di pubblico dominio',
+    'contribute.guides.images.rule3': 'Le tue fotografie (con liberatoria)',
+    'contribute.ideas.title': 'Idee per articoli',
+    'contribute.ideas.idea1': 'Storia locale che non si trova su Wikipedia',
+    'contribute.ideas.idea2': 'Ricette con il loro contesto culturale',
+    'contribute.ideas.idea3': 'Racconti orali di residenti di lunga data',
+    'contribute.ideas.idea4': 'Luoghi nascosti che conoscono solo gli abitanti',
+    'contribute.ideas.idea5': 'Storie degli anziani della comunità',
+    'contribute.ideas.idea6': 'Osservazioni sulla natura e sui cicli stagionali',
   },
 } as const;
