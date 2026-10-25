@@ -169,14 +169,14 @@ const siteGuideCards = [
         <div class="contact-grid">
           <div class="contact-card">
             <div class="contact-icon">💬</div>
-            <h4>Collaboration</h4>
+            <h4>{t('about.contact.collaboration')}</h4>
             <a href={`mailto:${placeConfig.links.email}`}>
               {placeConfig.links.email}
             </a>
           </div>
           <div class="contact-card">
             <div class="contact-icon">🐙</div>
-            <h4>Open Source</h4>
+            <h4>{t('about.contact.openSource')}</h4>
             <a
               href={repoUrl}
               target="_blank"
@@ -187,7 +187,7 @@ const siteGuideCards = [
           </div>
           <div class="contact-card">
             <div class="contact-icon">📄</div>
-            <h4>License</h4>
+            <h4>{t('about.contact.license')}</h4>
             <a
               href="https://creativecommons.org/licenses/by-sa/4.0/"
               target="_blank"
@@ -201,7 +201,7 @@ const siteGuideCards = [
         <div class="contact-cta">
           <p>{t('about.contact.cta.text')}</p>
           <div class="cta-buttons">
-            <a href={localPath('/contribute')} class="btn btn-primary">Contribution Guide</a>
+            <a href={localPath('/contribute')} class="btn btn-primary">{t('about.contact.guide')}</a>
             <a
               href={repoUrl}
               target="_blank"

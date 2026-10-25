@@ -30,6 +30,14 @@ export function useTranslations(lang: Lang) {
   };
 }
 
+/**
+ * BCP 47 locale for `toLocaleDateString` etc. English keeps the `en-US`
+ * formatting the site has always used; other languages use their bare code.
+ */
+export function dateLocale(lang: Lang): string {
+  return lang === 'en' ? 'en-US' : lang;
+}
+
 export function useTranslatedPath(lang: Lang) {
   return function translatePath(path: string, l: string = lang) {
     if (!showDefaultLang && l === defaultLang) return path;

@@ -52,6 +52,9 @@ const imgSideClass =
 const classes = ['article-card', densityClass, imgSideClass, 'no-external-icon']
   .filter(Boolean)
   .join(' ');
+
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+const t = useTranslations(getLangFromUrl(Astro.url));
 ---
 
 <Tag
@@ -155,7 +158,7 @@ const classes = ['article-card', densityClass, imgSideClass, 'no-external-icon']
     {
       density === 'premium' && (
         <span class="article-card-cta" style={`color: ${categoryColor};`}>
-          <span class="article-card-cta-label">{readingTime || 'Read'}</span>
+          <span class="article-card-cta-label">{readingTime || t('article.read')}</span>
           <svg
             class="article-card-cta-arrow"
             width="12"
@@ -186,7 +189,7 @@ const classes = ['article-card', densityClass, imgSideClass, 'no-external-icon']
             {(!!footnotes || !!readingTime) && (
               <span class="article-card-stats">
                 {!!footnotes && (
-                  <span class="article-card-stat" title="Citations">
+                  <span class="article-card-stat" title={t('article.citations')}>
                     <svg
                       width="13"
                       height="13"

@@ -12,15 +12,17 @@ import ContributeSection from '../components/home/ContributeSection.astro';
 import { fetchRecentCommits } from '../lib/commits';
 import placeConfig from '../../place.config';
 
-import { getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+import { getLangFromUrl, useTranslatedPath, useTranslations } from '../i18n/utils';
 
 // Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
-const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
+const lang = getLangFromUrl(Astro.url);
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
 const recentCommits = await fetchRecentCommits();
 const { features, home } = placeConfig;
 ---
 
-<Layout title="Home">
+<Layout title={t('home.meta.title')}>
   <HeroSection />
 
   <ReaderDoors />

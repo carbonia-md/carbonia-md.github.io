@@ -160,7 +160,7 @@ const categoryList = placeConfig.categories.map((c) => ({
         <!-- Language switcher: only when this page exists in more than one language -->
         {
           alternates.length > 1 && (
-            <nav class="lang-toggle" aria-label="Language">
+            <nav class="lang-toggle" aria-label={t('nav.aria-language')}>
               {alternates.map((a) => (
                 <a
                   href={a.path}
@@ -250,7 +250,7 @@ const categoryList = placeConfig.categories.map((c) => ({
                   {hasSub && (
                     <button
                       class="mobile-sub-toggle open"
-                      aria-label="Expand submenu"
+                      aria-label={t('nav.aria-expand-submenu')}
                     >
                       ▸
                     </button>
