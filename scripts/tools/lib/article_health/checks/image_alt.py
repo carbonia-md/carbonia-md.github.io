@@ -20,6 +20,7 @@ import os
 import re
 from typing import Any, Iterator
 
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -42,9 +43,9 @@ _RE_FILENAME_ALT = re.compile(
 )
 
 
-def _is_in_image_sources_section(body: str, image_pos: int) -> bool:
+def _is_in_image_sources_section(body: str, image_pos: int, lang: str = vocab.DEFAULT_LANG) -> bool:
     """Skip alt check inside Image Sources section (alt there is descriptive caption)."""
-    section_start = body.rfind("## Image Sources", 0, image_pos)
+    section_start = body.rfind(f"## {vocab.heading(lang, 'image_sources')}", 0, image_pos)
     if section_start < 0:
         return False
     next_h2 = body.find("\n## ", section_start + 1)
@@ -91,7 +92,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
 
     for match in _RE_IMAGE.finditer(body):
         # Skip if inside Image Sources section
-        if _is_in_image_sources_section(body, match.start()):
+        if _is_in_image_sources_section(body, match.start(), target.lang):
             continue
 
         alt = match.group(1)

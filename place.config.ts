@@ -198,8 +198,8 @@ const config: PlaceConfig = {
     domain: 'carbonia-md.github.io',
     locale: 'en',
     // Italian added as a controlled, instance-local experiment — see
-    // /PROGRESS.md. categories[].title/.description and home.* copy stay
-    // English-only strings until M4 lands the locale-map schema change.
+    // /PROGRESS.md. This file holds the base (English) text; Italian display
+    // text is the overlay in place.translations.ts.
     languages: ['en', 'it'],
   },
   categories: [

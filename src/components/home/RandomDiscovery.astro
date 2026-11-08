@@ -1,7 +1,9 @@
 ---
 import placeConfig from '../../../place.config';
+import { getLangFromUrl } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
 
-const { randomDiscovery } = placeConfig.home;
+const { randomDiscovery } = localizedHome(getLangFromUrl(Astro.url));
 const { categories } = placeConfig;
 
 const routedCats = categories.map((c) => c.slug);
@@ -49,7 +51,13 @@ const routedCats = categories.map((c) => c.slug);
       var res = await fetch('/kb/topics.json');
       if (res.ok) {
         var raw = await res.json();
+        var pageLang = document.documentElement.lang || '';
         articles = raw
+          .filter(function (a) {
+            // topics.json carries every language; keep the reader's own.
+            if (a.lang && pageLang && a.lang !== pageLang) return false;
+            return true;
+          })
           .filter(function (a) {
             var s = (a.url || '').split('/');
             var urlCat = s.length >= 2 ? s[s.length - 2].toLowerCase() : '';

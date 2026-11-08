@@ -49,8 +49,12 @@ def is_article_path(path: Path | str) -> bool:
     if "knowledge" not in parts:
         return False
     # At least `knowledge/<dir>/<file>.md`: one directory between the tree root
-    # and the file.
-    if len(parts) - parts.index("knowledge") < 3:
+    # and the file -- two when that directory is a non-default language root
+    # (`knowledge/<lang>/<Category>/<file>.md`), since a file directly in a
+    # language root is a queue, not an article, exactly like one at knowledge/.
+    rest = parts[parts.index("knowledge") + 1 :]
+    depth_needed = 3 if rest and rest[0] in place.non_default_language_codes() else 2
+    if len(rest) < depth_needed:
         return False
     return not Path(p).name.startswith("_")
 

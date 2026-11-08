@@ -8,7 +8,7 @@ subcategory: 'Founding and Industrial History'
 author: 'Carbonia'
 featured: true
 lastVerified: 2026-09-20
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Torri_degli_ascensori_-_panorama.JPG'
 imageAlt: 'Panoramic view of the elevator towers at the Grande Miniera di Serbariu, which served shafts 1 and 2.'
 imageCredit: 'Scrigno54, via Wikimedia Commons'

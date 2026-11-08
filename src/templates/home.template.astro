@@ -11,6 +11,7 @@ import RecentUpdates from '../components/home/RecentUpdates.astro';
 import ContributeSection from '../components/home/ContributeSection.astro';
 import { fetchRecentCommits } from '../lib/commits';
 import placeConfig from '../../place.config';
+import { localizedHome } from '../lib/place-i18n';
 
 import { getLangFromUrl, useTranslatedPath, useTranslations } from '../i18n/utils';
 
@@ -19,7 +20,8 @@ const lang = getLangFromUrl(Astro.url);
 const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 const recentCommits = await fetchRecentCommits();
-const { features, home } = placeConfig;
+const { features } = placeConfig;
+const home = localizedHome(lang);
 ---
 
 <Layout title={t('home.meta.title')}>

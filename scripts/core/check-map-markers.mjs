@@ -1,5 +1,5 @@
 /**
- * check-map-markers.mjs — contract test for src/data/map-markers.geojson.
+ * check-map-markers.mjs — contract test for src/data/map-markers*.geojson (one file per language).
  *
  * The map page (src/templates/map.template.astro) and downstream consumers rely on
  * the marker file being a valid GeoJSON FeatureCollection whose every feature is a
@@ -15,54 +15,69 @@ import { resolve } from 'node:path';
 const ROOT = process.cwd();
 const placeConfig = (await import(resolve(ROOT, 'place.config.ts'))).default;
 const CATEGORY_SLUGS = new Set(placeConfig.categories.map((c) => c.slug));
-const FILE = resolve(ROOT, 'src/data/map-markers.geojson');
+const LANGS = placeConfig.place.languages?.length
+  ? placeConfig.place.languages
+  : ['en'];
 const REQUIRED_PROPS = ['slug', 'title', 'category', 'description', 'area'];
 
-const errors = [];
 
-let data;
-try {
-  data = JSON.parse(await readFile(FILE, 'utf-8'));
-} catch (e) {
-  console.error(`❌ map-markers check FAILED: cannot read/parse ${FILE}: ${e.message}`);
-  process.exit(1);
-}
+let totalFeatures = 0;
+let failed = false;
 
-if (data?.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-  errors.push('root is not a FeatureCollection with a features array');
-}
+for (const [idx, lang] of LANGS.entries()) {
+  const name = idx === 0 ? 'map-markers.geojson' : `map-markers.${lang}.geojson`;
+  const FILE = resolve(ROOT, 'src/data', name);
+  const errors = [];
 
-for (const [i, f] of (data.features ?? []).entries()) {
-  const where = `feature[${i}]${f?.properties?.slug ? ` (${f.properties.slug})` : ''}`;
-  if (f?.type !== 'Feature') errors.push(`${where}: type is not "Feature"`);
+  let data;
+  try {
+    data = JSON.parse(await readFile(FILE, 'utf-8'));
+  } catch (e) {
+    console.error(`❌ map-markers check FAILED: cannot read/parse ${FILE}: ${e.message}`);
+    process.exit(1);
+  }
 
-  const g = f?.geometry;
-  if (g?.type !== 'Point' || !Array.isArray(g.coordinates) || g.coordinates.length !== 2) {
-    errors.push(`${where}: geometry is not a 2-element Point`);
+  if (data?.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+    errors.push('root is not a FeatureCollection with a features array');
+  }
+
+  for (const [i, f] of (data.features ?? []).entries()) {
+    const where = `feature[${i}]${f?.properties?.slug ? ` (${f.properties.slug})` : ''}`;
+    if (f?.type !== 'Feature') errors.push(`${where}: type is not "Feature"`);
+
+    const g = f?.geometry;
+    if (g?.type !== 'Point' || !Array.isArray(g.coordinates) || g.coordinates.length !== 2) {
+      errors.push(`${where}: geometry is not a 2-element Point`);
+    } else {
+      const [lng, lat] = g.coordinates;
+      if (!Number.isFinite(lng) || lng < -180 || lng > 180)
+        errors.push(`${where}: longitude out of range (${lng})`);
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90)
+        errors.push(`${where}: latitude out of range (${lat})`);
+    }
+
+    const props = f?.properties ?? {};
+    for (const key of REQUIRED_PROPS) {
+      if (!(key in props)) errors.push(`${where}: missing property "${key}"`);
+    }
+    if (props.category && !CATEGORY_SLUGS.has(props.category)) {
+      errors.push(`${where}: category "${props.category}" is not a configured slug`);
+    }
+  }
+
+  if (errors.length) {
+    console.log(`\n🔴 ${errors.length} error(s) in ${name}:`);
+    errors.forEach((e) => console.log(`   - ${e}`));
+    failed = true;
   } else {
-    const [lng, lat] = g.coordinates;
-    if (!Number.isFinite(lng) || lng < -180 || lng > 180)
-      errors.push(`${where}: longitude out of range (${lng})`);
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90)
-      errors.push(`${where}: latitude out of range (${lat})`);
-  }
-
-  const props = f?.properties ?? {};
-  for (const key of REQUIRED_PROPS) {
-    if (!(key in props)) errors.push(`${where}: missing property "${key}"`);
-  }
-  if (props.category && !CATEGORY_SLUGS.has(props.category)) {
-    errors.push(`${where}: category "${props.category}" is not a configured slug`);
+    const n = data.features.length;
+    const colors = new Set(data.features.map((f) => f.properties.category)).size;
+    console.log(`✅ ${name} check passed: ${n} valid Point feature(s), ${colors} categor(ies).`);
+    totalFeatures += n;
   }
 }
 
-if (errors.length) {
-  console.log(`\n🔴 ${errors.length} error(s) in map-markers.geojson:`);
-  errors.forEach((e) => console.log(`   - ${e}`));
+if (failed) {
   console.log('\n❌ map-markers check FAILED. Build blocked.');
   process.exit(1);
 }
-
-const n = data.features.length;
-const colors = new Set(data.features.map((f) => f.properties.category)).size;
-console.log(`✅ map-markers check passed: ${n} valid Point feature(s), ${colors} categor(ies).`);

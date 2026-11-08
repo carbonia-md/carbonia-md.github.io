@@ -15,7 +15,7 @@ import { getCategoryConfigs } from '../utils/categoryConfig';
 // Prebuilt by scripts/core/build-latest.mjs.
 import latestData from '../data/latest.json';
 
-const cats = getCategoryConfigs();
+const cats = getCategoryConfigs(getLangFromUrl(Astro.url));
 const articles: Array<{
   title: string;
   description: string;

@@ -140,6 +140,7 @@ class HealthReport:
             "file": str(self.target.path),
             "category": self.target.category,
             "slug": self.target.slug,
+            "lang": self.target.lang,
             "summary": {
                 "hard": self.hard_count,
                 "warn": self.warn_count,

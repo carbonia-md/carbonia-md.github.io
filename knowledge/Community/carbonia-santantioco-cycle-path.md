@@ -8,7 +8,7 @@ subcategory: 'Infrastructure and Local Life'
 author: 'Carbonia'
 featured: false
 lastVerified: 2026-08-18
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Stazione_Carbonia_2023.jpg'
 imageAlt: 'The former Carbonia FMS railway station, closed in 1974, now the starting point of the cycle path.'
 imageCredit: 'Alex10, via Wikimedia Commons'

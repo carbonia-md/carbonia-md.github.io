@@ -8,7 +8,7 @@ subcategory: 'Archaeological Sites'
 author: 'Carbonia'
 featured: true
 lastVerified: 2026-09-20
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Monte_Sirai_2.jpg'
 imageAlt: 'The hilltop plateau of Monte Sirai near Carbonia.'
 imageCredit: 'Alex10, via Wikimedia Commons'

@@ -13,9 +13,11 @@
 import Layout from '../layouts/Layout.astro';
 import { getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
-// Prebuilt by scripts/core/build-map-markers.mjs (run-p prebuild group). Imported
-// as raw text because Vite has no loader for the .geojson extension.
-import markersRaw from '../data/map-markers.geojson?raw';
+// Prebuilt by scripts/core/build-map-markers.mjs (run-p prebuild group), one file
+// per language: map-markers.geojson (default language) and map-markers.{lang}.geojson.
+// Read with fs at build time because Vite has no loader for the .geojson extension.
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { getLangFromUrl, useTranslatedPath, useTranslations } from '../i18n/utils';
 
@@ -36,9 +38,16 @@ const markers: {
     };
     geometry: { type: string; coordinates: [number, number] };
   }>;
-} = JSON.parse(markersRaw);
+} = JSON.parse(
+  readFileSync(
+    [`map-markers.${lang}.geojson`, 'map-markers.geojson']
+      .map((f) => resolve(process.cwd(), 'src/data', f))
+      .find((f) => existsSync(f))!,
+    'utf-8',
+  ),
+);
 
-const cats = getCategoryConfigs();
+const cats = getCategoryConfigs(lang);
 const { name } = placeConfig.place;
 const { center, zoom, maxBounds } = placeConfig.map;
 

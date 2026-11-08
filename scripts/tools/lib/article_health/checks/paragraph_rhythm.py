@@ -32,6 +32,7 @@ import re
 from statistics import median
 from typing import Any, Iterator
 
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -57,7 +58,7 @@ TW_MODULE_CEILING_DISCOUNT_CAP = 13
 MEDIA_BAND_MIN_WORDS = 1200
 
 
-_RE_WORD = re.compile(r"[A-Za-z0-9'-]+")
+_RE_WORD = vocab.WORD_RE
 _RE_H2 = re.compile(r"^##\s+(?!#)", re.MULTILINE)  # H2 only, not H3+
 _RE_IFRAME = re.compile(r"<iframe\s", re.IGNORECASE)
 _RE_IMAGE_MD = re.compile(r"!\[[^\]]*\]\([^\)]+\)")
@@ -80,8 +81,10 @@ def _strip_for_prose_analysis(text: str) -> str:
     return text
 
 
-def _count_words(s: str) -> int:
-    return len(_RE_WORD.findall(s))
+def _count_words(s: str, lang: str = vocab.DEFAULT_LANG) -> int:
+    """Word count, normalized to English-equivalent for non-English prose (vocab.WORD_EXPANSION),
+    so the length thresholds below apply uniformly across languages."""
+    return vocab.normalize_words(lang, len(_RE_WORD.findall(s)))
 
 
 def _extract_h2_sections(body: str) -> list[tuple[str, str]]:
@@ -148,7 +151,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
     """Detect atomization drift signals."""
     text = target.text
     body = _strip_for_prose_analysis(text)
-    total_words = _count_words(body)
+    total_words = _count_words(body, target.lang)
 
     # Only check depth articles (>= 800 words — short articles have different rhythm)
     if total_words < 800:
@@ -168,7 +171,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
             lead_body = body[: first_h2_match.start()]
             lead_paragraphs = _split_paragraphs(lead_body)
             for p in lead_paragraphs:
-                words = _count_words(p)
+                words = _count_words(p, target.lang)
                 if words >= 5:
                     all_paragraphs_words.append(words)
                 if words > PARA_WALL_MAX:
@@ -180,7 +183,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
         paragraphs = _split_paragraphs(section_body)
         per_section_counts.append((title, len(paragraphs)))
         for p in paragraphs:
-            words = _count_words(p)
+            words = _count_words(p, target.lang)
             if words >= 5:
                 all_paragraphs_words.append(words)
             if words > PARA_WALL_MAX:

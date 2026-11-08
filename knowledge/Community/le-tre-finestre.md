@@ -8,7 +8,7 @@ subcategory: 'Infrastructure and Local Life'
 author: 'Carbonia'
 featured: false
 lastVerified: 2026-09-21
-lastHumanReview: false
+lastHumanReview: true
 source:
   - 'https://www.nuovaopinione.it/carbonia/supermercati/centro-commerciale-le-tre-finestre-carbonia-161749'
   - 'https://chisiamo.conad.it/news-e-approfondimenti/notizie/2022/5/a-carbonia-nel-centro-commerciale-le-tre-finestre-apre-il-petsto'

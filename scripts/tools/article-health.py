@@ -30,6 +30,7 @@ _THIS = Path(__file__).resolve()
 _TOOLS_DIR = _THIS.parent
 sys.path.insert(0, str(_TOOLS_DIR))
 
+from lib.article_health import place  # noqa: E402
 from lib.article_health import (  # noqa: E402
     FileTarget,
     HealthReport,
@@ -81,11 +82,22 @@ def _get_all_source() -> list[Path]:
     root = Path("knowledge")
     if not root.exists():
         return []
-    files = []
-    for cat in root.iterdir():
-        if not cat.is_dir():
+    # The default language's categories sit at knowledge/{Category}/; every other
+    # enabled language nests one level deeper at knowledge/{lang}/{Category}/ (a
+    # top-level dir named for a configured language is a language root, not a
+    # category) -- sync.sh's projection convention.
+    lang_roots = set(place.non_default_language_codes())
+    category_dirs: list[Path] = []
+    for entry in sorted(root.iterdir()):
+        if not entry.is_dir():
             continue
-        for md in cat.glob("*.md"):
+        if entry.name in lang_roots:
+            category_dirs.extend(sorted(c for c in entry.iterdir() if c.is_dir()))
+        else:
+            category_dirs.append(entry)
+    files = []
+    for cat in category_dirs:
+        for md in sorted(cat.glob("*.md")):
             if not md.name.startswith("_"):
                 files.append(md)
     return files

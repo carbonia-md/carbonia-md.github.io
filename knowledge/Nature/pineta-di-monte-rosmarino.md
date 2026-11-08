@@ -8,7 +8,7 @@ subcategory: 'Parks and Green Spaces'
 author: 'Carbonia'
 featured: false
 lastVerified: 2026-08-18
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Parco_Monte_Rosmarino_-_Carbonia.jpg'
 imageAlt: 'A tree-lined path inside the Pineta di Monte Rosmarino park in Carbonia.'
 imageCredit: 'Alex10, via Wikimedia Commons'

@@ -21,6 +21,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import placeConfig from '../../../place.config';
 import { getCategoryConfig } from '../../utils/categoryConfig';
+import { localizedCategoryText } from '../../lib/place-i18n';
 import { getLangFromUrl, useTranslatedPath, useTranslations } from '../../i18n/utils';
 
 const { name } = placeConfig.place;
@@ -36,7 +37,7 @@ const categoryColor = (slug: string): string =>
   getCategoryConfig(slug)?.color ?? '#475569';
 const categoryLabel = (slug: string): string => {
   const cat = placeConfig.categories.find((c) => c.slug === slug);
-  return cat ? `${cat.icon} ${cat.title}` : slug;
+  return cat ? `${cat.icon} ${localizedCategoryText(slug, lang).title}` : slug;
 };
 // slug → knowledge/ folder name. Sync projects knowledge/{Title}/ →
 // src/content/en/{slug}/, so Hub-wikilink resolution walks knowledge/ keyed by

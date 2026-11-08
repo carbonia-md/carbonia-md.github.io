@@ -32,6 +32,9 @@ from __future__ import annotations
 import re
 from typing import Any, Iterator
 
+from functools import lru_cache
+
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -41,19 +44,22 @@ DEFAULT_SEVERITY = Severity.WARN
 EDITORIAL_REF = "docs/playbook/ARTICLE-PLAYBOOK.md §4.3 Subheadings: No Date-Led Timeline Headers"
 
 
-_MONTHS = (
-    r"January|February|March|April|May|June|July|August|September|"
-    r"October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec"
-)
+# Month names are per-language (lib/article_health/vocab.py, keyed by target.lang).
 
 # ── HARD: chronicle subheading patterns ──────────────────────────────────────
 
 # Month Year — most common AI failure mode (event date lead)
 # e.g. ## May 2016: the fire started
-_RE_MONTH_YEAR = re.compile(rf"^##\s+(?:{_MONTHS})\s+\d{{4}}", re.IGNORECASE)
+@lru_cache(maxsize=None)
+def _re_month_year(lang: str) -> re.Pattern[str]:
+    return re.compile(rf"^##\s+(?:{vocab.months_alternation(lang)})\s+\d{{4}}", re.IGNORECASE)
+
 
 # Year Month (reversed order) — e.g. ## 2016 May
-_RE_YEAR_MONTH = re.compile(rf"^##\s+\d{{4}}\s+(?:{_MONTHS})", re.IGNORECASE)
+@lru_cache(maxsize=None)
+def _re_year_month(lang: str) -> re.Pattern[str]:
+    return re.compile(rf"^##\s+\d{{4}}\s+(?:{vocab.months_alternation(lang)})", re.IGNORECASE)
+
 
 # YYYY: Title / YYYY "Event" — year-prefixed event lead
 # e.g. ## 2018: the award nomination
@@ -82,13 +88,13 @@ def _is_legitimate_chronicle(line: str) -> bool:
     )
 
 
-def _detect_chronicle_violation(line: str) -> str | None:
+def _detect_chronicle_violation(line: str, lang: str = vocab.DEFAULT_LANG) -> str | None:
     """Return violation pattern name if line is a chronicle subheading, else None."""
     if _is_legitimate_chronicle(line):
         return None
-    if _RE_MONTH_YEAR.match(line):
+    if _re_month_year(lang).match(line):
         return "month-year"
-    if _RE_YEAR_MONTH.match(line):
+    if _re_year_month(lang).match(line):
         return "year-month"
     if _RE_YEAR_EVENT.match(line):
         return "year-event"
@@ -110,7 +116,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
         stripped = line.rstrip()
         if not stripped.startswith("## "):
             continue
-        kind = _detect_chronicle_violation(stripped)
+        kind = _detect_chronicle_violation(stripped, target.lang)
         if not kind:
             continue
         yield Violation(

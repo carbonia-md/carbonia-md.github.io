@@ -1,7 +1,10 @@
 /**
  * build-related-tagoverlap.mjs — deterministic related-articles via tag overlap
- * plus a wiki-link bonus. Emits src/data/related/en.json as { "cat/slug": ["cat/slug", ...] },
- * consumed by the article route → ArticleSidebar "Related" list.
+ * plus a wiki-link bonus. Emits src/data/related/{lang}.json per enabled language as
+ * { "cat/slug": ["cat/slug", ...] }, consumed by the article route → ArticleSidebar
+ * "Related" list. Related articles never cross languages: each language is scored
+ * against its own articles only (default language at knowledge/{Category}/, others
+ * at knowledge/{lang}/{Category}/).
  *
  * Categories flow from place.config.ts (genericity gate).
  */
@@ -16,16 +19,23 @@ const CATEGORIES = placeConfig.categories.map((c) => ({
   slug: c.slug,
   title: c.title,
 }));
+const LANGS = placeConfig.place.languages?.length
+  ? placeConfig.place.languages
+  : ['en'];
+const DEFAULT_LANG = LANGS[0];
 const TOP_K = 8;
 const WIKI_LINK_BONUS = 2;
 
 const args = process.argv.slice(2);
 const outDir = resolve(ROOT, args[args.indexOf('--out') + 1] || 'src/data/related');
 
-async function scanArticles() {
+async function scanArticles(lang) {
   const docs = [];
   for (const { slug, title } of CATEGORIES) {
-    const dir = resolve(ROOT, 'knowledge', title);
+    const dir =
+      lang === DEFAULT_LANG
+        ? resolve(ROOT, 'knowledge', title)
+        : resolve(ROOT, 'knowledge', lang, title);
     let files;
     try {
       files = (await readdir(dir)).filter(
@@ -61,18 +71,19 @@ function score(a, b) {
   return s;
 }
 
-const docs = await scanArticles();
-const related = {};
-for (const doc of docs) {
-  related[doc.slug] = docs
-    .filter((d) => d.slug !== doc.slug)
-    .map((d) => ({ slug: d.slug, s: score(doc, d) }))
-    .filter((d) => d.s > 0)
-    .sort((a, b) => b.s - a.s)
-    .slice(0, TOP_K)
-    .map((d) => d.slug);
-}
-
 await mkdir(outDir, { recursive: true });
-await writeFile(join(outDir, 'en.json'), JSON.stringify(related, null, 2));
-console.log(`✅ tag-overlap: ${Object.keys(related).length} articles → ${outDir}/en.json`);
+for (const lang of LANGS) {
+  const docs = await scanArticles(lang);
+  const related = {};
+  for (const doc of docs) {
+    related[doc.slug] = docs
+      .filter((d) => d.slug !== doc.slug)
+      .map((d) => ({ slug: d.slug, s: score(doc, d) }))
+      .filter((d) => d.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, TOP_K)
+      .map((d) => d.slug);
+  }
+  await writeFile(join(outDir, `${lang}.json`), JSON.stringify(related, null, 2));
+  console.log(`✅ tag-overlap: ${Object.keys(related).length} ${lang} articles → ${outDir}/${lang}.json`);
+}

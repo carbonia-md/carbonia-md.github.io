@@ -38,8 +38,8 @@ const lang = getLangFromUrl(Astro.url);
 const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 
-const allConfigs = getCategoryConfigs();
-const categoryInfo = getCategoryConfig(category) ?? {
+const allConfigs = getCategoryConfigs(lang);
+const categoryInfo = getCategoryConfig(category, lang) ?? {
   name: category,
   description: '',
   icon: '',

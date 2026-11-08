@@ -13,6 +13,7 @@ import placeConfig from '../../place.config';
 
 import type { Lang } from '../config/languages';
 import { getLangFromUrl, getAlternates, stripLangPrefix } from '../i18n/utils';
+import { localizedTagline } from '../lib/place-i18n';
 
 interface Props {
   title: string;
@@ -46,14 +47,15 @@ interface Props {
   readerSettings?: boolean;
 }
 
-const { name, domain, tagline } = placeConfig.place;
+const { name, domain } = placeConfig.place;
 const { links } = placeConfig;
 const domainDot = `.${domain.split('.').pop()}`;
 const siteName = `${name}${domainDot}`;
 
 const {
   title,
-  description = tagline,
+  lang = getLangFromUrl(Astro.url),
+  description = localizedTagline(lang),
   image,
   type,
   datePublished,
@@ -65,7 +67,6 @@ const {
   categorySlug: propCategorySlug,
   noindex,
   readerSettings = true,
-  lang = getLangFromUrl(Astro.url),
   availableLangs,
 } = Astro.props;
 

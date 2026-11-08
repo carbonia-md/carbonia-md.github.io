@@ -9,6 +9,7 @@
  * No place literals.
  */
 import { useTranslations, getLangFromUrl, useTranslatedPath } from '../i18n/utils';
+import { localizedTagline, localizedCategoryText } from '../lib/place-i18n';
 import { resolveChat } from '../lib/chat';
 import placeConfig from '../../place.config';
 
@@ -19,7 +20,8 @@ const localPath = useTranslatedPath(lang);
 // Both halves, like the Header: see src/lib/chat.ts.
 const chat = resolveChat(placeConfig);
 
-const { name, tagline, domain, brandSuffix } = placeConfig.place;
+const { name, domain, brandSuffix } = placeConfig.place;
+const tagline = localizedTagline(lang);
 const { categories, features, links } = placeConfig;
 const suffix = brandSuffix ?? `.${domain.split('.').pop()}`;
 const year = new Date().getFullYear();
@@ -107,7 +109,7 @@ const colLinkClass =
         {
           categories.map((category) => (
             <a href={localPath(`/${category.slug}`)}>
-              {category.icon} {category.title}
+              {category.icon} {localizedCategoryText(category.slug, lang).title}
             </a>
           ))
         }

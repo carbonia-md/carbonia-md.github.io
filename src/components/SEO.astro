@@ -11,6 +11,7 @@
  */
 import { ENABLED_LANGUAGE_CODES, DEFAULT_LANGUAGE, getLanguage } from '../config/languages';
 import type { Lang } from '../config/languages';
+import { localizedTagline, localizedCategoryText } from '../lib/place-i18n';
 import placeConfig from '../../place.config';
 import { resolveOgImage } from '../utils/og-image';
 
@@ -33,7 +34,7 @@ interface Props {
 }
 
 
-const { name, tagline, domain } = placeConfig.place;
+const { name, domain } = placeConfig.place;
 const { categories, links, seo, features, workers } = placeConfig;
 const domainDot = `.${domain.split('.').pop()}`;
 const siteName = `${name}${domainDot}`;
@@ -43,7 +44,7 @@ const {
   lang = 'en',
   alternates = [],
   title,
-  description = tagline,
+  description = localizedTagline(lang),
   url = Astro.url.href,
   type = 'website',
   datePublished,
@@ -52,6 +53,7 @@ const {
   tags,
   category,
 } = Astro.props;
+const tagline = localizedTagline(lang);
 
 const image = resolveOgImage({
   featureOg: features?.og,
@@ -154,7 +156,7 @@ const organizationLD = {
   logo: new URL(seo.defaultOgImage, siteUrl).href,
   description: tagline,
   inLanguage: ENABLED_LANGUAGE_CODES,
-  knowsAbout: categories.map((c) => `${name} ${c.title}`),
+  knowsAbout: categories.map((c) => `${name} ${localizedCategoryText(c.slug, lang).title}`),
   sameAs,
   contactPoint: {
     '@type': 'ContactPoint',
@@ -210,7 +212,7 @@ const homepageCollectionLD = isHomepage
             '@type': 'CollectionPage',
             '@id': `${siteUrl}/${c.slug}`,
             url: `${siteUrl}/${c.slug}`,
-            name: c.title,
+            name: localizedCategoryText(c.slug, lang).title,
           },
         })),
       },
@@ -219,7 +221,7 @@ const homepageCollectionLD = isHomepage
 
 const dynamicKeywords = [
   name,
-  ...categories.map((c) => `${name} ${c.title}`),
+  ...categories.map((c) => `${name} ${localizedCategoryText(c.slug, lang).title}`),
   ...(category ? [`${name} ${category}`] : []),
   ...(tags && tags.length > 0 ? tags : []),
 ].join(', ');

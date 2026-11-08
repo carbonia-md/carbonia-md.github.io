@@ -10,16 +10,16 @@
 
 ## Status
 
-| Milestone | Status | Notes |
-|---|---|---|
-| M1 — config schema, language registry, routing skeleton | ✅ done | see notes below |
-| M2 — pilot article end-to-end | ✅ done (different pilot article) | see notes below |
-| M3 — UI chrome translation | ✅ done (2026-10-25) | home-page copy left to M4 (it lives in `place.config.ts`) |
-| M4 — home-page copy + place.config.ts schema | ☐ not started | |
-| M5 — derived-data script fixes | 🔶 1/7 scripts fixed | `test-frontmatter.mjs` done (via M2); rest open |
-| M6 — article-health locale-awareness | 🔶 loader bug fixed | `_derive_meta_from_path`/`FileTarget.lang` done (via M2); it-vocab checks still open |
-| M7 — skills updates | 🔶 mostly done, out of order | done ahead of M2-M6 at user's request — see notes |
-| M8 — remaining articles + full-site verification | ✅ all 7 translated + human-reviewed (2026-10-25) | see notes below |
+| Milestone                                               | Status                                           | Notes                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| M1 — config schema, language registry, routing skeleton | ✅ done                                           | see notes below                                                                      |
+| M2 — pilot article end-to-end                           | ✅ done (different pilot article)                 | see notes below                                                                      |
+| M3 — UI chrome translation                              | ✅ done (2026-10-25)                              | home-page copy left to M4 (it lives in `place.config.ts`)                            |
+| M4 — home-page copy + translations overlay | ✅ done (2026-11-08) | overlay file `place.translations.ts` instead of D2's Record maps |
+| M5 — derived-data script fixes | ✅ done (2026-11-08) | all 7 scripts language-aware |
+| M6 — article-health locale-awareness | ✅ done (2026-11-08) | vocab tables + word-count normalization |
+| M7 — skills updates                                     | 🔶 mostly done, out of order                     | done ahead of M2-M6 at user's request — see notes                                    |
+| M8 — remaining articles + full-site verification        | ✅ all 7 translated + human-reviewed (2026-10-25) | see notes below                                                                      |
 
 ## Design Decisions Log
 
@@ -275,54 +275,114 @@ markers' titles/descriptions, the explore page's "Surprise me" random pick
 explore page's latest strip is already per-language (`getCollection(lang)`). **Home page copy** lives
 in `place.config.ts` -> M4.
 
-### M4 — Home-page copy + place.config.ts schema
+### M4 — Home-page copy + place.config.ts schema ✅ (2026-11-08)
 **Goal:** home page + category copy renders translated on `/it`.
 
-- [ ] `place.config.ts` — real Italian copy (replaces M1 placeholders)
-- [ ] consumers switched to `resolveLocale()`
-- [ ] re-confirm D2 hard rule held everywhere
+**Deviation from D2 (decided with the user at M4 start):** no
+`Record<Lang,string>` conversion. Instead an **overlay file**,
+`place.translations.ts` at the repo root, holds per-language partial overrides
+(tagline, category title/description, all `home.*` text); `place.config.ts` is
+unchanged apart from a comment. *Why a separate file and not a `translations`
+key inside `place.config.ts`:* `npm run place-config:check` parses a flat
+`PlaceConfig` declaration that `npm run init` re-emits for every adopter, and it
+cannot model a language-keyed map — putting it inside would have meant patching
+the framework's parser and wizard. *Consequence:* D2's hard rule (folder names
+never localize) holds by construction — `categories[].title` is untouched, so
+`sync.sh`, `build-kb-index`, `built-routes.ts` etc. needed no change. Structural
+fields (slugs, hrefs, icons, tones) are never translated; arrays merge
+index-wise, so the overlay only carries text.
 
-Verification: `npm run sync` still finds all 7 en articles; `/it/` shows
-Italian home copy.
+- [x] `place.translations.ts` — real Italian copy for tagline, 5 categories, and
+      every `home.*` block
+- [x] `src/lib/place-i18n.ts` — `localizedHome` / `localizedTagline` /
+      `localizedCategoryText`, with fallback to the base value
+- [x] consumers switched: 8 home components + `home.template`, `categoryConfig`
+      (now `getCategoryConfig(s)(…, lang)`) and its callers (article, category
+      hub, map, explore, latest), Header, Footer, CategoryGrid, graph labels,
+      Layout + SEO (tagline, JSON-LD category names)
+- [x] D2 hard rule re-confirmed (folder-path consumers still read base `title`)
+- Bonus fixes found on the way: home door links and exhibition pills pointed at
+  English URLs on `/it/`; `ReaderDoors` aria-label was hardcoded English
+  (`home.doors.aria` added to `ui.ts`).
 
-### M5 — Derived-data script fixes (all of them) 🔶
-- [x] `test-frontmatter.mjs` — fixed early, during M2 (see M2 notes for the
-      exact bug and fix — reads `place.config.ts`'s `languages` and recurses
-      one level into any non-default-language top-level dir)
-- [ ] `build-kb-index.mjs`
-- [ ] `build-related-tagoverlap.mjs` (full fix, replaces M2 stub)
-- [ ] `build-map-markers.mjs`
-- [ ] `check-graph.mjs`
-- [ ] `generate-changelog-data.mjs`
-- [ ] `build-dashboard-lite.mjs`
+Deliberately unchanged: `SystemDiagram` (maintainer page, English).
 
-Verification: each script surfaces the `it` pilot article like an `en` one.
+Verification: `npm run build` (49 pages) + postbuild green; `/it/` renders the
+Italian copy with no English home strings, `/` is unchanged; `npm run test`,
+`genericity`, `place-config:check`, i18n parity (281 keys) pass.
 
-### M6 — article-health locale-awareness 🔶
-- [x] `loader.py::_derive_meta_from_path` fix + `FileTarget.lang` — fixed
-      early, during M2 (see M2 notes for the exact bug and fix). Added
-      `place_languages()`/`non_default_language_codes()` to
-      `article_health/place.py` as the reusable primitive.
-- [ ] `article-health.py::_get_all_source()` fix (the `--all`/dashboard
-      one-level-deep bug — same shape as the now-fixed `test-frontmatter.mjs`
-      bug, but not yet ported to this file)
-- [ ] `prose_health.py`, `chronicle_lead.py`, `format_structure.py` — it vocab
-      (confirmed live during M2: `format-structure` WARNs on the Italian
-      article's `**In breve:**`/`## Per Saperne di Più`/`## Riferimenti`/
-      `## Fonti delle Immagini` headings since it only recognizes their
-      English forms — WARN only, doesn't block ship, but real)
-- [ ] `word_count.py`/`paragraph_rhythm.py` threshold audit
-- [ ] `test_loader.py` — it coverage (the fix landed without a dedicated
-      regression test yet — worth adding before this drifts)
+### M5 — Derived-data script fixes (all of them) ✅ (2026-11-08)
+All scripts now follow `build-search-index.mjs`'s convention: default language
+at `knowledge/{Category}/`, other languages at `knowledge/{lang}/{Category}/`,
+language list from `place.config.ts`.
+- [x] `test-frontmatter.mjs` — fixed early, during M2
+- [x] `build-kb-index.mjs` — `topics.json` is now combined, each entry has a
+      `lang` field and `/it/...` URLs; raw markdown at `kb/articles/it/...`;
+      `llms.txt` gets a `## Language: it` section. The two `topics.json`
+      consumers (`RandomDiscovery.astro`, `explore.template.astro` "Surprise
+      me") filter by `<html lang>`.
+- [x] `build-related-tagoverlap.mjs` — one `{lang}.json` per language, scored
+      within-language only (replaces the M2 stub)
+- [x] `build-map-markers.mjs` — `map-markers.geojson` (default) +
+      `map-markers.{lang}.geojson`; `map.template.astro` picks by lang with
+      fallback; `check-map-markers.mjs` validates every file
+- [x] `check-graph.mjs` — checks each language's `/graph` page against its own
+      `src/content/{lang}`
+- [x] `generate-changelog-data.mjs` — article links for `knowledge/{lang}/...`
+      commits get `/{lang}/...` URLs
+- [x] `build-dashboard-lite.mjs` — scans language roots, tags `lang`. **Still
+      sees only 7 articles** until M6's `_get_all_source()` fix, because its
+      input `article-health.json` omits `it/`.
 
-Verification: pytest suite passes (322/322, confirmed after the loader
-fix). `--all --profile=dashboard` does **not** yet report the Italian
-article — confirmed by running it: only `knowledge/History/founding-and-
-unraveling-of-carbonia.md` (the English file) appears, the `it/` counterpart
-is invisible, exactly as `_get_all_source()`'s still-open bug predicts. The
-single-file run (`article-health.py knowledge/it/History/...md
---profile=ci-deploy`, done in M2) is unaffected since it bypasses
-`_get_all_source()` entirely.
+Gotcha: `import.meta.glob(..., {query: '?raw'})` in `map.template.astro`
+frontmatter broke the build ("Unexpected "ternal""); read with `fs` instead.
+
+Verification: `npm run build` (49 pages) + postbuild green; map-markers 4+4,
+graph 21 nodes per language; `npm run test`, `npm run genericity` pass.
+
+### M6 — article-health locale-awareness ✅ (2026-11-08)
+Per D4: checks pick a vocab table by `FileTarget.lang`, falling back to `en`.
+All tables live in one new module, `scripts/tools/lib/article_health/vocab.py`.
+- [x] `loader.py::_derive_meta_from_path` + `FileTarget.lang` (early, via M2);
+      `is_article_path` now also requires depth for a language root
+      (`knowledge/it/INBOX.md` is a queue, not an article)
+- [x] `article-health.py::_get_all_source()` recurses into language roots, so
+      `--all` / the dashboard / immune score now cover `it/`; JSON report gains
+      a `lang` field (`build-dashboard-lite.mjs` already reads it)
+- [x] heading vocab (`format_structure`, `image_alt`, `image_health`):
+      `In breve` / `Per Saperne di Più` / `Riferimenti` / `Fonti delle Immagini`;
+      violation messages name the language's own heading
+- [x] `chronicle_lead` — Italian month names (`## Maggio 2016: ...`)
+- [x] word counting — **real bug found:** the ASCII-only word regex split
+      `città` into `citt`, undercounting Italian in `word_count`,
+      `paragraph_rhythm`, `media_richness`, `image_health`. Now one shared
+      `vocab.WORD_RE` (English counts unchanged except one article, 433 -> 432
+      words, from accented names now staying whole)
+- [x] threshold audit — measured Italian at **1.095x** the English word count
+      (range 1.08-1.14 over the 7 pairs). Length thresholds compare
+      `vocab.normalize_words()` (count / `WORD_EXPANSION[lang]`, `it` = 1.1), so a
+      faithful translation can't cross a limit its source didn't. Without it the
+      Italian History article tripped `paragraph-rhythm`'s 1200-word media-band
+      gate and got two WARNs the English one doesn't. Messages report the
+      normalized (English-equivalent) count.
+- [x] tests: `tests/article_health/test_i18n_vocab.py` (+20; loader regression,
+      each vocab behaviour, normalization, `--all` discovery). Suite 342 passed.
+
+Not changed on purpose: `prose_health` patterns (English phrase lists; they
+simply never match Italian prose — no false positives, but also no Italian AI-tell
+detection) and the editorial-ref wording.
+
+Verification: Italian per-article WARNs now match the English sources' (media
+count, no footnotes, Further Reading absent in the same two articles); English
+output unchanged apart from the one word-count above. `npm run build` green;
+dashboard-lite now rolls up **14 articles** (7 en + 7 it), immune score 82
+(was 67 over 7 articles — most of the jump is the 7 English articles now being
+`lastHumanReview: true`, not the Italian pass).
+
+**For the Wilson discussion:** iron rule 2 says "zero ... multi-language code
+paths in any code tree". `vocab.py` is exactly that (an `it` row in a framework
+tree); the CJK gate passes because it only scans for CJK codepoints. Keep in mind
+before upstreaming.
 
 ### M7 — Skills updates 🔶
 **Landed out of sequence, at user's request, before M2-M6 — and since then,
@@ -448,8 +508,8 @@ translated but targets/slugs unchanged (still subject to the M2-documented
 `remark-wikilinks.mjs` cross-language gap).
 
 - [x] 6 remaining articles translated (drafted)
-- [ ] human review of the 6 new translations (still open — same
-      `lastHumanReview: false` state as M2's pilot)
+- [x] human review of the 6 new translations (done by the user; all 7 Italian
+      articles now `lastHumanReview: true`)
 - [ ] `capture-baseline.mjs` loops all enabled langs (untouched this pass)
 - [x] full `npm run build` + post-build checks green (see verification below)
 
@@ -472,16 +532,32 @@ new articles' `geo:` fields are reflected on `/map` yet; graph: 21 nodes/20
 edges; dashboard check passed), `uv run pytest tests/article_health`
 (322/322, unchanged — no article_health code touched this pass).
 
-**Not done in this pass, still open:** human review of all 7 Italian
-articles (pilot + 6 new — `lastHumanReview: false` everywhere); the rest of
-M5's script list (`build-kb-index.mjs`, `build-related-tagoverlap.mjs` full
-fix, `check-graph.mjs`, `generate-changelog-data.mjs`,
-`build-dashboard-lite.mjs`, plus now-confirmed-still-open
-`build-map-markers.mjs`); M6's remaining items (`_get_all_source()`,
-it-vocab tables, `word_count`/`paragraph_rhythm` threshold audit,
-`test_loader.py` coverage); M3/M4 (UI chrome, home-page copy) — so `/it/`
-routes for all 7 articles render with correct Italian article content but
-still-English chrome, nav, and home page.
+*(Historical note: the "not done in this pass" list that stood here was
+resolved by the human review, M3, M4, M5 and M6 — see those sections.)*
+
+## Where things stand (2026-11-08)
+
+M1-M6 and M8 done; M7 done except `sekai-seed-articles` translate-awareness
+(deferred). All 14 articles (7 en + 7 it) are `lastHumanReview: true` — the
+English flags were set by the user on 2026-11-08. `/it/` renders translated
+chrome, home page, categories, articles, map, graph, search, topics/llms.txt.
+Verified locally: build (49 pages) + postbuild, `npm run test`, `genericity`,
+`place-config:check`, pytest (342). **Nothing from the 2026-11-08 session is
+committed yet** (M4/M5/M6 work, English review flags).
+
+**Still open:**
+- Cross-language wikilinks — `plugins/remark-wikilinks.mjs` resolves every
+  `[[link]]` to the English URL, so Italian readers land on English pages.
+  The one remaining *functional* gap.
+- `capture-baseline.mjs` loops only the default language.
+- Manual browser pass over `/it/` (long Italian strings vs layout) — only
+  build output and link checks have been verified.
+- Housekeeping: commit in separate commits (M5, M4, M6, review flags).
+- Upstream discussion with Wilson, before touching sekai-kb: M5 script
+  changes + `topics.json` shape (now has `lang`), the `place.translations.ts`
+  overlay (deviates from D2), `vocab.py` (an `it` table in a framework tree vs
+  iron rule 2), and the `src/` edits (map/explore/home components).
+- `ARTICLE-PLAYBOOK.md` §9 / `AGENTS.md` "Language support boundary" wording.
 
 ## Deferred / Non-goals
 

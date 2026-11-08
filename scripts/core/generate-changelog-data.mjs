@@ -28,19 +28,27 @@ function parseCommitMessage(message) {
 }
 
 // Map changed files to canonical source articles.
+const LANGS = placeConfig.place.languages?.length
+  ? placeConfig.place.languages
+  : ['en'];
+const NON_DEFAULT_LANGS = new Set(LANGS.slice(1));
+
 // knowledge/{Cap-Category}/{slug}.md -> /{category-lower}/{slug}
-const ARTICLE_RE = /^knowledge\/([A-Z][A-Za-z-]*)\/([^/]+)\.md$/;
+// knowledge/{lang}/{Cap-Category}/{slug}.md -> /{lang}/{category-lower}/{slug}
+const ARTICLE_RE = /^knowledge\/(?:([a-z]{2,3})\/)?([A-Z][A-Za-z-]*)\/([^/]+)\.md$/;
 function filesToArticles(files) {
   const seen = new Set();
   const out = [];
   for (const file of files) {
     const m = ARTICLE_RE.exec(file);
     if (!m) continue;
+    const [, lang, category, name] = m;
+    if (lang && !NON_DEFAULT_LANGS.has(lang)) continue;
     if (!fs.existsSync(path.join(PROJECT_ROOT, file))) continue;
-    const url = `/${m[1].toLowerCase()}/${m[2]}`;
+    const url = `${lang ? `/${lang}` : ''}/${category.toLowerCase()}/${name}`;
     if (seen.has(url)) continue;
     seen.add(url);
-    out.push({ url, name: m[2] });
+    out.push({ url, name });
     if (out.length >= 4) break;
   }
   return out;

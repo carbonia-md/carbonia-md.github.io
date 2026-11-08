@@ -17,7 +17,7 @@ import placeConfig from '../../place.config';
 import { getLangFromUrl, useTranslatedPath, useTranslations, dateLocale } from '../i18n/utils';
 
 const { features } = placeConfig;
-const cats = getCategoryConfigs();
+const cats = getCategoryConfigs(getLangFromUrl(Astro.url));
 const validSlugs = new Set(placeConfig.categories.map((c) => c.slug));
 
 const lang = getLangFromUrl(Astro.url);
@@ -242,6 +242,11 @@ const dayShort = (d: Date) =>
           var res = await fetch('/kb/topics.json');
           if (!res.ok) throw new Error('topics fetch failed');
           var topics = await res.json();
+          // topics.json carries every language; pick from the reader's own.
+          var pageLang = document.documentElement.lang || '';
+          topics = topics.filter(function (a) {
+            return !a.lang || !pageLang || a.lang === pageLang;
+          });
           if (!topics.length) throw new Error('empty');
           var pick = topics[Math.floor(Math.random() * topics.length)];
           window.location.href = pick.url;

@@ -4,6 +4,7 @@ import type { Commit } from '../../lib/commits';
 import placeConfig from '../../../place.config';
 
 import { getLangFromUrl, useTranslatedPath } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
 
 // Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
 const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
@@ -12,7 +13,7 @@ interface Props {
 }
 
 const { commits } = Astro.props;
-const { recentUpdates } = placeConfig.home;
+const { recentUpdates } = localizedHome(getLangFromUrl(Astro.url));
 const repoUrl = placeConfig.links.repo;
 ---
 

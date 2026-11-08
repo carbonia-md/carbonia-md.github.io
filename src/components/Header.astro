@@ -2,6 +2,7 @@
 import BrandMark from './BrandMark.astro';
 import { useTranslations, getLangFromUrl, useTranslatedPath, stripLangPrefix } from '../i18n/utils';
 import { LANGUAGE_DISPLAY_NAMES } from '../config/languages';
+import { localizedCategoryText } from '../lib/place-i18n';
 import type { Lang } from '../config/languages';
 import { resolveChat } from '../lib/chat';
 import placeConfig from '../../place.config';
@@ -47,7 +48,7 @@ const navConfig = [
 // Category links for the Explore dropdown + mobile menu, from config.
 const categoryList = placeConfig.categories.map((c) => ({
   path: navHref(`/${c.slug}`),
-  label: c.title,
+  label: localizedCategoryText(c.slug, lang).title,
   emoji: c.icon,
 }));
 ---

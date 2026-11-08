@@ -62,10 +62,10 @@ const t = useTranslations(lang);
 // Translations live under knowledge/{lang}/; the default language at knowledge/'s root.
 const knowledgeRoot = lang === DEFAULT_LANGUAGE.code ? 'knowledge' : `knowledge/${lang}`;
 
-const categoryInfo = getCategoryConfig(category);
+const categoryInfo = getCategoryConfig(category, lang);
 if (!categoryInfo) throw new Error(`Unknown category: ${category}`);
 
-const allConfigs = getCategoryConfigs();
+const allConfigs = getCategoryConfigs(lang);
 
 const estimatedReadingTime = readingTime ?? 5;
 

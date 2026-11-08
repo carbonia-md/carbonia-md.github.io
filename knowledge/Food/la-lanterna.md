@@ -8,7 +8,7 @@ subcategory: 'Restaurants'
 author: 'Carbonia'
 featured: false
 lastVerified: 2026-10-25
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Fregola_sarda_de_Chef_koketo.jpg'
 imageAlt: 'A plate of fregola sarda, the Sardinian pasta central to La Lanterna''s menu (illustrative photo, not taken at the restaurant).'
 imageCredit: 'Jorgehdezalonso, via Wikimedia Commons'
