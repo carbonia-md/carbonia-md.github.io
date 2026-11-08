@@ -13,6 +13,10 @@ export interface FeedItem {
  * Feed items for the RSS/Atom endpoints, newest-first. Sourced from the `en`
  * content collection (the sync.sh projection of knowledge/); category set flows
  * from place.config.ts. Shared by rss.xml.ts + feed.xml.ts.
+ *
+ * Deliberately `en`-only even with multiple languages enabled — per-language
+ * feeds are an explicit non-goal of the multi-language experiment (D6 in
+ * /PROGRESS.md), not an oversight.
  */
 export async function getFeedItems(limit = 50): Promise<FeedItem[]> {
   const validSlugs = new Set(placeConfig.categories.map((c) => c.slug));

@@ -8,7 +8,7 @@ subcategory: 'City Center'
 author: 'Carbonia'
 featured: true
 lastVerified: 2026-08-18
-lastHumanReview: false
+lastHumanReview: true
 image: '/article-images/landmarks/piazza-roma-frammento-di-vuoto.jpg'
 imageAlt: 'Gio Pomodoro''s marble sculpture Frammento di Vuoto I in Piazza Roma, with the Torre Littoria in the background.'
 imageCredit: 'Andrea Serra, LUDiCa/Monumenta project, Universita di Cagliari'
@@ -56,4 +56,4 @@ Piazza Roma sits at the center of Carbonia, alongside the Torre Littoria and the
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|The Founding and Unraveling of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Founding, Decline, and Resilience of Carbonia]]

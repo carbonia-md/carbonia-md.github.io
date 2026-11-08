@@ -99,7 +99,7 @@ if (!domain) {
 
 let knownRoutes;
 try {
-  const routes = builtRoutes(place, knowledgeCollectionIds(place, root), join(root, 'src/pages'));
+  const routes = builtRoutes(place, knowledgeCollectionIds(place, root), join(root, 'src/pages/[...lang]'));
   if (routes.length > 0) knownRoutes = routes;
 } catch (error) {
   console.warn(

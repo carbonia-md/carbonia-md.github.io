@@ -1,7 +1,11 @@
 ---
-import placeConfig from '../../../place.config';
 
-const { coverStory } = placeConfig.home;
+import { getLangFromUrl, useTranslatedPath } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
+const { coverStory } = localizedHome(getLangFromUrl(Astro.url));
 
 type Variant = {
   dot: string;
@@ -86,7 +90,7 @@ const quotes = coverStory.quotes.map((q, i) => ({
     >
       {coverStory.closing.map((line) => <p>{line}</p>)}
       <a
-        href="/about"
+        href={localPath('/about')}
         class="mt-2 inline-block font-medium text-[#3b82f6] no-underline hover:underline"
         >{coverStory.aboutLinkText}</a
       >

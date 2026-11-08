@@ -7,6 +7,8 @@
  */
 import Layout from '../layouts/Layout.astro';
 import placeConfig from '../../place.config';
+import { DEFAULT_LANGUAGE } from '../config/languages';
+import type { Lang } from '../config/languages';
 
 const { domain, name } = placeConfig.place;
 const { repo } = placeConfig.links;
@@ -16,7 +18,12 @@ const categories = placeConfig.categories;
 const issueUrl = `${repo}/issues/new`;
 ---
 
-<Layout title="Page Not Found" noindex={true}>
+<Layout
+  title="Page Not Found"
+  noindex={true}
+  lang={DEFAULT_LANGUAGE.code as Lang}
+  availableLangs={[DEFAULT_LANGUAGE.code as Lang]}
+>
   <main
     class="error-page flex min-h-[80vh] items-center justify-center px-[var(--space-page-x)] py-8"
   >

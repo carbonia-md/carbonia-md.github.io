@@ -1,4 +1,8 @@
 ---
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const t = useTranslations(getLangFromUrl(Astro.url));
+
 interface Heading {
   depth: number;
   slug: string;
@@ -19,11 +23,11 @@ const tocHeadings = headings.filter((h) => h.depth === 2 || h.depth === 3);
   tocHeadings.length > 1 && (
     <nav
       class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto py-6 [scrollbar-color:rgba(26,60,52,0.15)_transparent] [scrollbar-width:thin]"
-      aria-label="Table of contents"
+      aria-label={t('article.toc.aria')}
       id="toc"
     >
       <p class="mb-5 px-1 font-['Inter',system-ui,sans-serif] text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[#9aa89e]">
-        Contents
+        {t('article.toc.title')}
       </p>
       <ol class="m-0 flex list-none flex-col gap-[0.1rem] p-0">
         {tocHeadings.map((h, i) => (

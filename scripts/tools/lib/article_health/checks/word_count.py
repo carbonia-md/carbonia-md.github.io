@@ -23,6 +23,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterator
 
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -44,10 +45,10 @@ _RE_FOOTNOTE_REF = re.compile(r"\[\^[^\]]+\]")
 # Footnote definition lines [^N]: ... (whole line)
 _RE_FOOTNOTE_DEF_LINE = re.compile(r"^\[\^[^\]]+\]:.*$", re.MULTILINE)
 _RE_HTML_TAG = re.compile(r"<[^>]+>")
-_RE_WORD = re.compile(r"[A-Za-z0-9'-]+")
+_RE_WORD = vocab.WORD_RE
 
 
-def _count_words_in_body(body: str) -> int:
+def _count_words_in_body(body: str, lang: str = vocab.DEFAULT_LANG) -> int:
     """Count words in body, scrubbing structural / metadata regions."""
     text = body
     text = _RE_CODE_BLOCK.sub("", text)
@@ -56,7 +57,7 @@ def _count_words_in_body(body: str) -> int:
     text = _RE_FOOTNOTE_DEF_LINE.sub("", text)
     text = _RE_FOOTNOTE_REF.sub("", text)
     text = _RE_HTML_TAG.sub("", text)
-    return len(_RE_WORD.findall(text))
+    return vocab.normalize_words(lang, len(_RE_WORD.findall(text)))
 
 
 def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
@@ -80,7 +81,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
     if not body:
         return
 
-    words = _count_words_in_body(body)
+    words = _count_words_in_body(body, target.lang)
 
     # ── INFO stats line (always emit, regardless of pass/fail) ──────────────
     pct = (words / min_words) * 100 if min_words > 0 else 0

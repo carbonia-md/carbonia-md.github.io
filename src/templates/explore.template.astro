@@ -14,12 +14,17 @@ import CategoryGrid from '../components/CategoryGrid.astro';
 import { getCollection } from 'astro:content';
 import { getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
+import { getLangFromUrl, useTranslatedPath, useTranslations, dateLocale } from '../i18n/utils';
 
 const { features } = placeConfig;
-const cats = getCategoryConfigs();
+const cats = getCategoryConfigs(getLangFromUrl(Astro.url));
 const validSlugs = new Set(placeConfig.categories.map((c) => c.slug));
 
-const entries = await getCollection('en');
+const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
+const entries = await getCollection(lang);
 const articles = entries
   .map((entry) => {
     const parts = entry.id.split('/');
@@ -43,20 +48,20 @@ const latest = [...articles]
   .slice(0, 8);
 
 const dayShort = (d: Date) =>
-  d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  d.toLocaleDateString(dateLocale(lang), { month: 'short', day: 'numeric' });
 ---
 
 <Layout
-  title="Explore"
-  description={`Search across all articles and browse every topic on ${placeConfig.place.name}.`}
+  title={t('explore.meta.title')}
+  description={t('explore.meta.description').replace('{name}', placeConfig.place.name)}
 >
   <section class="mx-auto max-w-[var(--container-wide)] px-6 pt-12 pb-4 text-center max-[768px]:px-4 max-[768px]:pt-10">
     <h1 class="text-[clamp(2rem,5vw,3rem)] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)]">
-      Explore
+      {t('explore.meta.title')}
     </h1>
     <p class="mx-auto mt-3 max-w-[600px] text-[1.05rem] leading-[1.6] text-[color:var(--color-ink-soft)] max-[480px]:text-[0.95rem]">
-      Full-text search across every article, or browse by topic.
-      <span class="whitespace-nowrap"><strong>{totalArticles}</strong> articles.</span>
+      {t('explore.intro')}
+      <span class="whitespace-nowrap"><strong>{totalArticles}</strong>{t('explore.articleCount').replace('{n}', '')}</span>
     </p>
   </section>
 
@@ -67,7 +72,7 @@ const dayShort = (d: Date) =>
         type="button"
         id="explore-search-trigger"
         class="group flex flex-1 items-center gap-3 rounded-xl border-2 border-[color:var(--color-border-visible)] bg-[color:var(--color-bg-soft)] px-5 py-[0.95rem] text-left transition-all hover:border-[#10b981] hover:bg-[color:var(--color-surface-raised)] focus:border-[#10b981] focus:outline-none"
-        aria-label="Search all articles"
+        aria-label={t('explore.search.aria')}
       >
         <svg
           width="20"
@@ -84,7 +89,7 @@ const dayShort = (d: Date) =>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <span class="flex-1 text-[1rem] font-medium text-[#94a3b8] max-[480px]:text-[0.9rem]">
-          Search across all articles…
+          {t('explore.search.label')}
         </span>
         <kbd class="hidden flex-shrink-0 rounded border border-[#e2e8f0] bg-white px-2 py-[0.15rem] font-mono text-[0.75rem] font-semibold text-[#64748b] sm:inline-block">
           /
@@ -94,10 +99,10 @@ const dayShort = (d: Date) =>
         type="button"
         id="explore-random-btn"
         class="group flex items-center justify-center gap-2 rounded-xl border-2 border-[#f59e0b] bg-[linear-gradient(135deg,#f59e0b,#d97706)] px-5 py-[0.95rem] font-bold text-white transition-all hover:-translate-y-px active:translate-y-0 max-[600px]:py-3"
-        aria-label="Random article"
+        aria-label={t('explore.random.aria')}
       >
         <span class="text-[1.4rem] leading-none transition-transform group-hover:rotate-[20deg]">🎲</span>
-        <span class="text-[0.95rem]">Surprise me</span>
+        <span class="text-[0.95rem]">{t('explore.random.label')}</span>
       </button>
     </div>
   </section>
@@ -106,7 +111,7 @@ const dayShort = (d: Date) =>
   <section class="my-14 max-[768px]:my-10">
     <div class="mb-6 px-4 text-center">
       <h2 class="text-[2rem] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)] max-[768px]:text-[1.6rem]">
-        Browse by Topic
+        {t('explore.byTopic')}
       </h2>
     </div>
     <CategoryGrid />
@@ -118,13 +123,13 @@ const dayShort = (d: Date) =>
       <section class="mx-auto my-14 max-w-[860px] px-8 max-[768px]:my-10 max-[768px]:px-4">
         <div class="mb-6 flex items-end justify-between gap-4">
           <h2 class="text-[2rem] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)] max-[768px]:text-[1.6rem]">
-            Latest
+            {t('explore.latest')}
           </h2>
           <a
-            href="/latest"
+            href={localPath('/latest')}
             class="flex-shrink-0 whitespace-nowrap text-[0.88rem] font-semibold text-[#10b981] no-underline hover:underline"
           >
-            See all
+            {t('explore.seeAll')}
           </a>
         </div>
         <div class="flex flex-col gap-1">
@@ -132,7 +137,7 @@ const dayShort = (d: Date) =>
             const cfg = cats[a.category] || ({} as (typeof cats)[string]);
             return (
               <a
-                href={`/${a.category}/${encodeURIComponent(a.slug)}`}
+                href={localPath(`/${a.category}/${encodeURIComponent(a.slug)}`)}
                 class="group flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 no-underline transition-all hover:border-[color:var(--color-border-visible)] hover:bg-[color:var(--color-bg-soft)]"
               >
                 <span
@@ -161,38 +166,38 @@ const dayShort = (d: Date) =>
       <section class="mx-auto my-16 max-w-[var(--container-wide)] px-8 max-[768px]:my-10 max-[768px]:px-4">
         <div class="mb-8 text-center">
           <h2 class="text-[1.6rem] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)] max-[768px]:text-[1.35rem]">
-            More ways to explore
+            {t('explore.more')}
           </h2>
         </div>
         <div class="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1 max-[900px]:gap-4">
           {features.graph && (
             <a
-              href="/graph"
+              href={localPath('/graph')}
               class="group flex items-start gap-4 rounded-2xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] p-6 no-underline transition-all hover:-translate-y-1 hover:border-[#7c3aed]"
             >
               <span class="flex-shrink-0 text-[2rem]">🕸️</span>
               <div class="flex-1">
                 <h3 class="mb-1 text-[1.05rem] font-bold text-[color:var(--color-ink)] group-hover:text-[#7c3aed]">
-                  Knowledge Graph
+                  {t('nav.graph')}
                 </h3>
                 <p class="text-[0.88rem] leading-[1.55] text-[color:var(--color-ink-soft)]">
-                  See how every topic connects.
+                  {t('explore.graph.desc')}
                 </p>
               </div>
             </a>
           )}
           {features.map && (
             <a
-              href="/map"
+              href={localPath('/map')}
               class="group flex items-start gap-4 rounded-2xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] p-6 no-underline transition-all hover:-translate-y-1 hover:border-[#10b981]"
             >
               <span class="flex-shrink-0 text-[2rem]">🗺️</span>
               <div class="flex-1">
                 <h3 class="mb-1 text-[1.05rem] font-bold text-[color:var(--color-ink)] group-hover:text-[#065f46]">
-                  Map
+                  {t('nav.map')}
                 </h3>
                 <p class="text-[0.88rem] leading-[1.55] text-[color:var(--color-ink-soft)]">
-                  Browse everything by location.
+                  {t('explore.map.desc')}
                 </p>
               </div>
             </a>
@@ -237,6 +242,11 @@ const dayShort = (d: Date) =>
           var res = await fetch('/kb/topics.json');
           if (!res.ok) throw new Error('topics fetch failed');
           var topics = await res.json();
+          // topics.json carries every language; pick from the reader's own.
+          var pageLang = document.documentElement.lang || '';
+          topics = topics.filter(function (a) {
+            return !a.lang || !pageLang || a.lang === pageLang;
+          });
           if (!topics.length) throw new Error('empty');
           var pick = topics[Math.floor(Math.random() * topics.length)];
           window.location.href = pick.url;

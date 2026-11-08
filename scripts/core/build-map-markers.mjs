@@ -7,7 +7,7 @@
  * map. None of that survives — a marker exists iff an article declares an explicit
  * `geo:` line, and category is read straight off the content path.
  *
- * Source of truth: src/content/en/<category-slug>/<slug>.md (the synced
+ * Source of truth: src/content/{lang}/<category-slug>/<slug>.md (the synced
  * projection of knowledge/, written by scripts/core/sync.sh). Category is the
  * article's parent-directory slug, validated against place.config.categories.
  * Marker colors are deliberately NOT baked in here — the map page maps
@@ -18,7 +18,10 @@
  * SPEC §Content model). Articles without a parseable `geo` line are simply
  * absent from the map; there is no auto-geocoding fallback.
  *
- * Emits a GeoJSON FeatureCollection, one Point Feature per geo-carrying article:
+ * Emits one GeoJSON FeatureCollection per enabled language, one Point Feature per
+ * geo-carrying article in that language: the default language writes
+ * src/data/map-markers.geojson, every other language src/data/map-markers.{lang}.geojson
+ * (titles/descriptions are per-language; coordinates come from each file's own `geo:`):
  *   properties = { slug, title, category, description, area }
  *   geometry   = { type: 'Point', coordinates: [lng, lat] }
  *
@@ -35,8 +38,10 @@ import matter from 'gray-matter';
 
 const ROOT = process.cwd();
 const placeConfig = (await import(resolve(ROOT, 'place.config.ts'))).default;
-const CONTENT_DIR = resolve(ROOT, 'src/content/en');
-const OUT = resolve(ROOT, 'src/data/map-markers.geojson');
+const LANGS = placeConfig.place.languages?.length
+  ? placeConfig.place.languages
+  : ['en'];
+const DEFAULT_LANG = LANGS[0];
 
 // place.config is the only source of truth for valid category slugs.
 const CATEGORY_SLUGS = new Set(placeConfig.categories.map((c) => c.slug));
@@ -53,8 +58,13 @@ function parseGeo(raw) {
   return { name, lat, lng, area };
 }
 
-async function main() {
-  await mkdir(resolve(ROOT, 'src/data'), { recursive: true });
+async function buildLang(lang) {
+  const CONTENT_DIR = resolve(ROOT, 'src/content', lang);
+  const OUT = resolve(
+    ROOT,
+    'src/data',
+    lang === DEFAULT_LANG ? 'map-markers.geojson' : `map-markers.${lang}.geojson`,
+  );
 
   const features = [];
   let entries = [];
@@ -113,7 +123,12 @@ async function main() {
   );
 
   await writeFile(OUT, JSON.stringify({ type: 'FeatureCollection', features }));
-  console.log(`✓ map-markers.geojson: ${features.length} marker(s)`);
+  console.log(`✓ ${OUT.split('/').pop()}: ${features.length} marker(s)`);
+}
+
+async function main() {
+  await mkdir(resolve(ROOT, 'src/data'), { recursive: true });
+  for (const lang of LANGS) await buildLang(lang);
 }
 
 main().catch((e) => {

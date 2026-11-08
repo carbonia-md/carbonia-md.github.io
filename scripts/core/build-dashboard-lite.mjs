@@ -21,6 +21,10 @@ const INPUT_PATH = join(PROJECT_ROOT, 'src/data/article-health.json');
 const OUTPUT_DIR = join(PROJECT_ROOT, 'src/data');
 const OUTPUT_PATH = join(OUTPUT_DIR, 'dashboard-lite.json');
 const KNOWLEDGE_DIR = join(PROJECT_ROOT, 'knowledge');
+const placeConfig = (await import(join(PROJECT_ROOT, 'place.config.ts'))).default;
+const LANGS = placeConfig.place.languages?.length ? placeConfig.place.languages : ['en'];
+const DEFAULT_LANG = LANGS[0];
+const NON_DEFAULT_LANGS = new Set(LANGS.slice(1));
 const CONFIG_TOML = join(PROJECT_ROOT, 'scripts/tools/article-health.config.toml');
 const CHECKS_DIR = join(PROJECT_ROOT, 'scripts/tools/lib/article_health/checks');
 
@@ -48,18 +52,32 @@ function gitLastModifiedDays(relPath) {
   }
 }
 
+// Default-language categories sit at knowledge/{Category}/; every other enabled
+// language nests under knowledge/{lang}/{Category}/ (a top-level dir named for a
+// configured non-default language is a language root, not a category).
 function loadKnowledgeArticles() {
   const articles = [];
   let dirs;
   try { dirs = readdirSync(KNOWLEDGE_DIR, { withFileTypes: true }); } catch { return articles; }
+  const roots = [];
   for (const ent of dirs) {
     if (!ent.isDirectory()) continue;
-    const catDir = join(KNOWLEDGE_DIR, ent.name);
+    if (NON_DEFAULT_LANGS.has(ent.name)) {
+      let cats;
+      try { cats = readdirSync(join(KNOWLEDGE_DIR, ent.name), { withFileTypes: true }); } catch { continue; }
+      for (const c of cats) {
+        if (c.isDirectory()) roots.push({ lang: ent.name, category: c.name, dir: join(KNOWLEDGE_DIR, ent.name, c.name) });
+      }
+    } else {
+      roots.push({ lang: DEFAULT_LANG, category: ent.name, dir: join(KNOWLEDGE_DIR, ent.name) });
+    }
+  }
+  for (const { lang, category, dir } of roots) {
     let files;
-    try { files = readdirSync(catDir); } catch { continue; }
+    try { files = readdirSync(dir); } catch { continue; }
     for (const f of files) {
       if (!f.endsWith('.md') || f.startsWith('_')) continue;
-      articles.push({ category: ent.name, slug: f.replace(/\.md$/, ''), path: join(catDir, f) });
+      articles.push({ lang, category, slug: f.replace(/\.md$/, ''), path: join(dir, f) });
     }
   }
   return articles;
@@ -264,6 +282,7 @@ function main() {
       file: r.file,
       category: r.category,
       slug: r.slug,
+      lang: r.lang ?? DEFAULT_LANG,
       hard: r.summary.hard,
       warn: r.summary.warn,
       info: r.summary.info,

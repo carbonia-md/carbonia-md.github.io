@@ -1,7 +1,10 @@
 ---
-import placeConfig from '../../../place.config';
+import { getLangFromUrl, useTranslatedPath } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
 
-const { halls } = placeConfig.home.exhibitions;
+const lang = getLangFromUrl(Astro.url);
+const localPath = useTranslatedPath(lang);
+const { halls } = localizedHome(lang).exhibitions;
 ---
 
 <>
@@ -17,7 +20,7 @@ const { halls } = placeConfig.home.exhibitions;
           {hall.paragraphs.map((para) => (
             <p>
               {para.text}
-              <a href={para.pillHref} class="topic-pill">
+              <a href={localPath(para.pillHref)} class="topic-pill">
                 {para.pillIcon} {para.pillLabel}
               </a>
             </p>

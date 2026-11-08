@@ -1,6 +1,12 @@
 ---
 import placeConfig from '../../place.config';
 
+import { getLangFromUrl, useTranslatedPath, useTranslations, dateLocale } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const lang = getLangFromUrl(Astro.url);
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
 interface Props {
   title: string;
   tags?: string[];
@@ -36,14 +42,14 @@ const encodedTitle = encodeURIComponent(title);
 const shortHash = commitHash ? commitHash.substring(0, 7) : '';
 
 const displayDate = date
-  ? new Date(date).toLocaleDateString('en-US', {
+  ? new Date(date).toLocaleDateString(dateLocale(lang), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     })
   : null;
 
-const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
+const readingTimeLabel = readingTime != null ? t('article.minRead').replace('{n}', String(readingTime)) : '';
 ---
 
 <aside class="sticky top-24 flex flex-col">
@@ -102,7 +108,7 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
     tags.length > 0 && (
       <div class="border-b border-[rgba(26,60,52,0.08)] py-5">
         <p class="mb-[0.85rem] font-['Inter',system-ui,sans-serif] text-[0.67rem] font-bold uppercase tracking-[0.2em] text-[#9aa89e]">
-          Keywords
+          {t('article.keywords')}
         </p>
         <div class="flex flex-wrap gap-[0.4rem]">
           {tags.map((tag) => (
@@ -123,7 +129,7 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
     <p
       class="mb-[0.85rem] font-['Inter',system-ui,sans-serif] text-[0.67rem] font-bold uppercase tracking-[0.2em] text-[#9aa89e]"
     >
-      Share
+      {t('article.share')}
     </p>
     <div
       class="flex flex-col gap-[0.1rem] [&_.share-row]:flex [&_.share-row]:w-full [&_.share-row]:cursor-pointer [&_.share-row]:items-center [&_.share-row]:gap-[0.65rem] [&_.share-row]:rounded-md [&_.share-row]:border-none [&_.share-row]:bg-transparent [&_.share-row]:px-2 [&_.share-row]:py-[0.45rem] [&_.share-row]:text-left [&_.share-row]:font-['Inter',system-ui,sans-serif] [&_.share-row]:text-[0.82rem] [&_.share-row]:text-[#4a5e52] [&_.share-row]:no-underline [&_.share-row]:transition-colors [&_.share-row]:duration-150 [&_.share-row_svg]:flex-shrink-0 [&_.share-row_svg]:text-[#7a8b7e] [&_.share-row:hover]:bg-[rgba(26,60,52,0.05)] [&_.share-row:hover]:text-[#0e3a5c] [&_.share-row:hover_svg]:text-[#0e3a5c]"
@@ -133,7 +139,7 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
         target="_blank"
         rel="noopener noreferrer"
         class="share-row no-external-icon"
-        aria-label="Share on X"
+        aria-label={t('article.shareX')}
       >
         <svg
           width="15"
@@ -145,14 +151,14 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
             d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.256 5.636L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"
           ></path></svg
         >
-        <span>Share on X</span>
+        <span>{t('article.shareX')}</span>
       </a>
       <a
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
         rel="noopener noreferrer"
         class="share-row no-external-icon"
-        aria-label="Share on Facebook"
+        aria-label={t('article.shareFacebook')}
       >
         <svg
           width="15"
@@ -164,13 +170,14 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
             d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
           ></path></svg
         >
-        <span>Share on Facebook</span>
+        <span>{t('article.shareFacebook')}</span>
       </a>
       <button
         class="share-row copy-link-btn"
         type="button"
-        aria-label="Copy link"
-        data-copy-default="Copy link"
+        aria-label={t('article.copyLink')}
+        data-copy-default={t('article.copyLink')}
+        data-copy-copied={t('article.copied')}
         data-copy-copied="Copied!"
       >
         <svg
@@ -186,7 +193,7 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
             d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
           ></path></svg
         >
-        <span class="copy-link-text">Copy link</span>
+        <span class="copy-link-text">{t('article.copyLink')}</span>
       </button>
     </div>
   </div>
@@ -225,7 +232,7 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
     contributors.length > 0 && (
       <div class="border-b border-[rgba(26,60,52,0.08)] py-5 last:border-b-0">
         <p class="mb-[0.85rem] font-['Inter',system-ui,sans-serif] text-[0.67rem] font-bold uppercase tracking-[0.2em] text-[#9aa89e]">
-          Contributors
+          {t('article.contributors')}
         </p>
         <div class="flex flex-wrap gap-[0.4rem]">
           {contributors.map((name) => (
@@ -243,12 +250,12 @@ const readingTimeLabel = readingTime != null ? `${readingTime} min read` : '';
     relatedArticles.length > 0 && (
       <div class="py-5">
         <p class="mb-[0.85rem] font-['Inter',system-ui,sans-serif] text-[0.67rem] font-bold uppercase tracking-[0.2em] text-[#9aa89e]">
-          Related
+          {t('article.related')}
         </p>
         <div class="flex flex-col gap-2">
           {relatedArticles.map((article) => (
             <a
-              href={`/${article.category}/${article.slug}`}
+              href={localPath(`/${article.category}/${article.slug}`)}
               class="rounded-md px-2 py-[0.4rem] font-['Inter',system-ui,sans-serif] text-[0.82rem] text-[#4a5e52] no-underline transition-colors duration-150 hover:bg-[rgba(26,60,52,0.05)] hover:text-[#0e3a5c]"
             >
               {article.title}

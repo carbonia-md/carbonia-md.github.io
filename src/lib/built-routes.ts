@@ -4,9 +4,12 @@
  * Two pages validate a `knowledge/` manifest's declared `article` link against the
  * built route set before rendering it: `/soundscape` (a category's `article`) and
  * `/chat` (a context's `article`). Both need the same answer, and the answer is a
- * restatement of what `src/pages/[category]/[slug].astro`'s `getStaticPaths` filter
- * does — so it lives in one place rather than being derived twice and drifting the
- * first time the route rules change.
+ * restatement of what `src/pages/[...lang]/[category]/[slug].astro`'s `getStaticPaths`
+ * filter does — so it lives in one place rather than being derived twice and
+ * drifting the first time the route rules change. Manifest `article` links are
+ * unprefixed (`/history/foo`, never `/it/history/foo`) — soundscape/chat manifests
+ * are English-authored content for now (see /PROGRESS.md M5/M8), so this stays
+ * single-language even though the page tree it mirrors is multi-language.
  *
  * The collection is passed in rather than fetched here: `getCollection` is an
  * `astro:content` import that only resolves inside the Astro build, and keeping it
@@ -81,7 +84,7 @@ export function knowledgeCollectionIds(
  *     excluded — they are the article routes, derived below from the collection);
  *   - one hub per configured category;
  *   - one article route per collection entry whose category is configured, which is
- *     the same filter `src/pages/[category]/[slug].astro` applies in
+ *     the same filter `src/pages/[...lang]/[category]/[slug].astro` applies in
  *     `getStaticPaths`. An article in a directory that is not a configured category
  *     has no page, so a link to it would be a 404.
  */
@@ -89,8 +92,11 @@ export function builtRoutes(
   config: PlaceConfig,
   collection: CollectionEntryId[],
   // Absolute when the caller is not running from the repository root, which every
-  // caller outside the Astro build is.
-  pagesDir = 'src/pages',
+  // caller outside the Astro build is. Pages live under the `[...lang]` optional
+  // segment (src/pages/[...lang]/...); this scans that directory, not src/pages/
+  // itself, which now holds only the handful of routes that stay single-language
+  // (404, rss.xml, feed.xml — see /PROGRESS.md D6).
+  pagesDir = 'src/pages/[...lang]',
 ): string[] {
   const categorySlugs = new Set(config.categories.map((category) => category.slug));
 

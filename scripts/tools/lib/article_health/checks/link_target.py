@@ -30,7 +30,7 @@ DIMENSION = "structure"
 # long-accumulated broken slugs. release-pr profile sets fail_on="warn" so CI
 # still catches existence issues.
 DEFAULT_SEVERITY = Severity.HARD
-EDITORIAL_REF = "src/pages/[category]/[slug].astro category routing + knowledge/ article existence"
+EDITORIAL_REF = "src/pages/[...lang]/[category]/[slug].astro category routing + knowledge/ article existence"
 
 _KNOWLEDGE_ROOT = Path("knowledge")
 _NON_ARTICLE_ROOTS = {"api", "og-images", "assets", "_astro"}

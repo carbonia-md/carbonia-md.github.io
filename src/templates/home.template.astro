@@ -11,12 +11,20 @@ import RecentUpdates from '../components/home/RecentUpdates.astro';
 import ContributeSection from '../components/home/ContributeSection.astro';
 import { fetchRecentCommits } from '../lib/commits';
 import placeConfig from '../../place.config';
+import { localizedHome } from '../lib/place-i18n';
 
+import { getLangFromUrl, useTranslatedPath, useTranslations } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const lang = getLangFromUrl(Astro.url);
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
 const recentCommits = await fetchRecentCommits();
-const { features, home } = placeConfig;
+const { features } = placeConfig;
+const home = localizedHome(lang);
 ---
 
-<Layout title="Home">
+<Layout title={t('home.meta.title')}>
   <HeroSection />
 
   <ReaderDoors />
@@ -39,7 +47,7 @@ const { features, home } = placeConfig;
       {
         features.graph && (
           <a
-            href="/graph"
+            href={localPath('/graph')}
             class="home-cta-btn home-cta-primary inline-flex items-center gap-2 rounded-lg border-[1.5px] px-6 py-[0.7rem] text-[0.9rem] font-semibold no-underline transition-all duration-[250ms] hover:-translate-y-px"
           >
             {home.features.cta.graph}

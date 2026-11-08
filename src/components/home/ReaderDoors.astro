@@ -1,7 +1,13 @@
 ---
-import placeConfig from '../../../place.config';
+import { getLangFromUrl, useTranslatedPath, useTranslations } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
 
-const { doors } = placeConfig.home;
+const lang = getLangFromUrl(Astro.url);
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
+const { doors } = localizedHome(lang);
+// In-page anchors (#...) stay as-is; site paths (/...) keep the reader's language.
+const doorHref = (href: string) => (href.startsWith('/') ? localPath(href) : href);
 
 const TONE_BG: Record<string, string> = {
   green: 'hover:bg-[rgba(45,80,22,0.06)] hover:border-[rgba(45,80,22,0.35)]',
@@ -20,7 +26,7 @@ const TONE_ICON_BG: Record<string, string> = {
 
 <section
   class="mx-auto my-12 max-w-[1100px] px-8 max-[768px]:my-8 max-[480px]:px-4"
-  aria-label="Quick navigation"
+  aria-label={t('home.doors.aria')}
 >
   <div
     class="grid grid-cols-4 gap-3 max-[900px]:grid-cols-2 max-[900px]:gap-4 max-[480px]:grid-cols-1"
@@ -28,7 +34,7 @@ const TONE_ICON_BG: Record<string, string> = {
     {
       doors.map((door) => (
         <a
-          href={door.href}
+          href={doorHref(door.href)}
           class:list={[
             'group flex flex-col items-start gap-3 rounded-xl border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] p-5 no-underline shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_rgba(0,0,0,0.08)] max-[480px]:flex-row max-[480px]:items-center max-[480px]:gap-4 max-[480px]:p-4',
             TONE_BG[door.tone],

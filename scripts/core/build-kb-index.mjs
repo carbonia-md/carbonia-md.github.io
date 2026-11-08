@@ -12,6 +12,11 @@
  *   public/llms.txt                  — the llms.txt boot file (llmstxt.org), lists
  *                                      every present article grouped by category
  *
+ * Languages: the default language lives at knowledge/{Category}/ and keeps its
+ * unprefixed URLs; every other enabled language lives at knowledge/{lang}/
+ * {Category}/ and is emitted with /{lang}/ URLs and kb/articles/{lang}/ paths.
+ * topics.json entries carry a `lang` field so consumers can filter.
+ *
  * Place identity (name, domain, categories) flows from place.config.ts — zero
  * hardcoded strings (genericity gate, ADR 002).
  */
@@ -28,6 +33,11 @@ const SITE = `https://${domain}`;
 // Site display name mirrors Layout.astro: "<Name>.<tld>" (e.g. domain foo.md → .md).
 const siteName = `${placeName}${'.' + domain.split('.').pop()}`;
 
+const LANGS = placeConfig.place.languages?.length
+  ? placeConfig.place.languages
+  : ['en'];
+const DEFAULT_LANG = LANGS[0];
+
 // slug → knowledge/ folder title (folders are the config category titles).
 const CATEGORIES = placeConfig.categories.map((c) => ({
   slug: c.slug,
@@ -42,10 +52,15 @@ function readingTimeFromBody(body) {
   return Math.max(1, Math.round(words.length / 200));
 }
 
-async function scan() {
+async function scanLang(lang) {
   const articles = [];
+  const isDefault = lang === DEFAULT_LANG;
+  const urlPrefix = isDefault ? '' : `/${lang}`;
+  const kbPrefix = isDefault ? '' : `${lang}/`;
   for (const { slug, title } of CATEGORIES) {
-    const dir = resolve(ROOT, 'knowledge', title);
+    const dir = isDefault
+      ? resolve(ROOT, 'knowledge', title)
+      : resolve(ROOT, 'knowledge', lang, title);
     let files;
     try {
       files = (await readdir(dir)).filter(
@@ -67,9 +82,10 @@ async function scan() {
         title: data.title || name,
         description: data.description || '',
         category: slug,
+        lang,
         tags,
-        url: `/${slug}/${name}`,
-        kb: `/kb/articles/${slug}/${name}.md`,
+        url: `${urlPrefix}/${slug}/${name}`,
+        kb: `/kb/articles/${kbPrefix}${slug}/${name}.md`,
         readingTime: readingTimeFromBody(content),
         date:
           data.date instanceof Date
@@ -82,11 +98,14 @@ async function scan() {
       });
     }
   }
-  articles.sort((a, b) => a.title.localeCompare(b.title, 'en'));
+  articles.sort((a, b) => a.title.localeCompare(b.title, lang));
   return articles;
 }
 
-const articles = await scan();
+// Default language first, then the others in config order.
+const articlesByLang = new Map();
+for (const lang of LANGS) articlesByLang.set(lang, await scanLang(lang));
+const articles = LANGS.flatMap((l) => articlesByLang.get(l));
 
 // Fresh output tree (idempotent; drops articles removed from knowledge/). Clean
 // only THIS script's outputs — public/kb/ is shared with build-search-index.mjs,
@@ -101,15 +120,13 @@ await writeFile(join(KB_DIR, 'topics.json'), JSON.stringify(topics), 'utf-8');
 
 // ── per-article raw markdown ──
 for (const a of articles) {
-  const dest = join(ARTICLES_DIR, a.category, `${basename(a.url)}.md`);
+  const langDir = a.lang === DEFAULT_LANG ? '' : a.lang;
+  const dest = join(ARTICLES_DIR, langDir, a.category, `${basename(a.url)}.md`);
   await mkdir(resolve(dest, '..'), { recursive: true });
   await writeFile(dest, a.raw, 'utf-8');
 }
 
 // ── llms.txt ──
-const byCat = new Map(CATEGORIES.map((c) => [c.slug, []]));
-for (const a of articles) byCat.get(a.category)?.push(a);
-
 const catTitle = Object.fromEntries(CATEGORIES.map((c) => [c.slug, c.title]));
 const lines = [];
 lines.push(`# ${siteName}`);
@@ -123,22 +140,33 @@ lines.push('');
 lines.push(`- Topics index: ${SITE}/kb/topics.json`);
 lines.push(`- Full-text search index: ${SITE}/kb/search-index.json`);
 lines.push(`- Per-article markdown: ${SITE}/kb/articles/{category}/{slug}.md`);
+if (LANGS.length > 1) {
+  const others = LANGS.slice(1).map((l) => `/kb/articles/${l}/{category}/{slug}.md`);
+  lines.push(`- Other languages (markdown): ${others.map((o) => SITE + o).join(', ')}`);
+}
 lines.push('');
 lines.push(`## Articles (${articles.length})`);
 lines.push('');
-for (const { slug } of CATEGORIES) {
-  const list = byCat.get(slug) || [];
-  if (list.length === 0) continue;
-  lines.push(`### ${catTitle[slug]}`);
-  lines.push('');
-  for (const a of list) {
-    const desc = a.description ? `: ${a.description}` : '';
-    lines.push(`- [${a.title}](${SITE}${a.url})${desc} — raw: ${a.kb}`);
+for (const lang of LANGS) {
+  const langArticles = articlesByLang.get(lang);
+  if (LANGS.length > 1 && langArticles.length > 0) {
+    lines.push(`## Language: ${lang}`);
+    lines.push('');
   }
-  lines.push('');
+  for (const { slug } of CATEGORIES) {
+    const list = langArticles.filter((a) => a.category === slug);
+    if (list.length === 0) continue;
+    lines.push(`### ${catTitle[slug]}`);
+    lines.push('');
+    for (const a of list) {
+      const desc = a.description ? `: ${a.description}` : '';
+      lines.push(`- [${a.title}](${SITE}${a.url})${desc} — raw: ${a.kb}`);
+    }
+    lines.push('');
+  }
 }
 await writeFile(resolve(ROOT, 'public', 'llms.txt'), lines.join('\n'), 'utf-8');
 
 console.log(
-  `[kb-index] ${articles.length} articles → topics.json + articles/*.md + llms.txt`,
+  `[kb-index] ${articles.length} articles (${LANGS.length} lang(s)) → topics.json + articles/*.md + llms.txt`,
 );

@@ -7,21 +7,29 @@
  * Ported from the fork's src/pages/graph.astro. All place/category identity is
  * genericized: the hub list, node colors, labels, and knowledge/ folder mapping
  * derive from place.config.ts + src/utils/categoryConfig.ts — none of the fork's
- * hardcoded slug/title/hex tables survive. Articles read via the established
- * getCollection('en') convention; Hub files (underscore-prefixed, never synced)
- * are read from knowledge/, keyed by the config title↔slug map. D3 is CDN-loaded
- * and page-scoped; the graph data is emitted as an application/json island the
- * client parses (and scripts/core/check-graph.mjs asserts against post-build).
+ * hardcoded slug/title/hex tables survive. Articles read via the per-language
+ * content collection (src/content.config.ts); Hub files (underscore-prefixed,
+ * never synced) are read from knowledge/, keyed by the config title↔slug map.
+ * D3 is CDN-loaded and page-scoped; the graph data is emitted as an
+ * application/json island the client parses (and scripts/core/check-graph.mjs
+ * asserts against post-build — en only for now, see /PROGRESS.md M5).
  */
-import Layout from '../layouts/Layout.astro';
+export { langStaticPaths as getStaticPaths } from '../../lib/lang-static-paths';
+import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 import { readdir, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import placeConfig from '../../place.config';
-import { getCategoryConfig } from '../utils/categoryConfig';
+import placeConfig from '../../../place.config';
+import { getCategoryConfig } from '../../utils/categoryConfig';
+import { localizedCategoryText } from '../../lib/place-i18n';
+import { getLangFromUrl, useTranslatedPath, useTranslations } from '../../i18n/utils';
 
 const { name } = placeConfig.place;
+const lang = getLangFromUrl(Astro.url);
 
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
 // Category identity flows from config — no hardcoded categories[]/categoryColors/
 // categoryNames/categoryMapping tables (genericity gate; clean-rebuild rule).
 const categories = placeConfig.categories.map((c) => c.slug);
@@ -29,7 +37,7 @@ const categoryColor = (slug: string): string =>
   getCategoryConfig(slug)?.color ?? '#475569';
 const categoryLabel = (slug: string): string => {
   const cat = placeConfig.categories.find((c) => c.slug === slug);
-  return cat ? `${cat.icon} ${cat.title}` : slug;
+  return cat ? `${cat.icon} ${localizedCategoryText(slug, lang).title}` : slug;
 };
 // slug → knowledge/ folder name. Sync projects knowledge/{Title}/ →
 // src/content/en/{slug}/, so Hub-wikilink resolution walks knowledge/ keyed by
@@ -47,7 +55,7 @@ const tagMap: Record<string, string[]> = {}; // tag → article node ids
 
 // Articles from the content collection. Entry id is "{categorySlug}/{slug}".
 const validSlugs = new Set(categories);
-const allArticles = (await getCollection('en'))
+const allArticles = (await getCollection(lang))
   .map((entry) => {
     const parts = entry.id.split('/');
     const category = parts[0];
@@ -74,7 +82,7 @@ nodes.push({
   group: 'special',
   color: '#6366f1',
   size: 14,
-  url: '/about',
+  url: localPath('/about'),
 });
 nodes.push({
   id: 'contribute',
@@ -82,7 +90,7 @@ nodes.push({
   group: 'special',
   color: '#22c55e',
   size: 14,
-  url: '/contribute',
+  url: localPath('/contribute'),
 });
 edges.push({ source: CENTER_ID, target: 'about' });
 edges.push({ source: CENTER_ID, target: 'contribute' });
@@ -98,7 +106,7 @@ for (const cat of categories) {
     group: cat,
     color,
     size: 20,
-    url: `/${cat}`,
+    url: localPath(`/${cat}`),
   });
   edges.push({ source: CENTER_ID, target: cat });
 
@@ -115,7 +123,7 @@ for (const cat of categories) {
       group: cat,
       color,
       size: 8,
-      url: `/${cat}/${encodeURIComponent(slug)}`,
+      url: localPath(`/${cat}/${encodeURIComponent(slug)}`),
     });
 
     if (subcat) {
@@ -164,10 +172,12 @@ for (const [, articleIds] of Object.entries(tagMap)) {
 
 // Parse Hub wikilinks → Hub→article edges. Hub files (underscore-prefixed) live
 // only in knowledge/, never synced to src/content; folder resolves via the
-// place.config title↔slug map.
+// place.config title↔slug map. Non-default languages nest one level deeper
+// (knowledge/{lang}/{title}/), matching scripts/core/sync.sh's convention.
+const knowledgeLangRoot = lang === 'en' ? 'knowledge' : `knowledge/${lang}`;
 for (const [cat, folder] of categoryFolders) {
   try {
-    const hubDir = resolve(process.cwd(), 'knowledge', folder);
+    const hubDir = resolve(process.cwd(), knowledgeLangRoot, folder);
     const files = await readdir(hubDir);
     const hubFile = files.find((f) => f.startsWith('_') && f.includes('Hub'));
     if (!hubFile) continue;
@@ -215,7 +225,7 @@ for (const [cat, folder] of categoryFolders) {
 const graphData = JSON.stringify({ nodes, edges }).replace(/</g, '\\u003c');
 ---
 
-<Layout title="🕸️ Knowledge Graph">
+<Layout title={`🕸️ ${t('nav.graph')}`}>
   <main class="graph-page flex h-screen flex-col">
     <div
       class="flex flex-wrap items-center gap-4 bg-[#1a1a2e] px-[var(--space-page-x)] py-4 text-white max-[768px]:items-start max-[768px]:px-4 max-[768px]:py-[0.9rem]"
@@ -223,12 +233,12 @@ const graphData = JSON.stringify({ nodes, edges }).replace(/</g, '\\u003c');
       <h1
         class="m-0 font-[var(--font-editorial)] text-[clamp(1.25rem,2.4vw,1.8rem)] font-extrabold [letter-spacing:var(--title-letter-spacing)] [line-height:var(--title-line-height)] max-[768px]:text-[1.12rem] max-[768px]:leading-[1.3]"
       >
-        🕸️ Knowledge Graph
+        🕸️ {t('nav.graph')}
       </h1>
       <p
         class="m-0 max-w-[34rem] text-[0.98rem] leading-[1.6] text-white/[0.82] opacity-[0.78] max-[768px]:order-3 max-[768px]:w-full max-[768px]:text-[0.9rem]"
       >
-        All knowledge nodes and connections in {name}
+        {t('graph.subtitle').replace('{name}', name)}
       </p>
       <div
         class="ml-auto flex items-center gap-2 max-[768px]:order-4 max-[768px]:ml-0 max-[768px]:w-full max-[768px]:flex-wrap"
@@ -236,8 +246,8 @@ const graphData = JSON.stringify({ nodes, edges }).replace(/</g, '\\u003c');
         <input
           id="graph-search"
           type="search"
-          placeholder="Search nodes or articles"
-          aria-label="Search knowledge graph nodes"
+          placeholder={t('graph.search.placeholder')}
+          aria-label={t('graph.search.aria')}
           class="w-[200px] rounded-md border border-white/30 bg-white/10 px-[0.8rem] py-[0.4rem] text-[0.9rem] text-white outline-none transition-[border-color,background] duration-200 placeholder:text-white/50 focus:border-[#3b82f6] focus:bg-white/15 max-[768px]:w-full"
         />
         <span

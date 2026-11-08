@@ -15,6 +15,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from . import place
 from .types import FileTarget
 
 
@@ -48,8 +49,12 @@ def is_article_path(path: Path | str) -> bool:
     if "knowledge" not in parts:
         return False
     # At least `knowledge/<dir>/<file>.md`: one directory between the tree root
-    # and the file.
-    if len(parts) - parts.index("knowledge") < 3:
+    # and the file -- two when that directory is a non-default language root
+    # (`knowledge/<lang>/<Category>/<file>.md`), since a file directly in a
+    # language root is a queue, not an article, exactly like one at knowledge/.
+    rest = parts[parts.index("knowledge") + 1 :]
+    depth_needed = 3 if rest and rest[0] in place.non_default_language_codes() else 2
+    if len(rest) < depth_needed:
         return False
     return not Path(p).name.startswith("_")
 
@@ -243,16 +248,29 @@ def _detect_protected_regions(body: str) -> list[tuple[int, int, str]]:
     return sorted(regions, key=lambda r: r[0])
 
 
-def _derive_meta_from_path(path: Path) -> tuple[str, str]:
-    """Returns (category, slug) from a knowledge/{Category}/{slug}.md path."""
+def _derive_meta_from_path(path: Path) -> tuple[str, str, str]:
+    """Returns (category, slug, lang) from a knowledge/{Category}/{slug}.md
+    path (default language) or knowledge/{lang}/{Category}/{slug}.md (any
+    other enabled language) -- scripts/core/sync.sh's projection convention:
+    the default language sits at knowledge/{Category}/ directly, every other
+    enabled language nests one level deeper under its own knowledge/{lang}/
+    root. `lang` is the default language code (place.non_default_language_codes()
+    excludes it) unless the first segment matches a non-default one.
+    """
     parts = path.parts
+    default_lang = (place.place_languages() or ("en",))[0]
     try:
         idx = parts.index("knowledge")
     except ValueError:
-        return ("", path.stem)
+        return ("", path.stem, default_lang)
     rest = parts[idx + 1 :]
+    if not rest:
+        return ("", path.stem, default_lang)
+    lang = default_lang
+    if rest[0] in place.non_default_language_codes() and len(rest) > 1:
+        lang, rest = rest[0], rest[1:]
     category = rest[0] if rest else ""
-    return (category, path.stem)
+    return (category, path.stem, lang)
 
 
 def load_target(path: Path | str) -> FileTarget:
@@ -281,7 +299,7 @@ def load_target(path: Path | str) -> FileTarget:
         frontmatter_span = text[:body_text_offset]
         pad_lines = frontmatter_span.count("\n")
         body = ("\n" * pad_lines) + m.group("body")
-    category, slug = _derive_meta_from_path(p)
+    category, slug, lang = _derive_meta_from_path(p)
     regions = _detect_protected_regions(body)
     return FileTarget(
         path=p,
@@ -293,5 +311,6 @@ def load_target(path: Path | str) -> FileTarget:
         body_pad_lines=pad_lines,
         category=category,
         slug=slug,
+        lang=lang,
         protected_regions=regions,
     )

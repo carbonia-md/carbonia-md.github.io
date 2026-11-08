@@ -3,10 +3,13 @@ name: sekai-factcheck
 description: |
   Fact-check a knowledge/ article via the canonical FACTCHECK-PIPELINE. Audits
   claims against their sources and the knowledge/ ground truth. Quick mode during
-  rewrites; Full mode for post-ship audits or reader challenges.
+  rewrites; Full mode for post-ship audits or reader challenges; Translation
+  Fidelity mode when the target is a translation (checks it against its source
+  article, not against primary sources).
   TRIGGER when: user says "factcheck", "fact-check", "/sekai-factcheck",
-  "hallucination audit", "verify claims", "check sources", or when a rewrite
-  reaches REWRITE-PIPELINE Stage 3.
+  "hallucination audit", "verify claims", "check sources", "check the
+  translation"; when a rewrite reaches REWRITE-PIPELINE Stage 3; or when
+  `/sekai-write`'s translation mode reaches its own Stage 3.
 allowed-tools:
   - Bash
   - Read
@@ -34,9 +37,14 @@ Follow FACTCHECK-PIPELINE Phases 1–6 as written. Mode is set by context:
 
 - **Quick** — during a rewrite (REWRITE-PIPELINE Stage 3) or spot-checking a PR.
 - **Full** — a standalone audit, a reader challenge, or a periodic patrol.
+- **Translation Fidelity** — the target is a `knowledge/{lang}/...` article
+  with a `translatedFrom` frontmatter field (or you're checking one as part of
+  `/sekai-write`'s translation mode). Read the source article too — Phase T
+  replaces Phase 3/4 for this mode; Phases 1, 2, 5, 6 still run, against the
+  article pair rather than primary sources.
 
 ## 3. Report
 
-Report findings per Phase 6 triage (PASS / SOFT-FIX / HARD-FIX / DEAD-LINK). Fix
-every HARD-FIX and DEAD-LINK in `knowledge/` (the SSOT) and `npm run sync` before
-anything ships.
+Report findings per Phase 6 triage (PASS / SOFT-FIX / HARD-FIX / DEAD-LINK /
+TRANSLATION-DRIFT). Fix every HARD-FIX, DEAD-LINK, and TRANSLATION-DRIFT in
+`knowledge/` (the SSOT) and `npm run sync` before anything ships.

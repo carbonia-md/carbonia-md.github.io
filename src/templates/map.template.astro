@@ -13,10 +13,19 @@
 import Layout from '../layouts/Layout.astro';
 import { getCategoryConfigs } from '../utils/categoryConfig';
 import placeConfig from '../../place.config';
-// Prebuilt by scripts/core/build-map-markers.mjs (run-p prebuild group). Imported
-// as raw text because Vite has no loader for the .geojson extension.
-import markersRaw from '../data/map-markers.geojson?raw';
+// Prebuilt by scripts/core/build-map-markers.mjs (run-p prebuild group), one file
+// per language: map-markers.geojson (default language) and map-markers.{lang}.geojson.
+// Read with fs at build time because Vite has no loader for the .geojson extension.
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
+import { getLangFromUrl, useTranslatedPath, useTranslations } from '../i18n/utils';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const lang = getLangFromUrl(Astro.url);
+const localPath = useTranslatedPath(lang);
+const t = useTranslations(lang);
+const readArticleLabel = t('map.popup.read');
 const markers: {
   type: string;
   features: Array<{
@@ -29,9 +38,16 @@ const markers: {
     };
     geometry: { type: string; coordinates: [number, number] };
   }>;
-} = JSON.parse(markersRaw);
+} = JSON.parse(
+  readFileSync(
+    [`map-markers.${lang}.geojson`, 'map-markers.geojson']
+      .map((f) => resolve(process.cwd(), 'src/data', f))
+      .find((f) => existsSync(f))!,
+    'utf-8',
+  ),
+);
 
-const cats = getCategoryConfigs();
+const cats = getCategoryConfigs(lang);
 const { name } = placeConfig.place;
 const { center, zoom, maxBounds } = placeConfig.map;
 
@@ -57,7 +73,7 @@ const markerRows = markers.features.map((f) => ({
   categoryLabel: cats[f.properties.category]?.name ?? f.properties.category,
   area: f.properties.area,
   description: f.properties.description,
-  href: `/${f.properties.category}/${encodeURIComponent(f.properties.slug)}`,
+  href: localPath(`/${f.properties.category}/${encodeURIComponent(f.properties.slug)}`),
   color: cats[f.properties.category]?.color ?? '#475569',
   lat: f.geometry.coordinates[1],
   lng: f.geometry.coordinates[0],
@@ -67,7 +83,7 @@ const mapConfig = { center, zoom, maxBounds };
 ---
 
 <Layout
-  title={`Map of ${name}`}
+  title={t('map.meta.title').replace('{name}', name)}
   description={`An interactive map of ${name} — every article pinned to the place it is about.`}
 >
   <link
@@ -77,10 +93,10 @@ const mapConfig = { center, zoom, maxBounds };
 
   <section class="mx-auto max-w-[var(--container-wide)] px-6 pt-12 pb-2 max-[768px]:px-4 max-[768px]:pt-10">
     <h1 class="text-[clamp(2rem,5vw,3rem)] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)]">
-      Map of {name}
+      {t('map.meta.title').replace('{name}', name)}
     </h1>
     <p class="mt-2 text-[1.05rem] text-[color:var(--color-ink-soft)]">
-      Explore the places behind the articles — pick a category or area, or tap a marker.
+      {t('map.intro')}
     </p>
   </section>
 
@@ -97,9 +113,9 @@ const mapConfig = { center, zoom, maxBounds };
           {
             areas.length > 0 && (
               <div class="filter-row">
-                <span class="filter-row-label">Neighborhoods</span>
+                <span class="filter-row-label">{t('map.filter.areas')}</span>
                 <div class="filter-chips" id="areaFilters">
-                  <button class="filter-btn active" data-filter="all">All</button>
+                  <button class="filter-btn active" data-filter="all">{t('map.filter.all')}</button>
                   {areas.map((a) => (
                     <button class="filter-btn" data-filter={a}>
                       {a}
@@ -110,9 +126,9 @@ const mapConfig = { center, zoom, maxBounds };
             )
           }
           <div class="filter-row">
-            <span class="filter-row-label">Category</span>
+            <span class="filter-row-label">{t('map.filter.category')}</span>
             <div class="filter-chips" id="categoryFilters">
-              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn active" data-filter="all">{t('map.filter.all')}</button>
               {
                 presentCats.map((c) => (
                   <button class="filter-btn" data-filter={c.slug}>
@@ -136,7 +152,7 @@ const mapConfig = { center, zoom, maxBounds };
   is:inline
   src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script is:inline define:vars={{ markerRows, mapConfig }}>
+<script is:inline define:vars={{ markerRows, mapConfig, readArticleLabel }}>
   const map = L.map('leafletMap', {
     scrollWheelZoom: false,
     maxBounds: mapConfig.maxBounds,
@@ -219,7 +235,7 @@ const mapConfig = { center, zoom, maxBounds };
           (m.description
             ? `<br/><p style="margin:.4rem 0 .3rem">${esc(m.description)}</p>`
             : '') +
-          `<a href="${esc(m.href)}">Read the article &rarr;</a>`,
+          `<a href="${esc(m.href)}">${esc(readArticleLabel)} &rarr;</a>`,
       );
       markerByIndex.set(i, marker);
     });

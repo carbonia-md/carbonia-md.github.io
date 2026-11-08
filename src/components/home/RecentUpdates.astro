@@ -3,12 +3,17 @@ import { commitIcon, timeAgo } from '../../lib/commits';
 import type { Commit } from '../../lib/commits';
 import placeConfig from '../../../place.config';
 
+import { getLangFromUrl, useTranslatedPath } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
 interface Props {
   commits: Commit[];
 }
 
 const { commits } = Astro.props;
-const { recentUpdates } = placeConfig.home;
+const { recentUpdates } = localizedHome(getLangFromUrl(Astro.url));
 const repoUrl = placeConfig.links.repo;
 ---
 
@@ -59,13 +64,13 @@ const repoUrl = placeConfig.links.repo;
         </div>
         <div class="relative z-[2] mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
-            href="/latest"
+            href={localPath('/latest')}
             class="inline-flex items-center gap-[0.3rem] rounded-full bg-[#10b981] px-6 py-[0.6rem] text-[0.9rem] font-semibold text-white no-underline transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#059669] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
           >
             {recentUpdates.latestLabel}
           </a>
           <a
-            href="/changelog"
+            href={localPath('/changelog')}
             class="inline-flex items-center gap-[0.3rem] rounded-full bg-[#1e3a5f] px-6 py-[0.6rem] text-[0.9rem] font-semibold text-white no-underline transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1e40af] hover:shadow-[0_4px_12px_rgba(30,64,175,0.3)]"
           >
             {recentUpdates.viewAll}

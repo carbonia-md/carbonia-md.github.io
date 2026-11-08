@@ -12,11 +12,19 @@ import HeadInlineScripts from '../components/HeadInlineScripts.astro';
 import placeConfig from '../../place.config';
 
 import type { Lang } from '../config/languages';
+import { getLangFromUrl, getAlternates, stripLangPrefix } from '../i18n/utils';
+import { localizedTagline } from '../lib/place-i18n';
 
 interface Props {
   title: string;
   description?: string;
   lang?: Lang;
+  /**
+   * Languages this page exists in, for hreflang + the header language switcher.
+   * Omit for routes generated in every enabled language; articles pass the
+   * languages that actually have a translation.
+   */
+  availableLangs?: readonly Lang[];
   image?: string;
   type?: 'website' | 'article';
   datePublished?: string;
@@ -39,14 +47,15 @@ interface Props {
   readerSettings?: boolean;
 }
 
-const { name, domain, tagline } = placeConfig.place;
+const { name, domain } = placeConfig.place;
 const { links } = placeConfig;
 const domainDot = `.${domain.split('.').pop()}`;
 const siteName = `${name}${domainDot}`;
 
 const {
   title,
-  description = tagline,
+  lang = getLangFromUrl(Astro.url),
+  description = localizedTagline(lang),
   image,
   type,
   datePublished,
@@ -58,10 +67,12 @@ const {
   categorySlug: propCategorySlug,
   noindex,
   readerSettings = true,
-  lang = 'en',
+  availableLangs,
 } = Astro.props;
 
-const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const alternates = getAlternates(Astro.url, availableLangs);
+
+const currentPath = stripLangPrefix(Astro.url.pathname).replace(/\/$/, '') || '/';
 const isHome = currentPath === '/';
 const bodyClass = isHome ? 'page-home' : 'page-default';
 
@@ -117,6 +128,7 @@ const slugToFolder: Record<string, string> = Object.fromEntries(
       title={title}
       description={description}
       lang={lang}
+      alternates={alternates}
       image={image}
       type={type}
       datePublished={datePublished}
@@ -156,7 +168,7 @@ const slugToFolder: Record<string, string> = Object.fromEntries(
     <HeadInlineScripts readerSettings={readerSettings} />
   </head>
   <body class={bodyClass}>
-    <Header />
+    <Header alternates={alternates} />
 
     <script is:inline>
       // ── Search engine (MiniSearch with fallback) ──

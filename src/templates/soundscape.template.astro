@@ -24,12 +24,14 @@
  */
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { getLangFromUrl, useTranslations, useTranslatedPath } from '../i18n/utils';
 import { builtRoutes } from '../lib/built-routes';
 import { readSoundscape } from '../lib/sounds';
 import placeConfig from '../../place.config';
 
 const lang = getLangFromUrl(Astro.url);
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(lang);
 const t = useTranslations(lang);
 
 /**
@@ -38,7 +40,7 @@ const t = useTranslations(lang);
  * build-time warning instead of shipping a 404 — which is also what keeps the
  * post-build internal-link check green.
  */
-const knownRoutes = builtRoutes(placeConfig, await getCollection('en'));
+const knownRoutes = builtRoutes(placeConfig, await getCollection(lang));
 
 // Build-time read. Warnings (a missing asset, a malformed entry, an `article`
 // that resolves to nothing) are emitted to the build log by the reader itself,
@@ -202,7 +204,7 @@ const isLinkable = (url: string) =>
         <li>{t('soundscape.contribute.step.two')}</li>
         <li>{t('soundscape.contribute.step.three')}</li>
       </ol>
-      <a class="contribute-cta" href="/contribute">{t('soundscape.contribute.cta')}</a>
+      <a class="contribute-cta" href={localPath('/contribute')}>{t('soundscape.contribute.cta')}</a>
     </section>
   </main>
 </Layout>

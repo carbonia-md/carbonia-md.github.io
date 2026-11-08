@@ -1,7 +1,12 @@
 ---
 import placeConfig from '../../../place.config';
 
-const { contribute } = placeConfig.home;
+import { getLangFromUrl, useTranslatedPath } from '../../i18n/utils';
+import { localizedHome } from '../../lib/place-i18n';
+
+// Internal links stay in the reader's language: `/x` -> `/it/x` on Italian pages.
+const localPath = useTranslatedPath(getLangFromUrl(Astro.url));
+const { contribute } = localizedHome(getLangFromUrl(Astro.url));
 const { links } = placeConfig;
 ---
 
@@ -31,7 +36,7 @@ const { links } = placeConfig;
       class="flex flex-wrap justify-center gap-6 max-[768px]:flex-col max-[768px]:items-center"
     >
       <a
-        href="/contribute"
+        href={localPath('/contribute')}
         class="rounded-lg bg-[#1e40af] px-10 py-4 text-[1.1rem] font-semibold text-white no-underline shadow-[0_4px_12px_rgba(30,64,175,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1d4ed8] hover:shadow-[0_6px_16px_rgba(30,64,175,0.4)]"
         >{contribute.guideLabel}</a
       >

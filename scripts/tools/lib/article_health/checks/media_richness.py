@@ -27,6 +27,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterator
 
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -52,7 +53,7 @@ _RE_IFRAME = re.compile(r"<iframe[\s>]", re.IGNORECASE)
 _RE_INLINE_IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)\n]+)\)")
 # Strip fenced code blocks before counting iframes (avoid example snippets in docs).
 _RE_CODE_BLOCK = re.compile(r"```.*?```", re.DOTALL)
-_RE_WORD = re.compile(r"[A-Za-z0-9'-]+")
+_RE_WORD = vocab.WORD_RE
 
 
 def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
@@ -121,7 +122,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
     # Depth article only — short articles don't get a count target. INFO
     # advisory; the density floor (a harder signal) is owned by paragraph-rhythm.
     total_media = total_images + iframe_count
-    words = len(_RE_WORD.findall(body_clean))
+    words = vocab.normalize_words(target.lang, len(_RE_WORD.findall(body_clean)))
     DEPTH_WORD_THRESHOLD = 800
     if words >= DEPTH_WORD_THRESHOLD:
         count_target = max(3, round(words / DEFAULT_WORDS_PER_MEDIA))

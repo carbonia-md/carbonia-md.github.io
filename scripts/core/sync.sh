@@ -90,6 +90,12 @@ sync_lang() {
   fi
   dst_root="src/content/$lang"
 
+  # Always create dst_root, even with no source yet: src/content.config.ts
+  # defines one Astro collection per enabled language (ENABLED_LANGUAGE_CODES),
+  # and glob()'s base directory must exist or getCollection(lang) errors at
+  # build time for a language that's enabled but not yet translated.
+  mkdir -p "$dst_root"
+
   if [ ! -d "$src_root" ]; then
     echo "  $lang: SKIP (no $src_root/)"
     return

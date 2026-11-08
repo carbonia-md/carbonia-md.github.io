@@ -1,14 +1,14 @@
 ---
 title: 'Monte Sirai Archaeological Park'
-description: 'A Phoenician-then-Punic settlement on a 191-meter plateau near Carbonia, with a necropolis and tofet, inaugurated as a park in 2001.'
+description: 'A Phoenician-then-Punic settlement on a 191-meter plateau near Carbonia, excavated since 1963 and inaugurated as an archaeological park in 2001.'
 date: 2026-08-19
 category: 'Landmarks'
 tags: ['monte-sirai', 'phoenician', 'punic', 'necropolis', 'archaeology']
 subcategory: 'Archaeological Sites'
 author: 'Carbonia'
 featured: true
-lastVerified: 2026-08-19
-lastHumanReview: false
+lastVerified: 2026-09-20
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Monte_Sirai_2.jpg'
 imageAlt: 'The hilltop plateau of Monte Sirai near Carbonia.'
 imageCredit: 'Alex10, via Wikimedia Commons'
@@ -20,10 +20,11 @@ source:
   - 'https://cultura.gov.it/luogo/parco-archeologico-monte-sirai'
   - 'https://www.marecalmo.org/en/2018/08/22/alla-scoperta-parco-archeologico-di-monte-sirai-antiche-civilta-fenicio-punico/'
   - 'https://www.donnanuragica.com/siti-archeologici-sardi/fenicio-punico-romano/carbonia-area-archeologica-di-monte-sirai/'
+  - 'https://www.unicaradio.it/en/blog/2026/04/09/monte-sirai-storia-e-segreti-del-sito-archeologico-2/'
 geo: 'Parco Archeologico di Monte Sirai,39.1800842,8.4882586,Carbonia'
 ---
 
-Monte Sirai is a Phoenician-then-Punic settlement on a plateau 191 meters above sea level, about 2 kilometers northwest of Carbonia. The archaeological park covering it was inaugurated in 2001, and the site is unusual for Sardinia in a specific way: it carries no later-period construction or restructuring layered on top, so what's there is Phoenician and Punic, without a Roman or medieval overlay confusing the picture.
+Monte Sirai is a Phoenician-then-Punic settlement on a plateau 191 meters above sea level, about 2 kilometers northwest of Carbonia. Excavations began in 1963, after a local resident found a carved stele at the tofet the year before; the site has drawn visitors ever since, though it wasn't formally inaugurated as an archaeological park — with today's visitor center, ticketing, and parking — until 2001. The site is unusual for Sardinia in a specific way: it carries no later-period construction or restructuring layered on top, so what's there is Phoenician and Punic, without a Roman or medieval overlay confusing the picture.
 
 > **At a glance:** The site's tofet held cremation urns for children and animals, placed at the base of an elevated cult building reached by a staircase — a specific, documented detail rather than a vague "ancient religious site" gloss.
 
@@ -52,4 +53,4 @@ The park is roughly 2 kilometers northwest of central Carbonia. Opening hours an
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|The Founding and Unraveling of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Founding, Decline, and Resilience of Carbonia]]

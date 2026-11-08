@@ -24,6 +24,7 @@ import re
 from pathlib import Path
 from typing import Any, Iterator
 
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -50,11 +51,22 @@ DEFAULT_WORDS_PER_MEDIA = 400
 _RE_INLINE_IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)\n]+)\)")
 # Count video iframes toward the media threshold (images+videos count together).
 _RE_IFRAME = re.compile(r"<iframe[\s>]", re.IGNORECASE)
-_RE_IMAGE_SOURCES_H2 = re.compile(r"^##\s*Image Sources", re.MULTILINE)
-_RE_WORD = re.compile(r"[A-Za-z0-9'-]+")
+_RE_WORD = vocab.WORD_RE
+
+
+def _re_image_sources_h2(lang: str) -> re.Pattern[str]:
+    return re.compile(rf"^##\s*(?:{vocab.heading_alternation(lang, 'image_sources')})", re.MULTILINE)
+
+
 # length-scaling counts prose words, excluding the references section (footnotes
 # would inflate the count and demand excessive media).
-_RE_REF_SECTION = re.compile(r"^##\s*(?:References|Further Reading)", re.MULTILINE)
+def _re_ref_section(lang: str) -> re.Pattern[str]:
+    names = "|".join(
+        (vocab.heading_alternation(lang, "references"), vocab.heading_alternation(lang, "further_reading"))
+    )
+    return re.compile(rf"^##\s*(?:{names})", re.MULTILINE)
+
+
 # Caption render check: HTML block (</div> / </iframe>) immediately followed by markdown italic
 # caption (_..._) without blank line -> remark/markdown won't render italic (underscores become
 # literal chars). 2026-06-07 directive. Working pattern: blank line between </div> and _caption_.
@@ -164,7 +176,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
         or target.frontmatter.get("imageLicense")
         or target.frontmatter.get("imageSource")
     )
-    if has_attribution and not _RE_IMAGE_SOURCES_H2.search(body):
+    if has_attribution and not _re_image_sources_h2(target.lang).search(body):
         yield Violation(
             check=CHECK_NAME,
             severity=Severity.WARN,
@@ -199,9 +211,9 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
     # effective_min = max(min_images, round(words / words_per_media)). base
     # min_images is the short-depth floor; length-scale pulls longer articles higher.
     if options.get("length_scaled", DEFAULT_LENGTH_SCALED):
-        ref_m = _RE_REF_SECTION.search(body)
+        ref_m = _re_ref_section(target.lang).search(body)
         prose_body = body[: ref_m.start()] if ref_m else body
-        length_unit = len(_RE_WORD.findall(prose_body))
+        length_unit = vocab.normalize_words(target.lang, len(_RE_WORD.findall(prose_body)))
         per = int(options.get("words_per_media", DEFAULT_WORDS_PER_MEDIA)) or DEFAULT_WORDS_PER_MEDIA
         min_images = max(min_images, round(length_unit / per))
     # 2026-06-04 directive: images+videos valued together. Threshold counts "media"

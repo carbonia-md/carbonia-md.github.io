@@ -9,7 +9,7 @@
 import TimelineDayNav from '../components/timeline/TimelineDayNav.astro';
 import TimelineDay from '../components/timeline/TimelineDay.astro';
 import Layout from '../layouts/Layout.astro';
-import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import { getLangFromUrl, useTranslations, dateLocale } from '../i18n/utils';
 import { fetchCommitFeed, commitType, commitIcon } from '../lib/commits';
 import placeConfig from '../../place.config';
 
@@ -20,12 +20,12 @@ const { commits, source } = await fetchCommitFeed(9999);
 
 const sourceLabel =
   source === 'git'
-    ? 'From local git history'
+    ? t('changelog.source.git')
     : source === 'cache'
-      ? 'From the build-time cached commit feed'
+      ? t('changelog.source.cache')
       : source === 'github'
-        ? 'From the GitHub commit feed'
-        : 'Updates are temporarily unavailable';
+        ? t('changelog.source.github')
+        : t('changelog.source.none');
 
 // Group by day for left nav
 const grouped: Record<string, number> = {};
@@ -58,15 +58,14 @@ for (const commit of commits) {
 
 function formatMonth(monthStr: string): string {
   const [y, m] = monthStr.split('-');
-  const names = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  return `${names[parseInt(m) - 1]} ${y}`;
+  return new Date(Number(y), parseInt(m) - 1, 1).toLocaleDateString(dateLocale(lang), {
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function formatDayFull(d: string): string {
-  return new Date(`${d}T00:00:00`).toLocaleDateString('en-US', {
+  return new Date(`${d}T00:00:00`).toLocaleDateString(dateLocale(lang), {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -75,12 +74,12 @@ function formatDayFull(d: string): string {
 }
 
 const filterTypes = [
-  { key: 'all', icon: '', label: 'All' },
-  { key: 'feat', icon: '✨', label: 'Feature' },
-  { key: 'fix', icon: '🐛', label: 'Fix' },
-  { key: 'content', icon: '📝', label: 'Content' },
-  { key: 'merge', icon: '🔀', label: 'Merge' },
-  { key: 'maintenance', icon: '🔧', label: 'Maintenance' },
+  { key: 'all', icon: '', label: t('changelog.filter.all') },
+  { key: 'feat', icon: '✨', label: t('changelog.filter.feat') },
+  { key: 'fix', icon: '🐛', label: t('changelog.filter.fix') },
+  { key: 'content', icon: '📝', label: t('changelog.filter.content') },
+  { key: 'merge', icon: '🔀', label: t('changelog.filter.merge') },
+  { key: 'maintenance', icon: '🔧', label: t('changelog.filter.maintenance') },
 ];
 
 // Left-column nav data
@@ -114,13 +113,13 @@ for (const commit of commits) {
     {/* Hero */}
     <div class="mb-10">
       <h1 class="text-[clamp(2rem,5vw,3rem)] font-black -tracking-[0.02em] text-[color:var(--color-ink-heading)]">
-        Update History
+        {t('changelog.hero.title')}
       </h1>
       <p class="mt-2 text-[1.05rem] text-[color:var(--color-ink-soft)]">
-        Track every content addition and site improvement.
+        {t('changelog.hero.subtitle')}
       </p>
       <p class="mt-1 text-sm text-[#94a3b8]">
-        {commits.length} updates &middot; {sourceLabel} &middot;
+        {t('changelog.count').replace('{n}', String(commits.length))} &middot; {sourceLabel} &middot;
         <a
           href={`${repoUrl}/commits/main`}
           target="_blank"
@@ -141,7 +140,7 @@ for (const commit of commits) {
         <input
           type="text"
           id="changelog-search"
-          placeholder="Search updates..."
+          placeholder={t('changelog.search.placeholder')}
           class="w-full rounded-lg border border-[color:var(--color-border-visible)] bg-[color:var(--color-surface-raised)] px-4 py-2.5 text-sm text-[color:var(--color-ink)] outline-none transition-colors placeholder:text-[color:var(--color-ink-soft)] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20"
         />
       </div>
@@ -189,17 +188,17 @@ for (const commit of commits) {
           commits.length === 0 ? (
             <div class="py-16 text-center">
               <h3 class="text-lg font-semibold text-[color:var(--color-ink)]">
-                Update history is temporarily unavailable
+                {t('changelog.unavailable.title')}
               </h3>
               <p class="mt-2 text-[color:var(--color-ink-soft)]">
-                This page reads from git, then falls back to a build-time cache and GitHub.
+                {t('changelog.unavailable.desc')}
               </p>
               <a
                 href={`${repoUrl}/commits/main`}
                 target="_blank"
                 class="no-external-icon mt-4 inline-block text-[#3b82f6] hover:underline"
               >
-                View on GitHub
+                {t('changelog.viewOnGitHub')}
               </a>
             </div>
           ) : (

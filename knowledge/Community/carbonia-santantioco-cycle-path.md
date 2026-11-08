@@ -8,7 +8,7 @@ subcategory: 'Infrastructure and Local Life'
 author: 'Carbonia'
 featured: false
 lastVerified: 2026-08-18
-lastHumanReview: false
+lastHumanReview: true
 image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Stazione_Carbonia_2023.jpg'
 imageAlt: 'The former Carbonia FMS railway station, closed in 1974, now the starting point of the cycle path.'
 imageCredit: 'Alex10, via Wikimedia Commons'
@@ -23,7 +23,7 @@ geo: 'Stazione FMS Carbonia,39.1635,8.5099,Carbonia'
 
 The cycle path connecting Carbonia to Sant'Antioco, passing through San Giovanni Suergiu, runs on the bed of a narrow-gauge railway that Ferrovie Meridionali Sarde built between 1923 and 1926 to link Sant'Antioco and the lower Sulcis to Cagliari. The Sulcis railway line was shut down in 1974.
 
-> **At a glance:** The line was still running through the 1970s, well into living memory for anyone who grew up here in that decade — it wasn't some distant 19th-century relic, but part of ordinary local transport within a lifetime of today's older residents.
+> **At a glance:** The line was still running through the 1970s, well into living memory for anyone who grew up here in that decade — it isn't some distant 19th-century relic, but part of ordinary local transport within a lifetime of today's older residents.
 
 ## From Railway to Cycle Path
 
@@ -49,4 +49,4 @@ The route runs at grade on the former rail bed between Carbonia and Sant'Antioco
 
 ## Further Reading
 
-- [[founding-and-unraveling-of-carbonia|The Founding and Unraveling of Carbonia]]
+- [[founding-and-unraveling-of-carbonia|Founding, Decline, and Resilience of Carbonia]]

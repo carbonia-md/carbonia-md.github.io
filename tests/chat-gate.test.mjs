@@ -92,7 +92,7 @@ test('the Header and Footer entry points are inside the gate', () => {
   );
   assert.match(
     source('../src/components/Footer.astro'),
-    /\{chat\.enabled && <a href="\/chat">/,
+    /\{chat\.enabled && <a href=(?:"\/chat"|\{localPath\('\/chat'\)\})>/,
     'the Footer link must be conditional on the resolved gate',
   );
 });

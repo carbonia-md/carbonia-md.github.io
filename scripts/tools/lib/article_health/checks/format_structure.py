@@ -33,6 +33,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterator
 
+from .. import vocab
 from ..types import FileTarget, Severity, Violation
 
 
@@ -41,26 +42,37 @@ DIMENSION = "structure"
 DEFAULT_SEVERITY = Severity.WARN
 EDITORIAL_REF = "docs/playbook/ARTICLE-PLAYBOOK.md §4 Structure"
 
+# Section names are per-language (lib/article_health/vocab.py, keyed by target.lang).
 # Further Reading markers (canonical accepted): `## Further Reading` or `**Further Reading**:`
-_RE_FURTHER_READING = re.compile(
-    r"^(?:##\s*Further Reading|\*\*Further Reading\*\*\s*:)", re.MULTILINE | re.IGNORECASE
-)
-_RE_REFERENCES_H2 = re.compile(r"^##\s*References", re.MULTILINE | re.IGNORECASE)
+def _re_further_reading(lang: str) -> re.Pattern[str]:
+    names = vocab.heading_alternation(lang, "further_reading")
+    return re.compile(
+        rf"^(?:##\s*(?:{names})|\*\*(?:{names})\*\*\s*:)", re.MULTILINE | re.IGNORECASE
+    )
+
+
+def _re_references_h2(lang: str) -> re.Pattern[str]:
+    names = vocab.heading_alternation(lang, "references")
+    return re.compile(rf"^##\s*(?:{names})", re.MULTILINE | re.IGNORECASE)
+
 # Accept both:
 #   > **At a glance**: body      (colon outside bold)
 #   > **At a glance:** body      (colon inside bold)
-_RE_OVERVIEW_BLOCKQUOTE = re.compile(
-    r"^>\s*\*\*At a glance[:]?\*\*", re.MULTILINE | re.IGNORECASE
-)
+def _re_overview_blockquote(lang: str) -> re.Pattern[str]:
+    names = vocab.heading_alternation(lang, "at_a_glance")
+    return re.compile(rf"^>\s*\*\*(?:{names})[:]?\*\*", re.MULTILINE | re.IGNORECASE)
+
+
 _RE_FOOTNOTE_REF_USE = re.compile(r"\[\^[0-9a-zA-Z_-]+\](?!:)")
 _RE_FOOTNOTE_DEF = re.compile(r"^\[\^[0-9a-zA-Z_-]+\]:", re.MULTILINE)
 
 
 def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
     body = target.body
-    has_overview = bool(_RE_OVERVIEW_BLOCKQUOTE.search(body))
-    has_further = bool(_RE_FURTHER_READING.search(body))
-    has_refs_h2 = bool(_RE_REFERENCES_H2.search(body))
+    lang = target.lang
+    has_overview = bool(_re_overview_blockquote(lang).search(body))
+    has_further = bool(_re_further_reading(lang).search(body))
+    has_refs_h2 = bool(_re_references_h2(lang).search(body))
     has_fn_uses = bool(_RE_FOOTNOTE_REF_USE.search(body))
     has_fn_defs = bool(_RE_FOOTNOTE_DEF.search(body))
 
@@ -69,7 +81,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
         yield Violation(
             check=CHECK_NAME,
             severity=Severity.WARN,
-            message="Missing `> **At a glance:**` blockquote",
+            message=f"Missing `> **{vocab.heading(lang, 'at_a_glance')}:**` blockquote",
             editorial_ref="docs/playbook/ARTICLE-PLAYBOOK.md §4.1 The Opening Paragraph + At a Glance",
         )
 
@@ -78,7 +90,10 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
         yield Violation(
             check=CHECK_NAME,
             severity=Severity.WARN,
-            message="Missing Further Reading section (`## Further Reading` or `**Further Reading**:`)",
+            message=(
+                f"Missing Further Reading section (`## {vocab.heading(lang, 'further_reading')}` "
+                f"or `**{vocab.heading(lang, 'further_reading')}**:`)"
+            ),
             editorial_ref="docs/playbook/ARTICLE-PLAYBOOK.md §4 Structure",
         )
 
@@ -87,7 +102,7 @@ def check(target: FileTarget, config: dict[str, Any]) -> Iterator[Violation]:
         yield Violation(
             check=CHECK_NAME,
             severity=Severity.WARN,
-            message="Footnotes used but missing `## References` H2",
+            message=f"Footnotes used but missing `## {vocab.heading(lang, 'references')}` H2",
             editorial_ref="docs/playbook/ARTICLE-PLAYBOOK.md §4.6 Citations",
         )
 
