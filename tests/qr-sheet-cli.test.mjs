@@ -73,8 +73,8 @@ function makeRoot(
 
   writeFileSync(join(root, 'place.config.ts'), PLACE_CONFIG, 'utf8');
 
-  mkdirSync(join(root, 'src/pages'), { recursive: true });
-  for (const page of pages) writeFileSync(join(root, 'src/pages', `${page}.astro`), '---\n---\n', 'utf8');
+  mkdirSync(join(root, 'src/pages/[...lang]'), { recursive: true });
+  for (const page of pages) writeFileSync(join(root, 'src/pages/[...lang]', `${page}.astro`), '---\n---\n', 'utf8');
 
   for (const article of articles) {
     const path = join(root, 'knowledge', article);
