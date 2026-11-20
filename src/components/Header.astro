@@ -289,6 +289,23 @@ const categoryList = placeConfig.categories.map((c) => ({
           onclick="document.querySelector('.nav-mobile').classList.remove('open')"
           >GitHub</a
         >
+        {
+          alternates.length > 1 && (
+            <div class="mobile-lang" role="group" aria-label={t('nav.aria-language')}>
+              {alternates.map((a) => (
+                <a
+                  href={a.path}
+                  hreflang={a.lang}
+                  lang={a.lang}
+                  class:list={['mobile-lang-btn', { active: a.lang === lang }]}
+                  aria-current={a.lang === lang ? 'true' : undefined}
+                >
+                  {LANGUAGE_DISPLAY_NAMES[a.lang]}
+                </a>
+              ))}
+            </div>
+          )
+        }
       </nav>
     </header>
   </div>
@@ -923,6 +940,32 @@ const categoryList = placeConfig.categories.map((c) => ({
   .nav-mobile {
     display: none;
   }
+  /* Language row in the hamburger menu; the header .lang-toggle is hidden ≤768px.
+     The menu panel is always dark, so colors are fixed light-on-dark. */
+  .mobile-lang {
+    display: none;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0.5rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .mobile-lang-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .mobile-lang-btn.active {
+    background: var(--lang-active-bg);
+    color: var(--lang-active-color);
+    border-color: transparent;
+  }
+
   .mobile-nav-item {
     display: flex;
     align-items: center;
@@ -1174,6 +1217,9 @@ const categoryList = placeConfig.categories.map((c) => ({
     }
     .lang-toggle {
       display: none;
+    }
+    .mobile-lang {
+      display: flex;
     }
     .lang-btn {
       padding: 0.3rem 0.5rem;
