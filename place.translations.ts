@@ -69,7 +69,7 @@ const translations: Record<string, PlaceTranslation> = {
       ],
       doors: [
         { title: 'Prima volta qui?', sub: 'Parti dalla storia' },
-        { title: 'Cerca ovunque', sub: 'Testo completo su tutti gli articoli' },
+        { title: 'Cerca nel sito', sub: 'Testo completo su tutti gli articoli' },
         { title: 'Sorprendimi', sub: 'Un articolo a caso da approfondire' },
         { title: 'Salute del sito', sub: 'Statistiche su aggiornamento e copertura' },
       ],
