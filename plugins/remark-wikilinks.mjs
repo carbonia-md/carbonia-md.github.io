@@ -1,44 +1,67 @@
 /**
  * Remark plugin: convert [[wikilinks]] to <a> tags pointing to the correct article URL.
- * Builds a title→URL map from knowledge/ directory at startup.
- * Category map passed as option from astro.config — zero hardcoded category names.
+ * Builds a slug→URL map per language from the knowledge/ directory at startup.
+ * Category map and language list passed as options from astro.config — zero
+ * hardcoded category or language names.
+ *
+ * A link inside an article of language L resolves to L's own version of the
+ * target when it exists (`/{L}/{category}/{slug}`), and falls back to the
+ * default language's URL when it does not, so a partially translated site
+ * never produces a dead link.
  */
 import { readdirSync } from 'fs';
 import { join, basename } from 'path';
 import { visit } from 'unist-util-visit';
 
-let titleToUrl = null;
+const mapsByLang = new Map();
 
-function buildMap(categorySlugMap) {
-  if (titleToUrl) return titleToUrl;
-  titleToUrl = new Map();
+function buildMap(categorySlugMap, lang, defaultLanguage) {
+  if (mapsByLang.has(lang)) return mapsByLang.get(lang);
+  const map = new Map();
+  mapsByLang.set(lang, map);
+  const isDefault = lang === defaultLanguage;
   const knowledgeDir = join(process.cwd(), 'knowledge');
+  const langDir = isDefault ? knowledgeDir : join(knowledgeDir, lang);
+  const urlPrefix = isDefault ? '' : `/${lang}`;
 
   for (const [folder, slug] of Object.entries(categorySlugMap)) {
-    const dir = join(knowledgeDir, folder);
+    const dir = join(langDir, folder);
     try {
       const files = readdirSync(dir);
       for (const file of files) {
         if (!file.endsWith('.md') || file.startsWith('_')) continue;
         const name = basename(file, '.md');
-        titleToUrl.set(name, `/${slug}/${encodeURIComponent(name)}`);
+        map.set(name, `${urlPrefix}/${slug}/${encodeURIComponent(name)}`);
       }
     } catch {
       // Category dir may not exist yet
     }
   }
-  return titleToUrl;
+  return map;
+}
+
+/**
+ * The language of the file being processed, from its path: the content
+ * collections live at `src/content/{lang}/...`. Anything else is the default.
+ */
+function langOfFile(file, languages, defaultLanguage) {
+  const path = (file && (file.path || file.history?.[0])) || '';
+  const match = path.replace(/\\/g, '/').match(/\/src\/content\/([^/]+)\//);
+  return match && languages.includes(match[1]) ? match[1] : defaultLanguage;
 }
 
 export default function remarkWikilinks(options = {}) {
-  const { categories = [] } = options;
+  const { categories = [], languages = [], defaultLanguage = 'en' } = options;
   const categorySlugMap = {};
   for (const cat of categories) {
     categorySlugMap[cat.title] = cat.slug;
   }
 
-  return (tree) => {
-    const map = buildMap(categorySlugMap);
+  return (tree, file) => {
+    const lang = langOfFile(file, languages, defaultLanguage);
+    const fallbackMap = buildMap(categorySlugMap, defaultLanguage, defaultLanguage);
+    const langMap = buildMap(categorySlugMap, lang, defaultLanguage);
+    const map = { get: (slug) => langMap.get(slug) ?? fallbackMap.get(slug) };
 
     visit(tree, 'text', (node, index, parent) => {
       if (!node.value || !node.value.includes('[[')) return;
